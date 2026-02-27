@@ -11,7 +11,6 @@
  */
 
 const async = require('async');
-const axon = require('axon');
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
 const spawn = require('child_process').spawn;
@@ -33,10 +32,10 @@ let spawnCounter = 0;
  *   const manager = new DynamicInstanceManager({ serverFilePath: '...' });
  *   await manager.ensureStartedAsync(settings);
  *   // use manager.url for HTTP requests
- *   // use manager.on('axon-*', callback) for notifications
+ *   // use manager.on('test-*', callback) for notifications
  *
  * @param {Object} config Must contain `serverFilePath`
- * @param {Object} options Optional: { messagePrefix: string } for axon message filtering
+ * @param {Object} options Optional: { messagePrefix: string } for message filtering
  * @constructor
  */
 function DynamicInstanceManager (config, options = {}) {
@@ -47,9 +46,7 @@ function DynamicInstanceManager (config, options = {}) {
   const tempConfigPath = temp.path({ suffix: '.json' });
   let serverProcess = null;
   let serverReady = false;
-  let messagingSocket = null;
   let allocatedHttpPort = null;
-  let allocatedAxonPort = null;
   const logger = getLogger('dynamic-instance-manager');
   const self = this;
 
@@ -63,55 +60,12 @@ function DynamicInstanceManager (config, options = {}) {
       }
       serverProcess = null;
     }
-    if (messagingSocket) {
-      try {
-        messagingSocket.close();
-      } catch (e) {
-        // Ignore
-      }
-      messagingSocket = null;
-    }
   };
 
   // Register cleanup handlers for graceful shutdown
   process.on('exit', cleanup);
   process.on('SIGINT', cleanup);
   process.on('SIGTERM', cleanup);
-
-  /**
-   * Setup axon messaging with allocated port
-   */
-  const setupAxonMessaging = (port, host) => {
-    if (messagingSocket) {
-      try {
-        messagingSocket.close();
-      } catch (e) {
-        // Ignore
-      }
-    }
-
-    messagingSocket = axon.socket('sub-emitter');
-    allocatedAxonPort = port;
-
-    messagingSocket.bind(+port, host, function () {
-      logger.debug(`TCP sub socket ready on ${host}:${port}`);
-    });
-
-    messagingSocket.on('*', function (message, data) {
-      // Support message prefix filtering for isolation
-      const effectiveMessage = messagePrefix
-        ? (message.startsWith(messagePrefix) ? message : null)
-        : message;
-
-      if (!effectiveMessage) return;
-
-      if (message === 'axon-server-ready') {
-        serverReady = true;
-      }
-      // Forward messages to listeners
-      self.emit(message, data);
-    });
-  };
 
   /**
    * Allocate ports and start the server
@@ -140,17 +94,15 @@ function DynamicInstanceManager (config, options = {}) {
           await self.stopAsync();
         }
 
-        // Reuse existing ports if already allocated, otherwise allocate new ones
-        let httpPort, axonPort;
-        if (allocatedHttpPort && allocatedAxonPort) {
+        // Reuse existing port if already allocated, otherwise allocate a new one
+        let httpPort;
+        if (allocatedHttpPort) {
           httpPort = allocatedHttpPort;
-          axonPort = allocatedAxonPort;
-          logger.debug(`Reusing ports: HTTP ${httpPort}, axon ${axonPort}`);
+          logger.debug(`Reusing port: HTTP ${httpPort}`);
         } else {
-          [httpPort, axonPort] = await portAllocator.allocatePorts(2);
+          httpPort = await portAllocator.allocatePort();
           allocatedHttpPort = httpPort;
-          allocatedAxonPort = axonPort;
-          logger.debug(`Allocated new ports: HTTP ${httpPort}, axon ${axonPort}`);
+          logger.debug(`Allocated new port: HTTP ${httpPort}`);
         }
 
         // Configure HTTP
@@ -158,20 +110,13 @@ function DynamicInstanceManager (config, options = {}) {
         settingsCopy.http.port = httpPort;
         settingsCopy.http.ip = settingsCopy.http.ip || '127.0.0.1';
 
-        // Configure axon messaging
-        settingsCopy.axonMessaging = settingsCopy.axonMessaging || {};
-        settingsCopy.axonMessaging.port = axonPort;
-        settingsCopy.axonMessaging.host = settingsCopy.axonMessaging.host || '127.0.0.1';
-        settingsCopy.axonMessaging.enabled = true;
-        settingsCopy.axonMessaging.pubConnectInsteadOfBind = true;
-
-        // Setup axon messaging with allocated port
-        setupAxonMessaging(axonPort, settingsCopy.axonMessaging.host);
+        // Configure test notifications (IPC-based, no port needed)
+        settingsCopy.testNotifications = { enabled: true };
 
         serverSettings = settingsCopy;
         self.url = `http://${settingsCopy.http.ip}:${httpPort}`;
 
-        logger.debug(`Starting server on port ${httpPort}, axon on ${axonPort}`);
+        logger.debug(`Starting server on port ${httpPort}`);
         self.start(callback);
       } catch (err) {
         callback(err);
@@ -190,7 +135,7 @@ function DynamicInstanceManager (config, options = {}) {
       return callback(new Error('Cannot restart: server was never started with ensureStarted'));
     }
 
-    // Use ensureStarted which properly handles stop and axon socket setup
+    // Use ensureStarted which properly handles stop and restart
     self.ensureStarted(serverSettings, callback);
   };
 
@@ -225,7 +170,7 @@ function DynamicInstanceManager (config, options = {}) {
 
     logger.debug('Starting server instance with config ' + tempConfigPath);
     const options = {
-      stdio: 'inherit',
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: { ...process.env, PRYV_BOILER_SUFFIX: '-dyn' + spawnCounter++ }
     };
 
@@ -245,6 +190,16 @@ function DynamicInstanceManager (config, options = {}) {
       serverExited = true;
       exitCode = 1;
       serverProcess = null;
+    });
+
+    serverProcess.on('message', function (msg) {
+      if (msg && msg.type === 'test-notification') {
+        // Support message prefix filtering for isolation
+        const event = msg.event;
+        if (messagePrefix && !event.startsWith(messagePrefix)) return;
+        if (event === 'test-server-ready') serverReady = true;
+        self.emit(event, msg.data);
+      }
     });
 
     async.until(isReadyOrExited, function (next) { setTimeout(next, 100); }, function () {
@@ -280,16 +235,6 @@ function DynamicInstanceManager (config, options = {}) {
     const proc = serverProcess;
     serverProcess = null;
     serverReady = false;
-
-    // Close axon socket
-    if (messagingSocket) {
-      try {
-        messagingSocket.close();
-      } catch (e) {
-        // Ignore
-      }
-      messagingSocket = null;
-    }
 
     // Set up exit handler before killing
     const onExit = () => {
@@ -339,13 +284,6 @@ function DynamicInstanceManager (config, options = {}) {
    */
   this.getPort = function () {
     return allocatedHttpPort;
-  };
-
-  /**
-   * Get allocated axon port
-   */
-  this.getAxonPort = function () {
-    return allocatedAxonPort;
   };
 
   function isRunning () {

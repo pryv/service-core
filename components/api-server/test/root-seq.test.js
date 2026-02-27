@@ -385,7 +385,7 @@ describe('[ROOT] root', function () {
     before(function () {
       eventsNotifCount = 0;
 
-      server.on('axon-events-changed', function () {
+      server.on('test-events-changed', function () {
         eventsNotifCount++;
       });
     });

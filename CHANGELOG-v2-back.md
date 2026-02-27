@@ -1,5 +1,15 @@
 # Changelog - Internal (no API impact)
 
+## Phase 6a: Remove Axon Test Messaging
+
+- Replaced axon TCP pub/sub with Node.js built-in IPC for test notification forwarding
+- Created `test_messaging.js` (IPC-based EventEmitter + `process.send()`), deleted `axon_messaging.js`
+- Updated InstanceManager, DynamicInstanceManager, spawner.js to use IPC instead of axon TCP sockets
+- Renamed `axon-*` message names to `test-*` across all test files (~20 files)
+- Renamed `axonMsgs`/`axonSocket` variables to `testMsgs`/`testNotifier`
+- Removed `axon` npm dependency and `axonMessaging` config sections
+- No changes to production messaging (NATS) or caching
+
 ## Phase 5e: Remove FerretDB Support
 
 - Removed FerretDB feature entirely — `ferretDB/` directory, `test-ferret` justfile recipe, `isFerret` config/property, FerretDB connection string, `ferretIndexAndOptionsAdaptationsIfNeeded()`, FerretDB duplicate error handling, FerretDB test guards

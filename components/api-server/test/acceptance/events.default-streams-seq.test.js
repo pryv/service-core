@@ -108,11 +108,11 @@ describe('[FG5R] Events of system streams', () => {
 
     // Initialize notifications dependency
 
-    const axonMsgs = [];
-    const axonSocket = {
-      emit: (...args) => axonMsgs.push(args)
+    const testMsgs = [];
+    const testNotifier = {
+      emit: (...args) => testMsgs.push(args)
     };
-    pubsub.setTestNotifier(axonSocket);
+    pubsub.setTestNotifier(testNotifier);
 
     pubsub.status.emit(pubsub.SERVER_READY);
     await require('api-server/src/methods/events')(app.api);

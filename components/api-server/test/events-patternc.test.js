@@ -48,17 +48,17 @@ describe('[EVPC] events (Pattern C)', function () {
     // Initialize notifications if not already done
     if (!global.notifications) {
       const { pubsub } = require('messages');
-      global.axonMsgs = [];
-      const axonSocket = { emit: (...args) => global.axonMsgs.push(args) };
-      pubsub.setTestNotifier(axonSocket);
+      global.testMsgs = [];
+      const testNotifier = { emit: (...args) => global.testMsgs.push(args) };
+      pubsub.setTestNotifier(testNotifier);
       global.notifications = {
-        reset: () => { global.axonMsgs = []; },
-        count: (type, u) => global.axonMsgs.filter(m => m[0] === type && (u == null || m[1] === u)).length,
-        eventsChanged: (u) => global.notifications.count('axon-events-changed', u),
-        streamsChanged: (u) => global.notifications.count('axon-streams-changed', u),
-        accountChanged: (u) => global.notifications.count('axon-account-changed', u),
-        accessesChanged: (u) => global.notifications.count('axon-accesses-changed', u),
-        all: () => global.axonMsgs
+        reset: () => { global.testMsgs = []; },
+        count: (type, u) => global.testMsgs.filter(m => m[0] === type && (u == null || m[1] === u)).length,
+        eventsChanged: (u) => global.notifications.count('test-events-changed', u),
+        streamsChanged: (u) => global.notifications.count('test-streams-changed', u),
+        accountChanged: (u) => global.notifications.count('test-account-changed', u),
+        accessesChanged: (u) => global.notifications.count('test-accesses-changed', u),
+        all: () => global.testMsgs
       };
     }
   });
@@ -298,7 +298,7 @@ describe('[EVPC] events (Pattern C)', function () {
       assert.strictEqual(res.body.event.description, data.description);
 
       // Check notification
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.eventsChanged(username) >= 1, 'events notifications');
       }
     });
@@ -544,7 +544,7 @@ describe('[EVPC] events (Pattern C)', function () {
       assert.strictEqual(res.body.event.content, 'updated');
       assert.strictEqual(res.body.event.description, 'New description');
 
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.eventsChanged(username) >= 1, 'events notifications');
       }
     });
@@ -653,7 +653,7 @@ describe('[EVPC] events (Pattern C)', function () {
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.event.trashed, true);
 
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.eventsChanged(username) >= 1, 'events notifications');
       }
     });
@@ -674,7 +674,7 @@ describe('[EVPC] events (Pattern C)', function () {
       assert.strictEqual(res.status, 200);
       assert.deepStrictEqual(res.body.eventDeletion, { id: eventId });
 
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.eventsChanged(username) >= 1, 'events notifications');
       }
     });

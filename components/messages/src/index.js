@@ -5,7 +5,8 @@
  * Refer to LICENSE file
  */
 module.exports = {
-  axonMessaging: require('./axon_messaging'),
+  testMessaging: require('./test_messaging'),
+  axonMessaging: require('./test_messaging'), // backward compat alias
   pubsub: require('./pubsub')
 };
 Object.assign(module.exports, require('./constants'));

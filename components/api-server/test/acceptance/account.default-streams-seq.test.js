@@ -101,11 +101,11 @@ describe('[ACCO] Account with system streams', function () {
     app = getApplication(true);
     await app.initiate();
     // Initialize notifications dependency
-    const axonMsgs = [];
-    const axonSocket = {
-      emit: (...args) => axonMsgs.push(args)
+    const testMsgs = [];
+    const testNotifier = {
+      emit: (...args) => testMsgs.push(args)
     };
-    pubsub.setTestNotifier(axonSocket);
+    pubsub.setTestNotifier(testNotifier);
     pubsub.status.emit(pubsub.SERVER_READY);
     await require('api-server/src/methods/account')(app.api);
     await require('api-server/src/methods/events')(app.api);

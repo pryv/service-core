@@ -5,7 +5,6 @@
  * Refer to LICENSE file
  */
 const async = require('async');
-const axon = require('axon');
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
 const spawn = require('child_process').spawn;
@@ -28,7 +27,7 @@ let spawnCounter = 0;
  *
  * Usage: just call `server.ensureStarted(settings, callback)` before running tests.
  *
- * @param {Object} settings Must contain `serverFilePath`, `axonMessaging` and `logging`
+ * @param {Object} settings Must contain `serverFilePath` and `logging`
  * @constructor
  */
 function InstanceManager (settings) {
@@ -38,23 +37,8 @@ function InstanceManager (settings) {
   const tempConfigPath = temp.path({ suffix: '.json' });
   let serverProcess = null;
   let serverReady = false;
-  const messagingSocket = axon.socket('sub-emitter');
   const logger = getLogger('instance-manager');
-
-  // setup TCP axonMessaging subscription
-
-  messagingSocket.bind(+settings.axonMessaging.port, settings.axonMessaging.host, function () {
-    logger.debug('TCP sub socket ready on ' + settings.axonMessaging.host + ':' +
-        settings.axonMessaging.port);
-  });
-
-  messagingSocket.on('*', function (message, data) {
-    if (message === 'axon-server-ready') {
-      serverReady = true;
-    }
-    // forward messages to our own listeners
-    this.emit(message, data);
-  }.bind(this));
+  const self = this;
 
   /**
    * Makes sure the instance is started with the given config settings, restarting it if needed;
@@ -119,9 +103,6 @@ function InstanceManager (settings) {
    * @api private
    */
   this.setup = function () {
-    // adjust config settings for test instance
-    serverSettings.axonMessaging.pubConnectInsteadOfBind = true;
-
     this.url = 'http://' + serverSettings.http.ip + ':' + serverSettings.http.port;
   };
 
@@ -156,8 +137,7 @@ function InstanceManager (settings) {
     // start proc
     logger.debug('Starting server instance... with config ' + tempConfigPath);
     const options = {
-      // Uncomment here if you want to see server output
-      stdio: 'inherit',
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: { ...process.env, PRYV_BOILER_SUFFIX: '-' + spawnCounter++ }
     };
     serverProcess = spawn(process.argv[0], args, options);
@@ -167,6 +147,12 @@ function InstanceManager (settings) {
       logger.debug('Server instance exited with code ' + code);
       serverExited = true;
       exitCode = code;
+    });
+    serverProcess.on('message', function (msg) {
+      if (msg && msg.type === 'test-notification') {
+        if (msg.event === 'test-server-ready') serverReady = true;
+        self.emit(msg.event, msg.data);
+      }
     });
 
     async.until(isReadyOrExited, function (next) { setTimeout(next, 100); }, function () {

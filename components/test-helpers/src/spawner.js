@@ -9,7 +9,6 @@
 const url = require('url');
 const childProcessNodeInternal = require('child_process');
 const EventEmitter = require('events');
-const axon = require('axon');
 const path = require('path');
 const lodash = require('lodash');
 const msgpack = require('msgpack5')();
@@ -102,8 +101,6 @@ class SpawnContext {
     // TODO Free ports once done.
     const port = await this.allocatePort();
 
-    const axonPort = await this.allocatePort();
-
     // Obtain a process proxy
     const process = this.getProcess();
 
@@ -113,14 +110,8 @@ class SpawnContext {
       http: {
         port // use this port for http/express
       },
-      axonMessaging: {
-        enabled: true,
-        // for spawner, we boot api-servers before their Server holder objects
-        // so the api-server needs to listen on a socket before Server facade
-        // connects to it. It's the inverse for InstanceManager
-        pubConnectInsteadOfBind: false,
-        port: axonPort,
-        host: '127.0.0.1'
+      testNotifications: {
+        enabled: true
       }
     }, customSettings);
 
@@ -130,7 +121,7 @@ class SpawnContext {
     logger.debug(`spawned a child on port ${port}`);
 
     // Return to our caller - server should be up and answering at this point.
-    return new Server(port, process, axonPort);
+    return new Server(port, process);
   }
 
   // Returns the next free port to use for testing.
@@ -229,7 +220,10 @@ class ProcessProxy {
     const child = this.childProcess;
     child.on('error', (err) => this.onChildError(err));
     child.on('exit', () => this.onChildExit());
-    child.on('message', (wire) => this.dispatchChildMessage(wire));
+    child.on('message', (wire) => {
+      if (wire && wire.type === 'test-notification') return; // skip IPC test notifications
+      this.dispatchChildMessage(wire);
+    });
   }
 
   /**
@@ -361,18 +355,14 @@ class ProcessProxy {
 class Server extends EventEmitter {
   port;
 
-  axonPort;
   baseUrl;
   process;
 
-  messagingSocket;
-
   host;
 
-  constructor (port, proxy, axonPort) {
+  constructor (port, proxy) {
     super();
     this.port = port;
-    this.axonPort = axonPort;
     this.host = '127.0.0.1';
     this.baseUrl = `http://${this.host}:${port}`;
     this.process = proxy;
@@ -383,14 +373,13 @@ class Server extends EventEmitter {
    * @returns {void}
    */
   listen () {
-    const host = this.host;
-    this.messagingSocket = axon.socket('sub-emitter');
-    const mSocket = this.messagingSocket;
-    mSocket.connect(+this.axonPort, host);
-
-    mSocket.on('*', function (message, data) {
-      this.emit(message, data);
-    }.bind(this));
+    const child = this.process.childProcess;
+    child.on('message', (msg) => {
+      if (msg && msg.type === 'test-notification') {
+        this.emit(msg.event, msg.data);
+      }
+      // other messages (msgpack command responses) handled by ProcessProxy
+    });
   }
 
   // Stops the server as soon as possible. Eventually returns either `true` (for

@@ -59,9 +59,9 @@ run component bin:
 lint *options:
     eslint {{options}} .
 
-# Run code linting only on changed files
+# Run code linting only on changed files (excludes deleted files)
 lint-changes *options:
-    eslint {{options}} $(git diff --name-only HEAD | grep -E '\.(js|jsx)$' | xargs)
+    eslint {{options}} $(git diff --name-only --diff-filter=d HEAD | grep -E '\.(js|jsx)$' | xargs)
 
 # Tag each test with a unique id if missing
 tag-tests:

@@ -70,9 +70,12 @@ for (const name of components) {
     }
   }
 
-  // Child killed by signal (e.g. SIGINT) — exit immediately
-  if (res.signal === 'SIGINT' || res.signal === 'SIGTERM') {
-    process.exit(130); // 128 + 2 (SIGINT)
+  // Child killed by signal (e.g. SIGINT/SIGTERM) — exit immediately.
+  // Also check for status 130 (128+SIGINT): mocha catches SIGINT internally
+  // and exits with code 130 rather than being killed by the signal directly,
+  // so res.signal is null but res.status is 130.
+  if (res.signal === 'SIGINT' || res.signal === 'SIGTERM' || res.status === 130) {
+    process.exit(130);
   }
 
   status += (res.status === null ? 1 : res.status);

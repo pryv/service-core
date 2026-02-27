@@ -24,7 +24,7 @@ services:
     key: test-system-key
 reporting:
   templateVersion: 1.0.0
-axonMessaging:
+testNotifications:
   enabled: false
 openSource:
   isActive: false

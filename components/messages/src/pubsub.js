@@ -103,16 +103,16 @@ function initNats () {
 // ----- TEST Messaging
 
 const testMessageMap = {};
-testMessageMap[CONSTANTS.USERNAME_BASED_EVENTS_CHANGED] = 'axon-events-changed';
-testMessageMap[CONSTANTS.USERNAME_BASED_STREAMS_CHANGED] = 'axon-streams-changed';
-testMessageMap[CONSTANTS.USERNAME_BASED_ACCESSES_CHANGED] = 'axon-accesses-changed';
-testMessageMap[CONSTANTS.USERNAME_BASED_ACCOUNT_CHANGED] = 'axon-account-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_EVENTS_CHANGED] = 'test-events-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_STREAMS_CHANGED] = 'test-streams-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_ACCESSES_CHANGED] = 'test-accesses-changed';
+testMessageMap[CONSTANTS.USERNAME_BASED_ACCOUNT_CHANGED] = 'test-account-changed';
 
 let globalTestNotifier = null;
 
 function forwardToTests (eventName, payload) {
   if (eventName === CONSTANTS.SERVER_READY) {
-    return globalTestNotifier.emit('axon-server-ready');
+    return globalTestNotifier.emit('test-server-ready');
   }
   const testMessageKey = testMessageMap[payload];
   if (testMessageKey) {

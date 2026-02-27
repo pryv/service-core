@@ -44,7 +44,7 @@ function clear (settings) {
 function execute (testSetup, testNotifier) {
   const obj = parse(testSetup);
   if (obj.context != null) {
-    // inject TCP axonMessaging socket to allow passing data back to test process
+    // inject test notifier to allow passing data back to test process via IPC
     obj.context.testNotifier = testNotifier;
   }
   try {

@@ -21,7 +21,6 @@ const path = require('path');
 testHelpers.dependencies.settings = getConfigUnsafe(true).get();
 testHelpers.dependencies.instanceManager = new InstanceManager({
   serverFilePath: path.resolve(__dirname, '../../src/server.js'),
-  axonMessaging: testHelpers.dependencies.settings.axonMessaging,
   logging: testHelpers.dependencies.logging
 });
 

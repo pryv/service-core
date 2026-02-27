@@ -47,17 +47,17 @@ describe('[STRP] streams (Pattern C)', function () {
     // Re-initialize notifications if running alongside Pattern A tests
     if (!global.notifications) {
       const { pubsub } = require('messages');
-      global.axonMsgs = [];
-      const axonSocket = { emit: (...args) => global.axonMsgs.push(args) };
-      pubsub.setTestNotifier(axonSocket);
+      global.testMsgs = [];
+      const testNotifier = { emit: (...args) => global.testMsgs.push(args) };
+      pubsub.setTestNotifier(testNotifier);
       global.notifications = {
-        reset: () => { global.axonMsgs = []; },
-        count: (type, user) => global.axonMsgs.filter(m => m[0] === type && (user == null || m[1] === user)).length,
-        eventsChanged: (user) => global.notifications.count('axon-events-changed', user),
-        streamsChanged: (user) => global.notifications.count('axon-streams-changed', user),
-        accountChanged: (user) => global.notifications.count('axon-account-changed', user),
-        accessesChanged: (user) => global.notifications.count('axon-accesses-changed', user),
-        all: () => global.axonMsgs
+        reset: () => { global.testMsgs = []; },
+        count: (type, user) => global.testMsgs.filter(m => m[0] === type && (user == null || m[1] === user)).length,
+        eventsChanged: (user) => global.notifications.count('test-events-changed', user),
+        streamsChanged: (user) => global.notifications.count('test-streams-changed', user),
+        accountChanged: (user) => global.notifications.count('test-account-changed', user),
+        accessesChanged: (user) => global.notifications.count('test-accesses-changed', user),
+        all: () => global.testMsgs
       };
     }
   });
@@ -132,7 +132,7 @@ describe('[STRP] streams (Pattern C)', function () {
       assert.strictEqual(res.body.stream.name, data.name);
       assert.deepStrictEqual(res.body.stream.clientData, data.clientData);
       // Only check notifications if tracking is active (won't work when Pattern A tests override pubsub)
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.streamsChanged(username) >= 1, 'streams notifications');
       }
     });
@@ -242,7 +242,7 @@ describe('[STRP] streams (Pattern C)', function () {
       assert.strictEqual(res.body.stream.id, childId);
       assert.strictEqual(res.body.stream.parentId, rootStreamId);
       // Only check notifications if tracking is active (won't work when Pattern A tests override pubsub)
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.streamsChanged(username) >= 1, 'streams notifications');
       }
     });
@@ -298,7 +298,7 @@ describe('[STRP] streams (Pattern C)', function () {
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.stream.name, data.name);
       // Only check notifications if tracking is active (won't work when Pattern A tests override pubsub)
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.streamsChanged(username) >= 1, 'streams notifications');
       }
     });
@@ -375,7 +375,7 @@ describe('[STRP] streams (Pattern C)', function () {
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.body.stream.trashed, true);
       // Only check notifications if tracking is active (won't work when Pattern A tests override pubsub)
-      if (global.axonMsgs && global.axonMsgs.length > 0) {
+      if (global.testMsgs && global.testMsgs.length > 0) {
         assert.ok(notifications.streamsChanged(username) >= 1, 'streams notifications');
       }
     });

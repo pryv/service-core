@@ -101,26 +101,26 @@ async function initCore () {
   };
 
   // Initialize notifications
-  global.axonMsgs = [];
-  const axonSocket = {
-    emit: (...args) => global.axonMsgs.push(args)
+  global.testMsgs = [];
+  const testNotifier = {
+    emit: (...args) => global.testMsgs.push(args)
   };
-  pubsub.setTestNotifier(axonSocket);
+  pubsub.setTestNotifier(testNotifier);
   pubsub.status.emit(pubsub.SERVER_READY);
 
   // Notification tracking helpers
   global.notifications = {
-    reset: () => { global.axonMsgs = []; },
+    reset: () => { global.testMsgs = []; },
     count: (type, username) => {
-      return global.axonMsgs.filter(msg =>
+      return global.testMsgs.filter(msg =>
         msg[0] === type && (username == null || msg[1] === username)
       ).length;
     },
-    eventsChanged: (username) => global.notifications.count('axon-events-changed', username),
-    streamsChanged: (username) => global.notifications.count('axon-streams-changed', username),
-    accountChanged: (username) => global.notifications.count('axon-account-changed', username),
-    accessesChanged: (username) => global.notifications.count('axon-accesses-changed', username),
-    all: () => global.axonMsgs
+    eventsChanged: (username) => global.notifications.count('test-events-changed', username),
+    streamsChanged: (username) => global.notifications.count('test-streams-changed', username),
+    accountChanged: (username) => global.notifications.count('test-account-changed', username),
+    accessesChanged: (username) => global.notifications.count('test-accesses-changed', username),
+    all: () => global.testMsgs
   };
 
   // Load API methods based on options

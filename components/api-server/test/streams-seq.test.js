@@ -40,8 +40,8 @@ describe('[STRE] streams', function () {
   // to verify data change notifications
   let streamsNotifCount,
     eventsNotifCount;
-  server.on('axon-streams-changed', function () { streamsNotifCount++; });
-  server.on('axon-events-changed', function () { eventsNotifCount++; });
+  server.on('test-streams-changed', function () { streamsNotifCount++; });
+  server.on('test-events-changed', function () { eventsNotifCount++; });
 
   before(function (done) {
     async.series([

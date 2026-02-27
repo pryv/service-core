@@ -23,7 +23,7 @@ services:
   register:
     url: http://127.0.0.1:5123
     key: test-system-key
-axonMessaging:
+testNotifications:
   enabled: true
 nats:
  uri: 'nats://127.0.0.1:4222'

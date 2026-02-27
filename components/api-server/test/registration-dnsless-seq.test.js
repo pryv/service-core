@@ -50,11 +50,11 @@ describe('[BMM2] registration: DNS-less', () => {
 
     // get events for a small test of valid token
     // Initialize notifyTests dependency
-    const axonMsgs = [];
-    const axonSocket = {
-      emit: (...args) => axonMsgs.push(args)
+    const testMsgs = [];
+    const testNotifier = {
+      emit: (...args) => testMsgs.push(args)
     };
-    pubsub.setTestNotifier(axonSocket);
+    pubsub.setTestNotifier(testNotifier);
     await require('api-server/src/methods/events')(app.api);
 
     request = supertest(app.expressApp);

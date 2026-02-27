@@ -33,7 +33,7 @@ const http = require('http');
 const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
-const { axonMessaging } = require('messages');
+const { testMessaging } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ExtensionLoader = utils.extension.ExtensionLoader;
 /**
@@ -72,7 +72,7 @@ async function start () {
   const server = http.createServer(expressApp);
   module.exports = server;
   // Go
-  const testNotifier = await axonMessaging.getTestNotifier();
+  const testNotifier = await testMessaging.getTestNotifier();
   await storageLayer.waitForConnection();
   const backlog = 512;
   server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
@@ -89,7 +89,7 @@ async function start () {
     // all right
     logger.debug(infostr);
     logger.info('Server ready');
-    testNotifier.emit('axon-server-ready');
+    testNotifier.emit('test-server-ready');
   });
   process.on('exit', function () {
     logger.info('Browser server exiting.');

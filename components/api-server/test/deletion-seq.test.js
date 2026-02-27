@@ -53,12 +53,12 @@ describe('[PGTD] DELETE /users/:username', () => {
     app = getApplication();
     await app.initiate();
     await require('api-server/src/methods/auth/delete')(app.api);
-    const axonMsgs = [];
-    const axonSocket = {
-      emit: (...args) => axonMsgs.push(args)
+    const testMsgs = [];
+    const testNotifier = {
+      emit: (...args) => testMsgs.push(args)
     };
     // needed even if not used
-    pubsub.setTestNotifier(axonSocket);
+    pubsub.setTestNotifier(testNotifier);
     await require('api-server/src/methods/events')(app.api);
     await require('api-server/src/methods/streams')(app.api);
     await require('api-server/src/methods/auth/login')(app.api);

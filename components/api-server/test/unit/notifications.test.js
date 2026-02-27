@@ -21,16 +21,16 @@ function assertDeepInclude (array, value) {
 }
 
 describe('[NOTF] Notifications', () => {
-  let axonMsgs = [];
+  let testMsgs = [];
   let emittedMsgs = [];
   // Clear out received messages before each test.
   beforeEach(() => {
-    axonMsgs = [];
+    testMsgs = [];
     emittedMsgs = [];
   });
-  // stub out axonSocket
-  const axonSocket = {
-    emit: (...args) => axonMsgs.push(args)
+  // stub out test notifier
+  const testNotifier = {
+    emit: (...args) => testMsgs.push(args)
   };
   before(async () => {
     // intercept internal events
@@ -40,8 +40,8 @@ describe('[NOTF] Notifications', () => {
     pubsub.notifications.on('USERNAME', (message) => {
       emittedMsgs.push(message);
     });
-    // attach "fake" axonSocket to pubsub.
-    pubsub.setTestNotifier(axonSocket);
+    // attach "fake" test notifier to pubsub.
+    pubsub.setTestNotifier(testNotifier);
   });
   describe('[NF01] #serverReady', () => {
     beforeEach(() => {
@@ -50,8 +50,8 @@ describe('[NOTF] Notifications', () => {
     it('[B76G] notifies internal listeners', () => {
       assertDeepInclude(emittedMsgs, pubsub.SERVER_READY);
     });
-    it('[SRAU] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, ['axon-server-ready']);
+    it('[SRAU] notifies test listeners', () => {
+      assertDeepInclude(testMsgs, ['test-server-ready']);
     });
   });
   describe('[NF02] #accountChanged', () => {
@@ -61,8 +61,8 @@ describe('[NOTF] Notifications', () => {
     it('[P6ZD] notifies internal listeners', () => {
       assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCOUNT_CHANGED);
     });
-    it('[Q96S] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, ['axon-account-changed', 'USERNAME']);
+    it('[Q96S] notifies test listeners', () => {
+      assertDeepInclude(testMsgs, ['test-account-changed', 'USERNAME']);
     });
   });
   describe('[NF03] #accessesChanged', () => {
@@ -72,8 +72,8 @@ describe('[NOTF] Notifications', () => {
     it('[P5CG] notifies internal listeners', () => {
       assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_ACCESSES_CHANGED);
     });
-    it('[VSN6] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, ['axon-accesses-changed', 'USERNAME']);
+    it('[VSN6] notifies test listeners', () => {
+      assertDeepInclude(testMsgs, ['test-accesses-changed', 'USERNAME']);
     });
   });
   describe('[NF05] #streamsChanged', () => {
@@ -83,8 +83,8 @@ describe('[NOTF] Notifications', () => {
     it('[LDUQ] notifies internal listeners', () => {
       assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_STREAMS_CHANGED);
     });
-    it('[BUR1] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, ['axon-streams-changed', 'USERNAME']);
+    it('[BUR1] notifies test listeners', () => {
+      assertDeepInclude(testMsgs, ['test-streams-changed', 'USERNAME']);
     });
   });
   describe('[NF06] #eventsChanged', () => {
@@ -94,8 +94,8 @@ describe('[NOTF] Notifications', () => {
     it('[N8RI] notifies internal listeners', () => {
       assertDeepInclude(emittedMsgs, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     });
-    it('[TRMW] notifies axon listeners', () => {
-      assertDeepInclude(axonMsgs, ['axon-events-changed', 'USERNAME']);
+    it('[TRMW] notifies test listeners', () => {
+      assertDeepInclude(testMsgs, ['test-events-changed', 'USERNAME']);
     });
   });
 });

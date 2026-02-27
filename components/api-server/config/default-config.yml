@@ -57,11 +57,8 @@ customExtensions:
   defaultFolder: 'REPLACE ME'
   customAuthStepFn: ''
 
-axonMessaging:
+testNotifications:
   enabled: false
-  host: '127.0.0.1'
-  port: 4000
-  pubConnectInsteadOfBind: false
 
 updates:
   ignoreProtectedFields: false

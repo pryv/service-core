@@ -11,7 +11,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const recLaOptionsAsync = require('backloop.dev').httpsOptionsAsync;
-const { axonMessaging } = require('messages');
+const { testMessaging } = require('messages');
 const { pubsub } = require('messages');
 const { getUsersRepository } = require('business/src/users');
 const { getLogger, getConfig } = require('@pryv/boiler');
@@ -47,7 +47,7 @@ class Server {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
       process.exit(1);
     }
-    // start TCP pub axonMessaging
+    // setup test notification bus (IPC-based)
     await this.setupTestsNotificationBus();
     // register API methods
     await this.registerApiMethods();
@@ -187,7 +187,7 @@ class Server {
     if (process.env.NODE_ENV === 'test' && instanceTestSetup !== null) {
       logger.debug('specific test setup ');
       try {
-        const testNotifier = await axonMessaging.getTestNotifier();
+        const testNotifier = await testMessaging.getTestNotifier();
         require('test-helpers').instanceTestSetup.execute(instanceTestSetup, testNotifier);
       } catch (err) {
         logger.error(err);
@@ -201,7 +201,7 @@ class Server {
    * @returns {Promise<void>}
    */
   async setupTestsNotificationBus () {
-    const testNotifier = await axonMessaging.getTestNotifier();
+    const testNotifier = await testMessaging.getTestNotifier();
     pubsub.setTestNotifier(testNotifier);
   }
 
