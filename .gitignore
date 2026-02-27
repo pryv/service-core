@@ -14,7 +14,6 @@ proxy/nginx.conf
 service-core.iml
 /out
 .nyc_output/
-zPLANS
 build_tag
 build/core/release.tar
 build/hfs/release.tar
