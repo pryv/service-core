@@ -24,7 +24,6 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 
 const cache = require('cache');
 
-const { getConfig } = require('@pryv/boiler');
 const { getMall, storeDataUtils } = require('mall');
 const { pubsub } = require('messages');
 const { getStorageLayer } = require('storage');
@@ -54,12 +53,9 @@ const { integrity } = require('business');
  */
 
 module.exports = async function produceAccessesApiMethods (api) {
-  const config = await getConfig();
   const dbFindOptions = { projection: { calls: 0, deleted: 0 } };
   const mall = await getMall();
   const storageLayer = await getStorageLayer();
-
-  const isFerret = config.get('database:isFerret');
 
   // RETRIEVAL
 
@@ -296,11 +292,6 @@ module.exports = async function produceAccessesApiMethods (api) {
     if (params.type === 'shared') params.deviceName = null;
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err != null) {
-        if (isFerret) {
-          if (err.isDuplicate) {
-            return next(errors.itemAlreadyExists('access', { info: 'FerretDB does not provide duplicate information' }));
-          }
-        }
         // Duplicate errors
         if (err.isDuplicateIndex('token')) {
           return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));

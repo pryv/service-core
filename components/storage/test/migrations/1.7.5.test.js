@@ -29,12 +29,10 @@ describe('[MG75] Migration - 1.7.5', function () {
 
   before(async function () {
     await userLocalDirectory.init();
-    if (database.isFerret) this.skip();
     accessesCollection = await database.getCollection({ name: 'accesses' });
   });
 
   after(async function () {
-    if (database.isFerret) return;
     // erase all
     await accessesCollection.deleteMany({});
   });

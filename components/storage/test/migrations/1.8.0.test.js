@@ -33,7 +33,6 @@ describe('[MG80] Migration - 1.8.0', function () {
   let usersIndex;
 
   before(async function () {
-    if (database.isFerret) this.skip();
     const newVersion = getVersions('1.8.0');
     await SystemStreamsSerializer.init();
     const restoreFromDumpAsync = promisify(testData.restoreFromDump);

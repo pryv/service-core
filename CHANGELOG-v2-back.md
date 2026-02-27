@@ -1,5 +1,11 @@
 # Changelog - Internal (no API impact)
 
+## Phase 5e: Remove FerretDB Support
+
+- Removed FerretDB feature entirely — `ferretDB/` directory, `test-ferret` justfile recipe, `isFerret` config/property, FerretDB connection string, `ferretIndexAndOptionsAdaptationsIfNeeded()`, FerretDB duplicate error handling, FerretDB test guards
+- Fixed bug in `Database.isDuplicateError()`: FerretDB branch had missing `return`, causing all errors to be reported as duplicates
+- Cleaned: Database.js, localDataStore.js, accesses.js, accesses-personal.test.js, result-chunk-streaming-seq.test.js, database-seq.test.js, 4 migration test files, README-DBs.md
+
 ## Phase 5d: Engine-Agnostic Series, Deletion, and Test Fixes
 
 ### Engine-Agnostic Series Connections for Tests

@@ -30,8 +30,6 @@ describe('[MG90] Migration - 1.9.0', function () {
   let userLocalDirectory;
 
   before(async function () {
-    const database = await storage.getDatabase();
-    if (database.isFerret) this.skip();
     // remove user attachments
     userLocalDirectory = storage.userLocalDirectory;
     await userLocalDirectory.init();

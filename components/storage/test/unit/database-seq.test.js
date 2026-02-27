@@ -62,7 +62,6 @@ describe('[DBSE] Database', () => {
         // we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.strictEqual(typeof isDuplicateIndex, 'function');
-        if (database.isFerret) return done();
         assert.strictEqual(err.isDuplicateIndex('name'), true);
         assert.strictEqual(err.isDuplicateIndex('username'), true);
         assert.strictEqual(err.isDuplicateIndex('age'), false);
@@ -72,8 +71,7 @@ describe('[DBSE] Database', () => {
     // This helps detecting if Mongo decides to change the error message format,
     // which may break our regular expression matchings, cf. GH issue #163.
     it('[D0EN] must fail if mongo duplicate error message changed', (done) => {
-      let duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index: name_1_username_1 dup key:`;
-      if (database.isFerret) duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name}`;
+      const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index: name_1_username_1 dup key:`;
       database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
         try {
           // we ensure that err contains the string errmsg with assert

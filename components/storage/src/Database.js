@@ -21,8 +21,6 @@ const { getLogger } = require('@pryv/boiler');
  * }} DatabaseOptions
  */
 
-let DBisFerret = false;
-
 /**
  * Handles actual interaction with the Mongo database.
  * It handles Mongo-specific tasks such as connecting, retrieving collections and applying indexes,
@@ -54,15 +52,10 @@ class Database {
 
   logger;
 
-  isFerret;
-
   constructor (settings) {
     const authPart = getAuthPart(settings);
     this.logger = getLogger('database');
-    DBisFerret = settings.isFerret || DBisFerret;
-    this.isFerret = DBisFerret;
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/`;
-    if (DBisFerret) this.connectionString += 'ferretdb?authMechanism=PLAIN';
     this.databaseName = settings.name;
     this.options = {
       writeConcern: {
@@ -115,9 +108,7 @@ class Database {
     try {
       await this.client.connect();
       this.logger.debug('Connected');
-      if (!DBisFerret) {
-        await this.client.db('admin').command({ setFeatureCompatibilityVersion: '6.0' }, {});
-      }
+      await this.client.db('admin').command({ setFeatureCompatibilityVersion: '6.0' }, {});
       this.db = this.client.db(this.databaseName);
       this.connecting = false;
     } catch (err) {
@@ -180,26 +171,9 @@ class Database {
     if (initializedCollections[collectionName]) { return; }
     for (const item of indexes) {
       if (item.options.background !== false) item.options.background = true;
-      this.ferretIndexAndOptionsAdaptationsIfNeeded(item);
       await collection.createIndex(item.index, item.options);
     }
     initializedCollections[collectionName] = true;
-  }
-
-  /**
-   * If DB is ferret handle unsupported features;
-   */
-  ferretIndexAndOptionsAdaptationsIfNeeded (indexItem) {
-    if (!this.isFerret) return;
-    if (indexItem.options.partialFilterExpression) {
-      const filteringKeys = Object.keys(indexItem.options.partialFilterExpression);
-      for (const filteringKey of filteringKeys) {
-        indexItem.index[filteringKey] = 1;
-      }
-    }
-    delete indexItem.options.partialFilterExpression;
-    delete indexItem.options.expireAfterSeconds;
-    delete indexItem.options.background;
   }
 
   // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
@@ -667,10 +641,6 @@ class Database {
     if (err == null) {
       return false;
     }
-    if (DBisFerret) { // happens on update.
-      if (err.message.includes('ERROR: duplicate key value violates unique constraint'));
-      return true;
-    }
     const errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
   }
@@ -685,7 +655,6 @@ class Database {
       // Check both errmsg (older drivers) and message (newer drivers)
       const errorMessage = err?.errmsg || err?.message;
       if (err != null && errorMessage != null && err.isDuplicate) {
-        if (DBisFerret) return true;
         // This check depends on the MongoDB storage engine
         // We assume WiredTiger here (and not MMapV1).
         const matching = errorMessage.match(/index:(.+) dup key:/);

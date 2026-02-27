@@ -10,8 +10,6 @@ const assert = require('node:assert');
 
 const { produceStorageConnection, context } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
-const { getConfig } = require('@pryv/boiler');
-
 const http = require('http');
 const superagent = require('superagent');
 const { promisify } = require('util');
@@ -22,11 +20,8 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
 
   let mongoFixtures;
-  let isFerret;
   before(async function () {
     mongoFixtures = databaseFixture(await produceStorageConnection());
-    const config = await getConfig();
-    isFerret = config.get('database:isFerret');
   });
 
   let apiServer;
@@ -81,7 +76,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
       res.setEncoding('utf8');
       let jsonString = '';
       let chunkCount = 0;
-      const timeout = isFerret ? 10000 : (STORAGE_ENGINE === 'postgresql' ? 5000 : 500);
+      const timeout = STORAGE_ENGINE === 'postgresql' ? 5000 : 500;
       res.on('data', function (chunk) {
         if (Date.now() - lastChunkRecievedAt > timeout) throw new Error(`It took more that ${timeout}ms between chunks`);
         lastChunkRecievedAt = Date.now();
@@ -119,7 +114,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
         res.setEncoding('utf8');
         let jsonString = '';
         let chunkCount = 0;
-        const timeout = isFerret ? 10000 : (STORAGE_ENGINE === 'postgresql' ? 5000 : 500);
+        const timeout = STORAGE_ENGINE === 'postgresql' ? 5000 : 500;
         res.on('data', function (chunk) {
           if (Date.now() - lastChunkRecievedAt > timeout) throw new Error(`It took more that ${timeout}ms between chunks`);
           lastChunkRecievedAt = Date.now();

@@ -10,7 +10,6 @@
 const { ErrorIds } = require('errors');
 const validation = require('./helpers/validation');
 const methodsSchema = require('../src/schema/accessesMethods');
-const { getConfig } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const storage = require('storage');
 
@@ -21,7 +20,6 @@ describe('[ACSF] accesses (personal)', function () {
   let sessionAccessId;
   let appToken;
   let sharedToken;
-  let isFerret = false;
   let mall = null;
   let accessStorage;
   let sessionStorage;
@@ -40,8 +38,6 @@ describe('[ACSF] accesses (personal)', function () {
     await initTests();
     await initCore();
 
-    const config = await getConfig();
-    isFerret = config.get('database:isFerret');
     mall = await getMall();
 
     fixtures = getNewFixture();
@@ -360,15 +356,10 @@ describe('[ACSF] accesses (personal)', function () {
         .set('Authorization', personalToken)
         .send(data);
 
-      let expectedData = { type: 'shared', name: sharedAccess.attrs.name, deviceName: null };
-      if (isFerret) {
-        expectedData = { info: 'FerretDB does not provide duplicate information' };
-      }
-
       validation.checkError(res, {
         status: 409,
         id: ErrorIds.ItemAlreadyExists,
-        data: expectedData
+        data: { type: 'shared', name: sharedAccess.attrs.name, deviceName: null }
       });
     });
 
@@ -380,15 +371,6 @@ describe('[ACSF] accesses (personal)', function () {
         permissions: []
       };
 
-      let expectedData = {
-        type: appAccess.attrs.type,
-        name: appAccess.attrs.name,
-        deviceName: appAccess.attrs.deviceName
-      };
-      if (isFerret) {
-        expectedData = { info: 'FerretDB does not provide duplicate information' };
-      }
-
       const res = await coreRequest
         .post(basePath)
         .set('Authorization', personalToken)
@@ -397,7 +379,11 @@ describe('[ACSF] accesses (personal)', function () {
       validation.checkError(res, {
         status: 409,
         id: ErrorIds.ItemAlreadyExists,
-        data: expectedData
+        data: {
+          type: appAccess.attrs.type,
+          name: appAccess.attrs.name,
+          deviceName: appAccess.attrs.deviceName
+        }
       });
     });
 

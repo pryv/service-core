@@ -8,8 +8,6 @@ From v1.7.0 Sqlite has been investigated in order to provide  back the ability t
 
 From v1.8.0 a Sqlite version for Event has been provided on top of the [datastore](https://github.com/pryv/pryv-datastore) abstraction. 
 
-From v1.9.x [FerretDB](https://www.ferretdb.com) has been implemented as on optional replacement of MongoDB. 
-
 Since v1.9.2 Pryv.io can be deployed in "full-cloud" setup without relying on the file system. This can be done by configuring all storage modules to use MongoDB. For the attachments and S3 implementation is in development. 
 
 For future v1.9.3 Pryv.io will be also capable in being "full local" with only SQLite databases. 
@@ -35,7 +33,7 @@ This database is a per-server index to map userId and userName. In the future it
 - With SQLite (default) the db file can be usually found at `var-pryv/user-index.db`
 - With MongoDB the collection is `id4name` and stored in the main host database `pryv-node`
 
-Settings to activate MongoDB/ferretDB instead of SQLite: `storageUserIndex:engine = 'mongodb'`
+Settings to activate MongoDB instead of SQLite: `storageUserIndex:engine = 'mongodb'`
 
 Script to migrate userIndex from SQLite to MongoDB:  [read first](#sql2mongo)
 `LOGS=info node components/storage/src/migrations/switchSqliteMongo/usersIndex.js --config configs/api.yml`
@@ -49,7 +47,7 @@ This database contains the password and passwords history of the user.
 - With SQLite (default) it can be found in the "User local directory" named as `account-1.0.0.sqlite` . 
 - With MongoDB the collection is `passwords` and stored in the main host database `pryv-node`
 
-Settings to activate MongoDB/ferretDB instead of SQLite: `storageUserAccount:engine = 'mongodb'`
+Settings to activate MongoDB instead of SQLite: `storageUserAccount:engine = 'mongodb'`
 
 Script to migrate from SQLite to MongoDB:  [read first](#sql2mongo)
 `LOGS=info node components/storage/src/migrations/switchSqliteMongo/userAccountStorage.js --config configs/api.yml`
@@ -65,7 +63,7 @@ In the Enterprise version of Pryv, it acts as a local cache and report to `servi
 - With SQLite (default) the db file can be usually found at `var-pryv/platform-wide.db`
 - With MongoDB 
 
-Settings to activate MongoDB/ferretDB instead of SQLite:`storagePlatform:engine = 'mongodb'`
+Settings to activate MongoDB instead of SQLite:`storagePlatform:engine = 'mongodb'`
 
 Script to migrate from SQLite to MongoDB: [read first](#sql2mongo)
 
@@ -77,14 +75,14 @@ base code:  [components/storage/src/localDataStore](components/storage/src/local
 
 Main storage for `events` ,  `streams`  & `attachments` this implementation follows the modular API of [datastore](https://github.com/pryv/pryv-datastore) abstraction. 
 
-- Fully implemented with MongoDB/FerretDB
+- Fully implemented with MongoDB
 - Only events are implemented with SQLite - Expecting full SQLite implementation in v1.9.3
 
 #### Profile, Accesses, FollowedSlices & Webhooks Storage
 
 base code:  [components/storage/src/user](components/storage/src/user)  
 
-Only implemented for MongoDB/FerretDB - Expecting full SQLite implementation in v1.9.3
+Only implemented for MongoDB - Expecting full SQLite implementation in v1.9.3
 
 ### Notes
 
