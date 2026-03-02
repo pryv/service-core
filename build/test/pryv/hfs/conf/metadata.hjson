@@ -31,7 +31,7 @@
     "tags": {"isActive":false,"rootStreamId":"tags-migrated","streamIdPrefix":"tag-migrated-"}
   },
 
-  "nats": {
-    "uri": "https://core:4222"
+  "tcpBroker": {
+    "port": 4222
   }
 }

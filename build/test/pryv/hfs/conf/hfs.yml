@@ -18,8 +18,8 @@ eventFiles:
 metadataUpdater:
   host: "127.0.0.1"
   port: 9000
-nats:
-  uri: "nats://core:4222"
+tcpBroker:
+  port: 4222
 services:
   register:
     url: "http:register:9000"

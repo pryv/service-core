@@ -9,8 +9,8 @@ database:
 influxdb:
   host: 127.0.0.1
   port: 8086
-nats:
-  uri: nats://127.0.0.1:4222
+tcpBroker:
+  port: 4222
 services:
   register:
     url: http://127.0.0.1:8080

@@ -32,13 +32,6 @@ fi
 export NODE_ENV=production
 export NODE_PATH=/app/bin/
 
-# Wait for NATS service to be up
-while ! nc -z 127.0.0.1 4222 ;
-do
-	echo "NATS service is not ready; waiting 2 seconds..."
-	sleep 2
-done
-
 # Run Migartion checks before really starting the services
 pushd ${NODE_PATH}components/api-server
 chpst -u app ./bin/migrate --config /app/conf/core.yml

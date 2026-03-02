@@ -25,8 +25,8 @@ services:
     key: test-system-key
 testNotifications:
   enabled: true
-nats:
- uri: 'nats://127.0.0.1:4222'
+tcpBroker:
+  port: 4222
 reporting:
   templateVersion: 1.0.0
 database:

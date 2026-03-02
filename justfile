@@ -30,11 +30,11 @@ install-stable:
 # Run
 # –––––––––––––----------------------------------------------------------------
 
-# Run all dependency services (e.g. nats server, Mongo, Influx…)
+# Run all dependency services (e.g. Mongo, Influx…)
 start-deps:
-    DEVELOPMENT=true concurrently --names "nats,mongo,influx" \
-        --prefix-colors "cyan,green,magenta" \
-        nats-server scripts/start-mongo influxd
+    DEVELOPMENT=true concurrently --names "mongo,influx" \
+        --prefix-colors "green,magenta" \
+        scripts/start-mongo influxd
 
 # Start the given server component for dev (expects '{component}/bin/server')
 start component *params:

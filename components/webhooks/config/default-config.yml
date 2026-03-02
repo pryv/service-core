@@ -15,8 +15,8 @@ postgresql:
   user: 'pryv'
   password: ''
   max: 20
-nats:
-  uri: 'nats://127.0.0.1:4222'
+tcpBroker:
+  port: 4222
 
 integrity:
   isActive:

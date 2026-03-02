@@ -96,7 +96,7 @@ class PubSub extends EventEmitter {
 let nats = null;
 function initNats () {
   if (nats != null || isOpenSource) return;
-  nats = require('./nats_pubsub');
+  nats = require('./tcp_pubsub');
   logger.debug('initNats');
 }
 

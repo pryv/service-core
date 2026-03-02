@@ -7,28 +7,53 @@
 /* global it, assert, describe, before, beforeEach */
 
 const { setTimeout } = require('timers/promises');
+const net = require('node:net');
 const cache = require('cache');
 const synchro = require('../../src/synchro');
 const MESSAGES = synchro.MESSAGES;
 const { pubsub } = require('messages');
 const { getConfig } = require('@pryv/boiler');
 
-const { connect, JSONCodec } = require('nats');
-const { encode } = JSONCodec();
-
 describe('[SYNC] Synchro', function () {
-  let natsClient;
+  let tcpClient;
+  let port;
 
   before(async function () {
     const config = await getConfig();
     if (config.get('openSource:isActive')) this.skip();
 
-    const natsUri = config.get('nats:uri');
-    natsClient = await connect({
-      servers: natsUri,
-      json: true
-    });
+    port = config.get('tcpBroker:port');
+    tcpClient = await connectRawTcp(port);
   });
+
+  // Helper: connect raw TCP client and wait for welcome
+  function connectRawTcp (p) {
+    return new Promise((resolve, reject) => {
+      const socket = net.createConnection({ port: p, host: '127.0.0.1' }, () => {
+        socket.removeListener('error', reject);
+      });
+      socket.once('error', reject);
+      let buffer = '';
+      socket.on('data', (chunk) => {
+        buffer += chunk.toString();
+        let nl;
+        while ((nl = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.length === 0) continue;
+          const msg = JSON.parse(line);
+          if (msg.t === 'welcome') {
+            resolve(socket);
+          }
+        }
+      });
+    });
+  }
+
+  // Helper: publish via raw TCP (same semantics as natsClient.publish)
+  function tcpPublish (scope, eventName, payload) {
+    tcpClient.write(JSON.stringify({ t: 'pub', scope, event: eventName, payload }) + '\n');
+  }
 
   beforeEach(() => {
     // empty eventual listener list
@@ -53,7 +78,7 @@ describe('[SYNC] Synchro', function () {
     assert.ok(al);
     assert.strictEqual(al.token, 'titi');
     await setTimeout(50);
-    natsClient.publish('cache.toto', encode({ eventName: 'toto', payload: { action: MESSAGES.UNSET_ACCESS_LOGIC, accessId: 'test', accessToken: 'titi' } }));
+    tcpPublish('cache.toto', 'toto', { action: MESSAGES.UNSET_ACCESS_LOGIC, accessId: 'test', accessToken: 'titi' });
     await setTimeout(50);
     assert.ok(cache.getAccessLogicForId('toto', 'test') == null);
   });
@@ -88,7 +113,7 @@ describe('[SYNC] Synchro', function () {
     cache.setStreams('toto-id', 'test', 'titi');
     assert.strictEqual(synchro.listenerMap.has('toto-id'), true, 'should be registered');
     await setTimeout(50);
-    natsClient.publish('cache.toto-id', encode({ eventName: 'toto-id', payload: { action: MESSAGES.UNSET_USER_DATA } }));
+    tcpPublish('cache.toto-id', 'toto-id', { action: MESSAGES.UNSET_USER_DATA });
     await setTimeout(50);
     assert.strictEqual(synchro.listenerMap.has('toto-id'), false, 'should be removed');
   });
@@ -99,7 +124,7 @@ describe('[SYNC] Synchro', function () {
     assert.strictEqual(cache.getUserId('toto'), 'toto-id', 'userId should be cached');
     assert.strictEqual(synchro.listenerMap.has('toto-id'), true, 'should be registered');
     await setTimeout(50);
-    natsClient.publish('cache.unset-user', encode({ eventName: 'unset-user', payload: { action: MESSAGES.UNSET_USER, username: 'toto' } }));
+    tcpPublish('cache.unset-user', 'unset-user', { action: MESSAGES.UNSET_USER, username: 'toto' });
     await setTimeout(50);
     assert.strictEqual(synchro.listenerMap.has('toto-id'), false, 'listner should be removed');
     assert.strictEqual(cache.getUserId('toto'), undefined, 'userId should be removed');

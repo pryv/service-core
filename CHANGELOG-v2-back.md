@@ -1,5 +1,17 @@
 # Changelog - Internal (no API impact)
 
+## Phase 6b: Replace NATS with Built-in TCP Pub/Sub
+
+- Replaced NATS server + `nats` npm package with zero-dependency TCP pub/sub broker using Node.js `net` module
+- Created `tcp_pubsub.js`: embedded broker/client — first process binds port, others connect as clients
+- Protocol: newline-delimited JSON over TCP with noEcho (sender exclusion via client IDs)
+- Updated 6 config files: `nats:uri` → `tcpBroker:port`
+- Rewrote 3 test files to use raw TCP clients instead of NATS client library
+- Removed NATS from Docker build (Dockerfile, runit/gnats, start-core wait loop)
+- Removed `nats-server/` binary directory and `scripts/setup-nats-server`
+- Removed `nats` npm dependency
+- No changes to PubSub class, constants, or any consumer code
+
 ## Phase 6a: Remove Axon Test Messaging
 
 - Replaced axon TCP pub/sub with Node.js built-in IPC for test notification forwarding
