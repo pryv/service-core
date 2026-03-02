@@ -1,0 +1,7 @@
+{
+  "name": "storages",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Storage engine plugin system for service-core",
+  "main": "./pluginLoader.js"
+}

@@ -7,7 +7,7 @@
 
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
-const { createUserAccountStorage } = require('./interfaces/UserAccountStorage');
+const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
 
 let db;
 

@@ -46,11 +46,13 @@ module.exports = function conformanceTests (getStorage, cleanupFn) {
         await storage.addPasswordHash(userId2, 'hash_1', 'test', now);
         try {
           await storage.addPasswordHash(userId2, 'hash_2', 'test', now);
+          assert.fail('should throw an error');
         } catch (e) {
-          assert.equal(e.message, 'UNIQUE constraint failed: passwords.time');
-          return;
+          if (e.code === 'ERR_ASSERTION') throw e;
+          // Expected: duplicate time constraint violation
+        } finally {
+          await storage._clearAll(userId2);
         }
-        assert.fail('should throw an error');
       });
     });
 

@@ -14,7 +14,7 @@
  */
 module.exports = function conformanceTests (getVersions, cleanupFn) {
   const assert = require('node:assert');
-  const { validateVersions } = require('../../src/interfaces/Versions');
+  const { validateVersions } = require('../Versions');
 
   describe('Versions conformance', () => {
     let versions;

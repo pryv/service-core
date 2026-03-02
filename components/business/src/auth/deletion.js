@@ -127,19 +127,14 @@ class Deletion {
   async deleteHFData (context, params, result, next) {
     if (this.config.get('openSource:isActive')) { return next(); }
     // dynamic loading, because series functionality does not exist in opensource
-    const storage = require('storage');
-    const engine = storage.getStorageEngine(this.config, 'database');
-    let conn;
-    if (engine === 'postgresql') {
-      const PGSeriesConnection = require('business/src/series/pg_connection');
-      const pgDb = await storage.getDatabasePG();
-      conn = new PGSeriesConnection(pgDb);
-    } else {
-      const InfluxConnection = require('business/src/series/influx_connection');
-      const host = this.config.get('influxdb:host');
-      const port = this.config.get('influxdb:port');
-      conn = new InfluxConnection({ host, port });
-    }
+    const pluginLoader = require('storages/pluginLoader');
+    await pluginLoader.init(this.config);
+    const engine = pluginLoader.getEngineFor('seriesStorage');
+    const engineModule = pluginLoader.getEngineModule(engine);
+    const conn = await engineModule.createSeriesConnection({
+      host: this.config.has('influxdb:host') ? this.config.get('influxdb:host') : undefined,
+      port: this.config.has('influxdb:port') ? this.config.get('influxdb:port') : undefined
+    });
     await conn.dropDatabase(`user.${params.username}`);
     next();
   }

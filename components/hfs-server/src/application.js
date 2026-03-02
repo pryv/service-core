@@ -29,7 +29,6 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
   ]
 });
 // Load configuration file, set up execution context and start the server.
-const business = require('business');
 const Context = require('./context');
 const Server = require('./server');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
@@ -41,28 +40,19 @@ const initTracer = require('jaeger-client').initTracer;
  */
 async function createContext (config) {
   const logger = getLogger('setup');
-  const getStorageEngine = require('storage/src/getStorageEngine');
-  const engine = getStorageEngine(config, 'database');
+  const pluginLoader = require('storages/pluginLoader');
+  await pluginLoader.init(config);
+  const engine = pluginLoader.getEngineFor('seriesStorage');
+  const engineModule = pluginLoader.getEngineModule(engine);
 
   let influx;
-  switch (engine) {
-    case 'postgresql': {
-      const { getDatabasePG } = require('storage');
-      const PGSeriesConnection = require('business/src/series/pg_connection');
-      const pgDb = await getDatabasePG();
-      influx = new PGSeriesConnection(pgDb);
-      break;
-    }
-    case 'sqlite':
-      // TODO: Phase 3 — implement SQLite series connection
-      throw new Error('SQLite series connection not yet implemented.');
-    default: {
-      // mongodb — use InfluxDB as before
-      const host = config.get('influxdb:host');
-      const port = config.get('influxdb:port');
-      influx = new business.series.InfluxConnection({ host, port });
-      break;
-    }
+  if (engineModule.createSeriesConnection) {
+    influx = await engineModule.createSeriesConnection({
+      host: config.has('influxdb:host') ? config.get('influxdb:host') : undefined,
+      port: config.has('influxdb:port') ? config.get('influxdb:port') : undefined
+    });
+  } else {
+    throw new Error(`Engine "${engine}" does not support seriesStorage.`);
   }
 
   const tracer = produceTracer(config, getLogger('jaeger'));

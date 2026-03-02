@@ -12,7 +12,8 @@
   "author": "Pryv <info@pryv.com> (https://pryv.com)",
   "workspaces": {
     "packages": [
-      "components/*"
+      "components/*",
+      "storages"
     ]
   },
   "scripts": {

@@ -5,37 +5,20 @@
  * Refer to LICENSE file
  */
 
-// MongoDB backends (current)
-const Versions = require('./Versions');
-const PasswordResetRequests = require('./PasswordResetRequests');
-const Sessions = require('./Sessions');
-const Accesses = require('./user/Accesses');
-const Profile = require('./user/Profile');
-const Streams = require('./user/Streams');
-const Webhooks = require('./user/Webhooks');
-
-// PostgreSQL backends
-const VersionsPG = require('./VersionsPG');
-const PasswordResetRequestsPG = require('./PasswordResetRequestsPG');
-const SessionsPG = require('./SessionsPG');
-const AccessesPG = require('./user/AccessesPG');
-const ProfilePG = require('./user/ProfilePG');
-const StreamsPG = require('./user/StreamsPG');
-const WebhooksPG = require('./user/WebhooksPG');
 const bluebird = require('bluebird');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const { validateUserStorage } = require('./interfaces/UserStorage');
-const { validateSessions } = require('./interfaces/Sessions');
-const { validatePasswordResetRequests } = require('./interfaces/PasswordResetRequests');
-const { validateVersions } = require('./interfaces/Versions');
-const getStorageEngine = require('./getStorageEngine');
+const { validateUserStorage } = require('storages/interfaces/baseStorage/UserStorage');
+const { validateSessions } = require('storages/interfaces/baseStorage/Sessions');
+const { validatePasswordResetRequests } = require('storages/interfaces/baseStorage/PasswordResetRequests');
+const { validateVersions } = require('storages/interfaces/baseStorage/Versions');
+const pluginLoader = require('storages/pluginLoader');
 
 /**
  * 'StorageLayer' is a component that contains all the vertical registries
  * for various database models.
  *
- * Supports multiple storage engines: 'mongodb' (current), 'sqlite', 'postgresql'.
- * The engine is selected via the `storageEngine` config key (or legacy per-component keys).
+ * Engine selection is handled by the pluginLoader — each engine plugin
+ * provides an `initStorageLayer()` method that populates this instance.
  */
 class StorageLayer {
   connection;
@@ -62,24 +45,18 @@ class StorageLayer {
 
     const config = await getConfig();
     this.logger = getLogger('storage');
-    this.engine = getStorageEngine(config, 'database');
+
+    await pluginLoader.init(config);
+    this.engine = pluginLoader.getEngineFor('baseStorage');
 
     const passwordResetRequestMaxAge = config.get('auth:passwordResetRequestMaxAge');
     const sessionMaxAge = config.get('auth:sessionMaxAge');
 
-    switch (this.engine) {
-      case 'mongodb':
-        this._initMongoDB(connection, { passwordResetRequestMaxAge, sessionMaxAge });
-        break;
-      case 'sqlite':
-        this._initSQLite(config, { passwordResetRequestMaxAge, sessionMaxAge });
-        break;
-      case 'postgresql':
-        this._initPostgreSQL(connection, { passwordResetRequestMaxAge, sessionMaxAge });
-        break;
-      default:
-        throw new Error(`Unknown storage engine: "${this.engine}"`);
-    }
+    const engineModule = pluginLoader.getEngineModule(this.engine);
+    engineModule.initStorageLayer(this, connection, {
+      passwordResetRequestMaxAge,
+      sessionMaxAge
+    });
 
     // Validate all storage instances against their interface contracts
     validateUserStorage(this.accesses);
@@ -89,50 +66,6 @@ class StorageLayer {
     validateSessions(this.sessions);
     validatePasswordResetRequests(this.passwordResetRequests);
     validateVersions(this.versions);
-  }
-
-  /**
-   * Initialize with MongoDB backends (current behavior).
-   * @private
-   */
-  _initMongoDB (connection, options) {
-    this.connection = connection;
-    this.versions = new Versions(connection, this.logger);
-    this.passwordResetRequests = new PasswordResetRequests(connection, {
-      maxAge: options.passwordResetRequestMaxAge
-    });
-    this.sessions = new Sessions(connection, { maxAge: options.sessionMaxAge });
-    this.accesses = new Accesses(connection);
-    this.profile = new Profile(connection);
-    this.streams = new Streams(connection);
-    this.webhooks = new Webhooks(connection);
-  }
-
-  /**
-   * Initialize with SQLite backends.
-   * @private
-   */
-  _initSQLite (config, options) {
-    // TODO: Phase 3 — implement SQLite backends for StorageLayer components
-    throw new Error('SQLite StorageLayer not yet implemented. Use storageEngine: "mongodb" for now.');
-  }
-
-  /**
-   * Initialize with PostgreSQL backends.
-   * @param {import('./DatabasePG')} connection - DatabasePG instance
-   * @private
-   */
-  _initPostgreSQL (connection, options) {
-    this.connection = connection;
-    this.versions = new VersionsPG(connection, this.logger);
-    this.passwordResetRequests = new PasswordResetRequestsPG(connection, {
-      maxAge: options.passwordResetRequestMaxAge
-    });
-    this.sessions = new SessionsPG(connection, { maxAge: options.sessionMaxAge });
-    this.accesses = new AccessesPG(connection);
-    this.profile = new ProfilePG(connection);
-    this.streams = new StreamsPG(connection);
-    this.webhooks = new WebhooksPG(connection);
   }
 
   /**

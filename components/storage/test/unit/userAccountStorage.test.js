@@ -6,7 +6,7 @@
  */
 
 const { userLocalDirectory, getUserAccountStorage } = require('storage');
-const conformanceTests = require('../conformance/UserAccountStorage.test');
+const conformanceTests = require('storages/interfaces/baseStorage/conformance/UserAccountStorage.test');
 
 describe('[UAST] Users Account Storage', () => {
   conformanceTests(

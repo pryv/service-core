@@ -1,0 +1,48 @@
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
+
+/**
+ * SQLite storage engine plugin.
+ *
+ * Note: StorageLayer (Sessions, Versions, etc.) is NOT yet implemented for SQLite.
+ * Note: dataStore streams fallback to MongoDB (incomplete).
+ */
+
+// -- BaseStorage --------------------------------------------------------
+
+function initStorageLayer (_storageLayer, _connection, _options) {
+  throw new Error('SQLite StorageLayer not yet implemented. Use storageEngine: "mongodb" for now.');
+}
+
+function getUserAccountStorage () {
+  return require('storage/src/userAccountStorageSqlite');
+}
+
+function getUsersLocalIndex () {
+  return require('storage/src/usersLocalIndexSQLite');
+}
+
+// -- DataStore ----------------------------------------------------------
+
+function getDataStoreModule () {
+  return require('storage/src/localDataStoreSQLite');
+}
+
+// -- PlatformStorage ----------------------------------------------------
+
+function createPlatformDB () {
+  const DB = require('platform/src/DBsqlite');
+  return new DB();
+}
+
+module.exports = {
+  initStorageLayer,
+  getUserAccountStorage,
+  getUsersLocalIndex,
+  getDataStoreModule,
+  createPlatformDB
+};

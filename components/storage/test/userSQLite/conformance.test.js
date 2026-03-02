@@ -8,7 +8,7 @@
 const cuid = require('cuid');
 const userLocalDirectory = require('../../src/userLocalDirectory');
 const Storage = require('../../src/userSQLite/Storage');
-const conformanceTests = require('../conformance/UserSQLiteStorage.test');
+const conformanceTests = require('storages/interfaces/baseStorage/conformance/UserSQLiteStorage.test');
 
 describe('[SQCF] UserSQLite conformance', () => {
   conformanceTests(

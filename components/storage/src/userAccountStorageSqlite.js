@@ -19,7 +19,7 @@ const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
 const userLocalDirectory = require('./userLocalDirectory');
-const { createUserAccountStorage } = require('./interfaces/UserAccountStorage');
+const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';

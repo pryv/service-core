@@ -16,7 +16,7 @@
  */
 module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
   const assert = require('node:assert');
-  const { validateUserStorage } = require('../../src/interfaces/UserStorage');
+  const { validateUserStorage } = require('../UserStorage');
 
   describe('UserStorage conformance', () => {
     let storage;

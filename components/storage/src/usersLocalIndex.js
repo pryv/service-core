@@ -10,8 +10,9 @@
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const cache = require('cache');
-const { validateUsersLocalIndexDB } = require('./interfaces/UsersLocalIndexDB');
+const { validateUsersLocalIndexDB } = require('storages/interfaces/baseStorage/UsersLocalIndexDB');
 const getStorageEngine = require('./getStorageEngine');
+const pluginLoader = require('storages/pluginLoader');
 
 const logger = getLogger('users:local-index');
 
@@ -31,25 +32,11 @@ class UsersLocalIndex {
     this.initialized = true;
 
     const config = await getConfig();
+    await pluginLoader.init(config);
     const engine = getStorageEngine(config, 'storageUserIndex');
-    switch (engine) {
-      case 'mongodb': {
-        const DBIndex = require('./usersLocalIndexMongoDB');
-        this.db = new DBIndex();
-        break;
-      }
-      case 'postgresql': {
-        const DBIndex = require('./usersLocalIndexPG');
-        this.db = new DBIndex();
-        break;
-      }
-      default: {
-        // sqlite (default)
-        const DBIndex = require('./usersLocalIndexSQLite');
-        this.db = new DBIndex();
-        break;
-      }
-    }
+    const engineModule = pluginLoader.getEngineModule(engine);
+    const DBIndex = engineModule.getUsersLocalIndex();
+    this.db = new DBIndex();
 
     await this.db.init();
     validateUsersLocalIndexDB(this.db);

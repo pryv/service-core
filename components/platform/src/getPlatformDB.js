@@ -5,33 +5,18 @@
  * Refer to LICENSE file
  */
 const { getConfig } = require('@pryv/boiler');
-const { validatePlatformDB } = require('./interfaces/PlatformDB');
-const getStorageEngine = require('storage/src/getStorageEngine');
+const { validatePlatformDB } = require('storages/interfaces/platformStorage/PlatformDB');
+const pluginLoader = require('storages/pluginLoader');
 
 let db;
 
 async function getPlatformDB () {
   if (db != null) return db;
   const config = await getConfig();
-  const engine = getStorageEngine(config, 'storagePlatform');
-  switch (engine) {
-    case 'mongodb': {
-      const DB = require('./DBmongodb');
-      db = new DB();
-      break;
-    }
-    case 'postgresql': {
-      const DB = require('./DBpostgresql');
-      db = new DB();
-      break;
-    }
-    default: {
-      // sqlite (default)
-      const DB = require('./DBsqlite');
-      db = new DB();
-      break;
-    }
-  }
+  await pluginLoader.init(config);
+  const engine = pluginLoader.getEngineFor('platformStorage');
+  const engineModule = pluginLoader.getEngineModule(engine);
+  db = engineModule.createPlatformDB();
   await db.init();
   validatePlatformDB(db);
   return db;

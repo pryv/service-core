@@ -1,0 +1,4 @@
+{
+  "storageTypes": ["fileStorage"],
+  "entrypoint": "src/index.js"
+}

@@ -13,6 +13,7 @@ const { getConfigUnsafe, getConfig } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
 const usersLocalIndex = require('./usersLocalIndex');
 const getStorageEngine = require('./getStorageEngine');
+const pluginLoader = require('storages/pluginLoader');
 
 module.exports = {
   Database: require('./Database'),
@@ -37,15 +38,15 @@ module.exports = {
   getUsersLocalIndex,
   getUserAccountStorage,
   interfaces: {
-    UserAccountStorage: require('./interfaces/UserAccountStorage'),
-    UsersLocalIndexDB: require('./interfaces/UsersLocalIndexDB'),
-    EventFiles: require('./interfaces/EventFiles'),
-    UserStorage: require('./interfaces/UserStorage'),
-    Sessions: require('./interfaces/Sessions'),
-    PasswordResetRequests: require('./interfaces/PasswordResetRequests'),
-    Versions: require('./interfaces/Versions'),
-    UserSQLiteStorage: require('./interfaces/UserSQLiteStorage'),
-    UserSQLiteDatabase: require('./interfaces/UserSQLiteDatabase')
+    UserAccountStorage: require('storages/interfaces/baseStorage/UserAccountStorage'),
+    UsersLocalIndexDB: require('storages/interfaces/baseStorage/UsersLocalIndexDB'),
+    EventFiles: require('storages/interfaces/fileStorage/EventFiles'),
+    UserStorage: require('storages/interfaces/baseStorage/UserStorage'),
+    Sessions: require('storages/interfaces/baseStorage/Sessions'),
+    PasswordResetRequests: require('storages/interfaces/baseStorage/PasswordResetRequests'),
+    Versions: require('storages/interfaces/baseStorage/Versions'),
+    UserSQLiteStorage: require('storages/interfaces/baseStorage/UserSQLiteStorage'),
+    UserSQLiteDatabase: require('storages/interfaces/baseStorage/UserSQLiteDatabase')
   }
 };
 
@@ -62,19 +63,10 @@ let userAccount;
 async function getUserAccountStorage () {
   if (!userAccount) {
     const config = await getConfig();
+    await pluginLoader.init(config);
     const engine = getStorageEngine(config, 'storageUserAccount');
-    switch (engine) {
-      case 'mongodb':
-        userAccount = require('./userAccountStorageMongo');
-        break;
-      case 'postgresql':
-        userAccount = require('./userAccountStoragePG');
-        break;
-      default:
-        // sqlite (default)
-        userAccount = require('./userAccountStorageSqlite');
-        break;
-    }
+    const engineModule = pluginLoader.getEngineModule(engine);
+    userAccount = engineModule.getUserAccountStorage();
     await userAccount.init();
   }
   return userAccount;
@@ -87,7 +79,8 @@ let storageLayer;
 async function getStorageLayer () {
   if (storageLayer) { return storageLayer; }
   const config = await getConfig();
-  const engine = getStorageEngine(config, 'database');
+  await pluginLoader.init(config);
+  const engine = pluginLoader.getEngineFor('baseStorage');
   storageLayer = new StorageLayer();
 
   let connection;

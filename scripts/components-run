@@ -30,7 +30,13 @@ if (process.env.COMPONENT && process.env.COMPONENT != 'all') {
 }
 
 let interrupted = false;
-process.on('SIGINT', () => { interrupted = true; });
+process.on('SIGINT', () => {
+  if (interrupted) {
+    // Second Ctrl+C — exit immediately
+    process.exit(130);
+  }
+  interrupted = true;
+});
 
 let status = 0;
 const components = fs.readdirSync(componentsPath);
