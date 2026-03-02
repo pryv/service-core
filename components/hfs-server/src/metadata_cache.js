@@ -59,7 +59,7 @@ class MetadataCache {
     this.mall = await getMall();
   }
 
-  // nats messages
+  // transport messages
   /**
    * @param {UsernameEvent} usernameEvent
    * @returns {any}

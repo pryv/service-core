@@ -405,7 +405,7 @@ describe('[SK01] Socket.IO', function () {
     let servers = [];
 
     before(function () {
-      if (!process.env.PRYV_NATS) { this.skip(); }
+      if (!process.env.PRYV_TRANSPORT) { this.skip(); }
     });
 
     // Client connections that we make. If you add your connection here, it

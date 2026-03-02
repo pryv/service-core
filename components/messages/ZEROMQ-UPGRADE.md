@@ -15,7 +15,7 @@ pubsub.js  ──  PubSub class (EventEmitter)
     │  delegates cross-process delivery to:
     ▼
 tcp_pubsub.js  ──  Transport backend
-    exports: init(), deliver(), subscribe(), setTestNatsDeliverHook()
+    exports: init(), deliver(), subscribe(), setTestDeliverHook()
 ```
 
 Consumers never touch the transport. Only `pubsub.js` line 99 picks the backend.
@@ -26,12 +26,12 @@ Consumers never touch the transport. Only `pubsub.js` line 99 picks the backend.
    - `init()` — bind XSUB+XPUB proxy (broker role) or connect pub+sub sockets (client role)
    - `deliver(scopeName, eventName, payload)` — `pub.send([scopeName, JSON.stringify({eventName, payload})])`
    - `subscribe(scopeName, pubsub)` — `sub.subscribe(scopeName)`, forward to `pubsub._emit()`
-   - `setTestNatsDeliverHook(hook)` — same test hook pattern
+   - `setTestDeliverHook(hook)` — same test hook pattern
 
 2. Change one line in `pubsub.js`:
    ```js
-   // nats = require('./tcp_pubsub');
-   nats = require('./zmq_pubsub');
+   // transport = require('./tcp_pubsub');
+   transport = require('./zmq_pubsub');
    ```
    Or add a config switch: `messaging:transport: 'tcp' | 'zmq'`
 
@@ -112,7 +112,7 @@ async function subscribe (scopeName, pubsub) {
   return { unsubscribe () { localSubs.delete(scopeName); sub.unsubscribe(scopeName); } };
 }
 
-function setTestNatsDeliverHook (hook) { testDeliverHook = hook; }
+function setTestDeliverHook (hook) { testDeliverHook = hook; }
 
-module.exports = { init, deliver, subscribe, setTestNatsDeliverHook };
+module.exports = { init, deliver, subscribe, setTestDeliverHook };
 ```

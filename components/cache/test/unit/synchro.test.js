@@ -50,7 +50,7 @@ describe('[SYNC] Synchro', function () {
     });
   }
 
-  // Helper: publish via raw TCP (same semantics as natsClient.publish)
+  // Helper: publish via raw TCP (same semantics as tcp_pubsub.deliver)
   function tcpPublish (scope, eventName, payload) {
     tcpClient.write(JSON.stringify({ t: 'pub', scope, event: eventName, payload }) + '\n');
   }
@@ -108,7 +108,7 @@ describe('[SYNC] Synchro', function () {
     assert.strictEqual(synchro.listenerMap.has('toto-id'), true, 'should not be removed');
   });
 
-  it('[Y5GA] Listeners should receive "nats" messages UNSET_USER_DATA', async () => {
+  it('[Y5GA] Listeners should receive transport messages UNSET_USER_DATA', async () => {
     cache.setUserId('toto', 'toto-id');
     cache.setStreams('toto-id', 'test', 'titi');
     assert.strictEqual(synchro.listenerMap.has('toto-id'), true, 'should be registered');
@@ -118,7 +118,7 @@ describe('[SYNC] Synchro', function () {
     assert.strictEqual(synchro.listenerMap.has('toto-id'), false, 'should be removed');
   });
 
-  it('[Y5GU] Listeners should receive "nats" messages UNSET_USER', async () => {
+  it('[Y5GU] Listeners should receive transport messages UNSET_USER', async () => {
     cache.setUserId('toto', 'toto-id');
     cache.setStreams('toto-id', 'test', 'titi');
     assert.strictEqual(cache.getUserId('toto'), 'toto-id', 'userId should be cached');

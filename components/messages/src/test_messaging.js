@@ -6,7 +6,7 @@
  */
 /**
  * Helper for forwarding test notifications via Node.js IPC.
- * Replaces the former axon TCP pub/sub with built-in process.send().
+ * IPC-based test notification forwarding via process.send().
  */
 
 const EventEmitter = require('events');
@@ -21,7 +21,7 @@ exports.getTestNotifier = async function () {
   if (notifier != null) return notifier;
   initializing = true;
   const config = await getConfig();
-  const settings = config.get('testNotifications') || config.get('axonMessaging');
+  const settings = config.get('testNotifications');
   if (!settings || !settings.enabled) {
     notifier = { emit: () => {}, on: () => {} };
     initializing = false;

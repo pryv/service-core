@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-// TCP-based pub/sub broker + client — replaces NATS with zero external deps.
+// TCP-based pub/sub broker + client — zero external deps.
 // First process to call init() becomes the broker; others connect as clients.
 // Protocol: newline-delimited JSON over TCP.
 
@@ -207,18 +207,12 @@ class TcpClient {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Exported API — same shape as nats_pubsub.js
+// Exported API
 // ──────────────────────────────────────────────────────────────────────
 
 async function getPort () {
   const config = await getConfig();
-  // Prefer new config key; fall back to parsing nats:uri for compat
   if (config.has('tcpBroker:port')) return config.get('tcpBroker:port');
-  if (config.has('nats:uri')) {
-    const uri = config.get('nats:uri');
-    const m = uri.match(/:(\d+)\s*$/);
-    if (m) return parseInt(m[1], 10);
-  }
   return 4222; // default
 }
 
@@ -292,7 +286,7 @@ async function subscribe (scopeName, pubsub) {
   };
 }
 
-function setTestNatsDeliverHook (deliverHook) {
+function setTestDeliverHook (deliverHook) {
   testDeliverHook = deliverHook;
 }
 
@@ -300,5 +294,5 @@ module.exports = {
   init,
   deliver,
   subscribe,
-  setTestNatsDeliverHook
+  setTestDeliverHook
 };

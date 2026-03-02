@@ -1,5 +1,13 @@
 # Changelog - Internal (no API impact)
 
+## Phase 6c: Cleanup NATS/Axon Naming Remnants
+
+- Renamed all internal `nats`/`NATS` variable names, function names, comments, and config references to generic `transport`/`Transport` terms
+- `NATS_MODE_ALL/KEY/NONE` → `TRANSPORT_MODE_ALL/KEY/NONE` (backward compat aliases kept)
+- `initNats()` → `initTransport()`, `isNatsEnabled()` → `isTransportEnabled()`, `setTestNatsDeliverHook()` → `setTestDeliverHook()`
+- Removed dead code: `NATS_CONNECTION_URI` in webhooks, `axonMessaging` export alias, `nats:uri` compat fallback
+- Removed NATS references from CI, README, .gitignore, .dockerignore, .licenser.yml
+
 ## Phase 6b: Replace NATS with Built-in TCP Pub/Sub
 
 - Replaced NATS server + `nats` npm package with zero-dependency TCP pub/sub broker using Node.js `net` module

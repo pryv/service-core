@@ -280,7 +280,7 @@ describe('[WH01] webhooks', function () {
         webhookId = res.body.webhook.id;
       });
 
-      it('[EXQD] should register a new webhook in the service through NATS', async function () {
+      it('[EXQD] should register a new webhook in the service through pubsub', async function () {
         let isWebhookActive = false;
         while (!isWebhookActive) {
           const [, webhook] = webhooksService.getWebhook(username, webhookId);
@@ -388,7 +388,7 @@ describe('[WH01] webhooks', function () {
           .set('Authorization', appAccessToken);
       });
 
-      it('[904D] should deactivate the current running webhook through NATS', async function () {
+      it('[904D] should deactivate the current running webhook through pubsub', async function () {
         let isWebhookActive = true;
         while (isWebhookActive) {
           const webhooks = webhooksApp.webhooksService.webhooks.get(username);

@@ -16,9 +16,6 @@ Prerequisites:
 - InfluxDB 1.2
   - Linux: `scripts/setup-influx`
   - MacOS: e.g. `brew install influxdb@1`
-- nats-server
-  - Linux: `scripts/setup-nats-server`
-  - MacOS: e.g. `brew install nats-server`
 - graphicsmagick (for image events preview)
   - Linux: e.g. `sudo apt-get install graphicsmagick`
   - MacOS: e.g. `brew install graphicsmagick`
@@ -54,7 +51,7 @@ The code follows the [Semi-Standard](https://github.com/standard/semistandard) s
 
 ## Running service dependencies
 
-The servers and the tests depend on NATS server, MongoDB and InfluxDB.
+The servers and the tests depend on MongoDB and InfluxDB.
 ```
 just start-deps
 ```

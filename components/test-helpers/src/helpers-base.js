@@ -57,7 +57,7 @@ async function initCore () {
   // Build config
   // Parallel mode: each worker has its own in-memory cache that cannot be
   // invalidated by other workers' direct MongoDB modifications (fixture
-  // inserts/deletes). Without NATS, cache entries become stale and cause
+  // inserts/deletes). Without transport, cache entries become stale and cause
   // spurious 403/404 errors. Only disable caching when truly parallel.
   const isParallelMode = process.env.MOCHA_PARALLEL === '1';
   const testConfig = {
@@ -209,7 +209,7 @@ function getMochaHooks (isParallelMode = false) {
       }
     },
     // CALUDE: We will need to fix this in a next phase
-    // Integrity checks disabled in parallel mode (no NATS between workers)
+    // Integrity checks disabled in parallel mode (no transport between workers)
     // and for PostgreSQL (system stream events not yet fully wired in PG backend).
     ...(isParallelMode || process.env.STORAGE_ENGINE === 'postgresql'
       ? {}

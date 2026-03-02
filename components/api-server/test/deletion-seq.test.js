@@ -192,7 +192,7 @@ describe('[PGTD] DELETE /users/:username', () => {
       describe(`[D7H${i}] when given existing username`, function () {
         let deletedOnRegister = false;
         let userToDelete;
-        const natsDelivered = [];
+        const delivered = [];
         before(async function () {
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
@@ -206,9 +206,9 @@ describe('[PGTD] DELETE /users/:username', () => {
               .times(1)
               .reply(200, { deleted: true });
           }
-          if (pubsub.isNatsEnabled()) {
-            pubsub.setTestNatsDeliverHook(function (scopeName, eventName, payload) {
-              natsDelivered.push({ scopeName, eventName, payload });
+          if (pubsub.isTransportEnabled()) {
+            pubsub.setTestDeliverHook(function (scopeName, eventName, payload) {
+              delivered.push({ scopeName, eventName, payload });
             });
           } // true OpenSource Setup
           res = await request
@@ -216,10 +216,10 @@ describe('[PGTD] DELETE /users/:username', () => {
             .set('Authorization', authKey);
         });
         after(async function () {
-          if (!pubsub.isNatsEnabled()) {
+          if (!pubsub.isTransportEnabled()) {
             return;
           } // true OpenSource Setup
-          pubsub.setTestNatsDeliverHook(null);
+          pubsub.setTestDeliverHook(null);
         });
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.strictEqual(res.status, 200);
@@ -271,11 +271,11 @@ describe('[PGTD] DELETE /users/:username', () => {
         it(`[${testIDs[i][10]}] should delete user from the cache`, async function () {
           const usersExists = cache.getUserId(userToDelete.attrs.id);
           assert.strictEqual(usersExists, undefined);
-          if (pubsub.isNatsEnabled()) {
-            assert.strictEqual(natsDelivered.length, 1);
-            assert.strictEqual(natsDelivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
-            assert.strictEqual(natsDelivered[0].eventName, MESSAGES.UNSET_USER);
-            assert.strictEqual(natsDelivered[0].payload.username, userToDelete.attrs.id);
+          if (pubsub.isTransportEnabled()) {
+            assert.strictEqual(delivered.length, 1);
+            assert.strictEqual(delivered[0].scopeName, 'cache.' + MESSAGES.UNSET_USER);
+            assert.strictEqual(delivered[0].eventName, MESSAGES.UNSET_USER);
+            assert.strictEqual(delivered[0].payload.username, userToDelete.attrs.id);
           }
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function () {
@@ -308,7 +308,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function () {
           if (settingsToTest[i][0]) { this.skip(); } // isDnsLess
-          if (!pubsub.isNatsEnabled()) { this.skip(); } // openSource
+          if (!pubsub.isTransportEnabled()) { this.skip(); } // openSource
           assert.strictEqual(deletedOnRegister, true);
         });
       });

@@ -8,7 +8,6 @@
 coverage
 docs
 mongo-scripts
-nats-server
 node_modules
 #scripts
 security-assessment

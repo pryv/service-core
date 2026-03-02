@@ -20,6 +20,10 @@ module.exports.USERNAME_BASED_STREAMS_CHANGED = 'streams-changed';
 module.exports.USERNAME_BASED_ACCESSES_CHANGED = 'accesses-changed';
 module.exports.USERNAME_BASED_ACCOUNT_CHANGED = 'account-changed';
 // pubsub working mode
-module.exports.NATS_MODE_ALL = 'all'; // all messages matching are serialized
-module.exports.NATS_MODE_KEY = 'key'; // subscriptions and emit are bound to a key (eg username)
-module.exports.NATS_MODE_NONE = 'none'; // don't use nats
+module.exports.TRANSPORT_MODE_ALL = 'all'; // all messages matching are serialized
+module.exports.TRANSPORT_MODE_KEY = 'key'; // subscriptions and emit are bound to a key (eg username)
+module.exports.TRANSPORT_MODE_NONE = 'none'; // don't use transport
+// backward compat aliases
+module.exports.NATS_MODE_ALL = module.exports.TRANSPORT_MODE_ALL;
+module.exports.NATS_MODE_KEY = module.exports.TRANSPORT_MODE_KEY;
+module.exports.NATS_MODE_NONE = module.exports.TRANSPORT_MODE_NONE;

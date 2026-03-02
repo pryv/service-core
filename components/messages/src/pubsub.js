@@ -15,40 +15,40 @@ const isOpenSource = getConfigUnsafe(true).get('openSource:isActive');
 
 class PubSub extends EventEmitter {
   options;
-  nats;
+  transport;
   scopeName;
   logger;
-  natsSubscriptionMap; // map that contains nats subscriptions by key
+  transportSubMap; // map that contains transport subscriptions by key
 
   constructor (scopeName, options = {}) {
     super();
     this.options = Object.assign({
-      nats: CONSTANTS.NATS_MODE_ALL,
+      transport: CONSTANTS.TRANSPORT_MODE_ALL,
       forwardToTests: false,
       forwardToInternal: true
     }, options);
 
     this.scopeName = scopeName;
     this.logger = logger.getLogger(this.scopeName);
-    this.natsSubscriptionMap = {};
+    this.transportSubMap = {};
 
-    if (this.options.nats !== CONSTANTS.NATS_MODE_NONE) {
-      initNats();
+    if (this.options.transport !== CONSTANTS.TRANSPORT_MODE_NONE) {
+      initTransport();
     }
-    if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_ALL)) {
-      nats.subscribe(this.scopeName, this);
+    if ((transport != null) && (this.options.transport === CONSTANTS.TRANSPORT_MODE_ALL)) {
+      transport.subscribe(this.scopeName, this);
     }
   }
 
   on (eventName, listener) {
-    // nats "keyed" listeners
-    if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_KEY)) {
-      if (this.natsSubscriptionMap[eventName] == null) { // not yet listening .. subscribe
-        nats.subscribe(this.scopeName + '.' + eventName, this).then((sub) => {
-          this.natsSubscriptionMap[eventName] = { sub, counter: 1 };
+    // keyed listeners
+    if ((transport != null) && (this.options.transport === CONSTANTS.TRANSPORT_MODE_KEY)) {
+      if (this.transportSubMap[eventName] == null) { // not yet listening .. subscribe
+        transport.subscribe(this.scopeName + '.' + eventName, this).then((sub) => {
+          this.transportSubMap[eventName] = { sub, counter: 1 };
         });
       } else {
-        this.natsSubscriptionMap[eventName].counter++; // count listners for nats eventName
+        this.transportSubMap[eventName].counter++; // count listeners
       }
     }
     super.on(eventName, listener);
@@ -62,12 +62,12 @@ class PubSub extends EventEmitter {
     this.on(eventName, listener);
     return function () {
       this.off(eventName, listener);
-      if ((nats != null) && (this.options.nats === CONSTANTS.NATS_MODE_KEY) && (this.natsSubscriptionMap[eventName] != null)) {
+      if ((transport != null) && (this.options.transport === CONSTANTS.TRANSPORT_MODE_KEY) && (this.transportSubMap[eventName] != null)) {
         this.logger.debug('off', eventName);
-        this.natsSubscriptionMap[eventName].counter--;
-        if (this.natsSubscriptionMap[eventName].counter === 0) { // no more listeners .. close nats subscription
-          this.natsSubscriptionMap[eventName].sub.unsubscribe();
-          delete this.natsSubscriptionMap[eventName];
+        this.transportSubMap[eventName].counter--;
+        if (this.transportSubMap[eventName].counter === 0) { // no more listeners
+          this.transportSubMap[eventName].sub.unsubscribe();
+          delete this.transportSubMap[eventName];
         }
       }
     }.bind(this);
@@ -79,9 +79,9 @@ class PubSub extends EventEmitter {
 
     if (this.options.forwardToTests) forwardToTests(eventName, payload);
 
-    if (nats != null) {
-      if (this.options.nats === CONSTANTS.NATS_MODE_ALL) nats.deliver(this.scopeName, eventName, payload);
-      if (this.options.nats === CONSTANTS.NATS_MODE_KEY) nats.deliver(this.scopeName + '.' + eventName, eventName, payload);
+    if (transport != null) {
+      if (this.options.transport === CONSTANTS.TRANSPORT_MODE_ALL) transport.deliver(this.scopeName, eventName, payload);
+      if (this.options.transport === CONSTANTS.TRANSPORT_MODE_KEY) transport.deliver(this.scopeName + '.' + eventName, eventName, payload);
     }
   }
 
@@ -91,13 +91,13 @@ class PubSub extends EventEmitter {
   }
 }
 
-// ----- NATS
+// ----- Transport
 
-let nats = null;
-function initNats () {
-  if (nats != null || isOpenSource) return;
-  nats = require('./tcp_pubsub');
-  logger.debug('initNats');
+let transport = null;
+function initTransport () {
+  if (transport != null || isOpenSource) return;
+  transport = require('./tcp_pubsub');
+  logger.debug('initTransport');
 }
 
 // ----- TEST Messaging
@@ -129,7 +129,7 @@ class PubSubFactory {
   _notifications;
   _cache;
   get status () {
-    if (this._status == null) this._status = new PubSub('status', { nats: CONSTANTS.NATS_MODE_NONE, forwardToTests: true });
+    if (this._status == null) this._status = new PubSub('status', { transport: CONSTANTS.TRANSPORT_MODE_NONE, forwardToTests: true });
     this._status.setMaxListeners(1); // 1 is enough
     return this._status;
   }
@@ -148,7 +148,7 @@ class PubSubFactory {
 
   get notifications () {
     if (this._notifications == null) {
-      this._notifications = new PubSub('notifications', { nats: CONSTANTS.NATS_MODE_KEY, forwardToTests: true });
+      this._notifications = new PubSub('notifications', { transport: CONSTANTS.TRANSPORT_MODE_KEY, forwardToTests: true });
       this._notifications.setMaxListeners(100); // Number of max socket.io or webhooks connections
     }
     return this._notifications;
@@ -156,7 +156,7 @@ class PubSubFactory {
 
   get cache () {
     if (this._cache == null) {
-      this._cache = new PubSub('cache', { nats: CONSTANTS.NATS_MODE_KEY, forwardToInternal: false });
+      this._cache = new PubSub('cache', { transport: CONSTANTS.TRANSPORT_MODE_KEY, forwardToInternal: false });
       this._cache.setMaxListeners(1); // 1 is enough
     }
     return this._cache;
@@ -166,16 +166,16 @@ class PubSubFactory {
     globalTestNotifier = testNotifier;
   }
 
-  setTestNatsDeliverHook (deliverHook) {
-    if (nats == null) {
-      console.log(new Error('NATS not initialized'));
+  setTestDeliverHook (deliverHook) {
+    if (transport == null) {
+      console.log(new Error('Transport not initialized'));
     }
-    nats.setTestNatsDeliverHook(deliverHook);
+    transport.setTestDeliverHook(deliverHook);
   }
 
   // used by tests to detect true "OpenSource" setup
-  isNatsEnabled () {
-    return nats != null;
+  isTransportEnabled () {
+    return transport != null;
   }
 }
 

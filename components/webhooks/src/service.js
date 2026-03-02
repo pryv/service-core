@@ -27,7 +27,6 @@ class WebhooksService {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks);
     this.settings = params.settings;
-    this.NATS_CONNECTION_URI = this.settings.get('nats:uri');
   }
 
   /**
