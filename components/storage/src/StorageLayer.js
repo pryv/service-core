@@ -11,7 +11,7 @@ const { validateUserStorage } = require('storages/interfaces/baseStorage/UserSto
 const { validateSessions } = require('storages/interfaces/baseStorage/Sessions');
 const { validatePasswordResetRequests } = require('storages/interfaces/baseStorage/PasswordResetRequests');
 const { validateVersions } = require('storages/interfaces/baseStorage/Versions');
-const pluginLoader = require('storages/pluginLoader');
+const { pluginLoader } = require('storages');
 
 /**
  * 'StorageLayer' is a component that contains all the vertical registries
@@ -46,7 +46,6 @@ class StorageLayer {
     const config = await getConfig();
     this.logger = getLogger('storage');
 
-    await pluginLoader.init(config);
     this.engine = pluginLoader.getEngineFor('baseStorage');
 
     const passwordResetRequestMaxAge = config.get('auth:passwordResetRequestMaxAge');

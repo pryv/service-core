@@ -5,11 +5,6 @@
  * Refer to LICENSE file
  */
 const StorageLayer = require('./StorageLayer');
-const { getConfigUnsafe, getConfig } = require('@pryv/boiler');
-const { dataBaseTracer } = require('tracing');
-const usersLocalIndex = require('./usersLocalIndex');
-const getStorageEngine = require('./getStorageEngine');
-const pluginLoader = require('storages/pluginLoader');
 
 module.exports = {
   Size: require('./Size'),
@@ -18,7 +13,7 @@ module.exports = {
   getDatabasePG,
   getStorageLayer,
   getDatabaseSync,
-  getStorageEngine,
+  getStorageEngine: require('./getStorageEngine'),
   userLocalDirectory: require('./userLocalDirectory'),
   getUsersLocalIndex,
   getUserAccountStorage,
@@ -35,103 +30,92 @@ module.exports = {
   }
 };
 
-let usersIndex;
-async function getUsersLocalIndex () {
-  if (!usersIndex) {
-    usersIndex = usersLocalIndex;
-    await usersIndex.init();
-  }
-  return usersIndex;
-}
-
-let userAccount;
-async function getUserAccountStorage () {
-  if (!userAccount) {
-    const config = await getConfig();
-    await pluginLoader.init(config);
-    const engine = getStorageEngine(config, 'storageUserAccount');
-    const engineModule = pluginLoader.getEngineModule(engine);
-    userAccount = engineModule.getUserAccountStorage();
-    await userAccount.init();
-  }
-  return userAccount;
-}
-
-let storageLayer;
 /**
- * @returns {StorageLayer}
+ * Ensure the storages barrel is initialized (lazy fallback).
+ */
+async function ensureBarrel () {
+  const storages = require('storages');
+  if (!storages.storageLayer) await storages.init();
+  return storages;
+}
+
+/**
+ * @returns {Promise<Object>} usersLocalIndex singleton
+ */
+async function getUsersLocalIndex () {
+  return (await ensureBarrel()).usersLocalIndex;
+}
+
+/**
+ * @returns {Promise<Object>} userAccountStorage singleton
+ */
+async function getUserAccountStorage () {
+  return (await ensureBarrel()).userAccountStorage;
+}
+
+/**
+ * @returns {Promise<StorageLayer>}
  */
 async function getStorageLayer () {
-  if (storageLayer) { return storageLayer; }
-  const config = await getConfig();
-  await pluginLoader.init(config);
-  const engine = pluginLoader.getEngineFor('baseStorage');
-  storageLayer = new StorageLayer();
+  return (await ensureBarrel()).storageLayer;
+}
 
-  let connection;
-  switch (engine) {
-    case 'mongodb':
-      connection = _getDatabase(config);
-      break;
-    case 'postgresql':
-      connection = _getDatabasePG(config);
-      break;
-    case 'sqlite':
-      connection = null; // SQLite StorageLayer manages its own connections
-      break;
+// Lazy-created MongoDB database — used by getDatabase/getDatabaseSync when
+// the barrel was initialized for a different engine (e.g. postgresql) or
+// before barrel init completes.
+let _lazyDatabase;
+function _ensureMongoDatabase () {
+  if (!_lazyDatabase) {
+    const { getConfigUnsafe } = require('@pryv/boiler');
+    const { dataBaseTracer } = require('tracing');
+    const config = getConfigUnsafe(true);
+    const Database = require('storages/engines/mongodb/src/Database');
+    _lazyDatabase = new Database(config.get('database'));
+    dataBaseTracer(_lazyDatabase);
   }
-  await storageLayer.init(connection);
-  return storageLayer;
+  return _lazyDatabase;
 }
 
 /**
- * @returns {any}
+ * Get the MongoDB database connection (sync).
+ * @returns {Object}
  */
-function getDatabaseSync (warnOnly) {
-  return _getDatabase(getConfigUnsafe(warnOnly));
+function getDatabaseSync () {
+  return require('storages').database || _ensureMongoDatabase();
 }
 
 /**
  * Get the MongoDB database connection.
- * @returns {Promise<any>}
+ * Always returns a MongoDB connection (even when primary engine is PG/SQLite).
+ * @returns {Promise<Object>}
  */
 async function getDatabase () {
-  const db = _getDatabase(await getConfig());
+  await ensureBarrel();
+  const db = require('storages').database || _ensureMongoDatabase();
   await db.ensureConnect();
   return db;
 }
+
+// Lazy-created PG database — used when barrel was initialized for a
+// different engine (e.g. mongodb) and caller still needs a PG connection.
+let _lazyDatabasePG;
 
 /**
  * Get the PostgreSQL database connection.
- * @returns {Promise<DatabasePG>}
+ * @returns {Promise<Object>}
  */
 async function getDatabasePG () {
-  const db = _getDatabasePG(await getConfig());
+  await ensureBarrel();
+  let db = require('storages').databasePG;
+  if (!db) {
+    if (!_lazyDatabasePG) {
+      const { getConfig } = require('@pryv/boiler');
+      const config = await getConfig();
+      const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
+      _lazyDatabasePG = new DatabasePG(config.get('postgresql'));
+    }
+    db = _lazyDatabasePG;
+  }
   await db.ensureConnect();
   return db;
-}
-
-let database;
-/**
- * @returns {any}
- */
-function _getDatabase (config) {
-  if (!database) {
-    const Database = require('storages/engines/mongodb/src/Database');
-    database = new Database(config.get('database'));
-    dataBaseTracer(database);
-  }
-  return database;
-}
-
-let databasePG;
-/**
- * @returns {any}
- */
-function _getDatabasePG (config) {
-  if (!databasePG) {
-    const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
-    databasePG = new DatabasePG(config.get('postgresql'));
-  }
-  return databasePG;
 }

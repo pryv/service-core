@@ -40,19 +40,9 @@ const initTracer = require('jaeger-client').initTracer;
  */
 async function createContext (config) {
   const logger = getLogger('setup');
-  const pluginLoader = require('storages/pluginLoader');
-  await pluginLoader.init(config);
-  const engine = pluginLoader.getEngineFor('seriesStorage');
-  const engineModule = pluginLoader.getEngineModule(engine);
-
-  let influx;
-  if (engineModule.createSeriesConnection) {
-    influx = await engineModule.createSeriesConnection({
-      host: config.has('influxdb:host') ? config.get('influxdb:host') : undefined,
-      port: config.has('influxdb:port') ? config.get('influxdb:port') : undefined
-    });
-  } else {
-    throw new Error(`Engine "${engine}" does not support seriesStorage.`);
+  const influx = require('storages').seriesConnection;
+  if (!influx) {
+    throw new Error('Series storage not available.');
   }
 
   const tracer = produceTracer(config, getLogger('jaeger'));

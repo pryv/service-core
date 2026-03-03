@@ -59,10 +59,10 @@ function createPlatformDB () {
 
 // -- SeriesStorage (PostgreSQL) -----------------------------------------
 
-async function createSeriesConnection (_config) {
+async function createSeriesConnection (config) {
   const PGSeriesConnection = require('./pg_connection');
-  const { getDatabasePG } = require('storage');
-  const pgDb = await getDatabasePG();
+  // Use provided databasePG (from barrel init) or fall back to storage
+  const pgDb = config.databasePG || await require('storage').getDatabasePG();
   return new PGSeriesConnection(pgDb);
 }
 

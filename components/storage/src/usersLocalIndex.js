@@ -12,7 +12,7 @@ const { getConfig, getLogger } = require('@pryv/boiler');
 const cache = require('cache');
 const { validateUsersLocalIndexDB } = require('storages/interfaces/baseStorage/UsersLocalIndexDB');
 const getStorageEngine = require('./getStorageEngine');
-const pluginLoader = require('storages/pluginLoader');
+const { pluginLoader } = require('storages');
 
 const logger = getLogger('users:local-index');
 
@@ -32,7 +32,6 @@ class UsersLocalIndex {
     this.initialized = true;
 
     const config = await getConfig();
-    await pluginLoader.init(config);
     const engine = getStorageEngine(config, 'storageUserIndex');
     const engineModule = pluginLoader.getEngineModule(engine);
     const DBIndex = engineModule.getUsersLocalIndex();

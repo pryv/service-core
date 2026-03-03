@@ -72,6 +72,7 @@ async function initCore () {
     await options.beforeInitCore();
   }
 
+  await require('storages').init(global.config);
   global.app = getApplication();
   await global.app.initiate();
 

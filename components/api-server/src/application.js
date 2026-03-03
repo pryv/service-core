@@ -134,6 +134,7 @@ class Application {
     this.isOpenSource = this.config.get('openSource:isActive');
     this.isAuditActive = this.config.get('audit:active');
     await userLocalDirectory.init();
+    await require('storages').init(this.config);
     if (this.isAuditActive) {
       const audit = require('audit');
       await audit.init();

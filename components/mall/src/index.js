@@ -54,18 +54,12 @@ async function getMall () {
     }
   }
 
-  // Load built-in stores based on storage engine
-  const pluginLoader = require('storages/pluginLoader');
-  await pluginLoader.init(config);
-  const getStorageEngine = require('storage/src/getStorageEngine');
-  const engine = getStorageEngine(config, 'database');
+  // Load built-in data store from storages barrel
+  const dataStoreModule = require('storages').dataStoreModule;
   const localSettings = {
     attachments: { setFileReadToken: true },
     versioning: config.get('versioning')
   };
-  logger.info('Using ' + engine + ' data store');
-  const engineModule = pluginLoader.getEngineModule(engine);
-  const dataStoreModule = engineModule.getDataStoreModule();
   mall.addStore(dataStoreModule, { id: 'local', name: 'Local', settings: localSettings });
   // audit
   if (config.get('audit:active')) {
