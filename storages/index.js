@@ -80,16 +80,21 @@ async function init (config) {
   await platformDB.init();
   validatePlatformDB(platformDB);
 
-  // 6. Series connection (skip in openSource or if engine lacks support)
+  // 6. Series connection (skip if engine missing or lacks support)
   let seriesConnection = null;
   const seriesEngine = pluginLoader.getEngineFor('seriesStorage');
-  const seriesModule = pluginLoader.getEngineModule(seriesEngine);
-  if (seriesModule.createSeriesConnection) {
-    seriesConnection = await seriesModule.createSeriesConnection({
-      host: config.has('influxdb:host') ? config.get('influxdb:host') : undefined,
-      port: config.has('influxdb:port') ? config.get('influxdb:port') : undefined,
-      databasePG // pass PG connection so engine doesn't re-enter the barrel
-    });
+  if (seriesEngine) {
+    let seriesModule;
+    try { seriesModule = pluginLoader.getEngineModule(seriesEngine); } catch (e) { /* engine not installed */ }
+    if (seriesModule?.createSeriesConnection) {
+      const { validateSeriesConnection } = require('storages/interfaces/seriesStorage/SeriesConnection');
+      seriesConnection = await seriesModule.createSeriesConnection({
+        host: config.has('influxdb:host') ? config.get('influxdb:host') : undefined,
+        port: config.has('influxdb:port') ? config.get('influxdb:port') : undefined,
+        databasePG // pass PG connection so engine doesn't re-enter the barrel
+      });
+      validateSeriesConnection(seriesConnection);
+    }
   }
 
   // 7. DataStore module (for mall)

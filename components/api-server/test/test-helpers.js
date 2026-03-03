@@ -26,7 +26,7 @@ after(async () => {
   await context.shutdown();
 });
 const storage = require('storage');
-const InfluxConnection = require('storages/engines/mongodb/src/influx_connection');
+const InfluxConnection = require('storages/engines/influxdb/src/influx_connection');
 /**
  * Returns the StorageLayer instance (engine-agnostic).
  * @returns {Promise<any>}

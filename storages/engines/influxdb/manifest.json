@@ -1,0 +1,4 @@
+{
+  "storageTypes": ["seriesStorage"],
+  "entrypoint": "src/index.js"
+}

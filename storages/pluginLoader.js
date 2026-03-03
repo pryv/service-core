@@ -151,15 +151,23 @@ function resolveConfig (config) {
  * @returns {string|null}
  */
 function resolveLegacyEngine (config, storageType) {
-  // STORAGE_ENGINE env var (testing override)
-  if (process.env.STORAGE_ENGINE) {
-    return process.env.STORAGE_ENGINE;
-  }
+  // Global overrides (STORAGE_ENGINE env var or storageEngine config)
+  const globalOverride = process.env.STORAGE_ENGINE ||
+    (config.has('storageEngine') && config.get('storageEngine')) ||
+    null;
 
-  // storageEngine unified key
-  if (config.has('storageEngine')) {
-    const engine = config.get('storageEngine');
-    if (engine) return engine;
+  // Global override applies to database-backed types and platform;
+  // series and file types are resolved independently below.
+  if (globalOverride) {
+    switch (storageType) {
+      case 'seriesStorage':
+        if (globalOverride === 'postgresql') return 'postgresql';
+        return 'influxdb';
+      case 'fileStorage':
+        return 'filesystem';
+      default:
+        return globalOverride;
+    }
   }
 
   // Per-component legacy keys
@@ -180,12 +188,13 @@ function resolveLegacyEngine (config, storageType) {
       return 'sqlite'; // default for platform
 
     case 'seriesStorage':
-      // series follows the main database engine
+      // Series engine is independent: PG handles its own series,
+      // otherwise InfluxDB is a standalone engine
       if (config.has('database:engine')) {
         const e = config.get('database:engine');
-        if (e) return e;
+        if (e === 'postgresql') return 'postgresql';
       }
-      return 'mongodb'; // default (uses influx via mongodb engine plugin)
+      return 'influxdb'; // default: standalone InfluxDB engine
 
     case 'fileStorage':
       return 'filesystem'; // always filesystem

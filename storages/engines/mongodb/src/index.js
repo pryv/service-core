@@ -75,22 +75,10 @@ function createPlatformDB () {
   return new DB();
 }
 
-// -- SeriesStorage (InfluxDB via MongoDB engine) -------------------------
-
-/**
- * @param {Object} config - { host, port } from influxdb config section
- * @returns {Object} InfluxConnection instance
- */
-function createSeriesConnection (config) {
-  const InfluxConnection = require('./influx_connection');
-  return new InfluxConnection({ host: config.host, port: config.port });
-}
-
 module.exports = {
   initStorageLayer,
   getUserAccountStorage,
   getUsersLocalIndex,
   getDataStoreModule,
-  createPlatformDB,
-  createSeriesConnection
+  createPlatformDB
 };

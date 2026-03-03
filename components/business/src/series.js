@@ -6,7 +6,7 @@
  */
 const batchRequest = require('./series/batch_request');
 module.exports = {
-  InfluxConnection: require('storages/engines/mongodb/src/influx_connection'),
+  InfluxConnection: require('storages/engines/influxdb/src/influx_connection'),
   PGSeriesConnection: require('storages/engines/postgresql/src/pg_connection'),
   Repository: require('./series/repository'),
   BatchRequest: batchRequest.BatchRequest,
