@@ -6,7 +6,7 @@
  */
 
 const assert = require('node:assert');
-const Database = require('../../src/Database');
+const Database = require('storages/engines/mongodb/src/Database');
 const { getConfig } = require('@pryv/boiler');
 
 describe('[DBSE] Database', () => {

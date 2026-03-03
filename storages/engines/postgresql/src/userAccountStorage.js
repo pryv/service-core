@@ -13,7 +13,7 @@ let db;
 
 module.exports = createUserAccountStorage({
   async init () {
-    const { getDatabasePG } = require('./index');
+    const { getDatabasePG } = require('storage');
     db = await getDatabasePG();
   },
 

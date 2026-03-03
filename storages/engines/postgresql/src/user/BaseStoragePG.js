@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const DatabasePG = require('../DatabasePG');
+const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
 
 /**
  * Column-name mapping: camelCase JS property → snake_case PG column.

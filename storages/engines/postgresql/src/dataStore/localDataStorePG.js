@@ -10,12 +10,12 @@
  * Implements the @pryv/datastore DataStore interface.
  */
 const ds = require('@pryv/datastore');
-const storage = require('../index');
+const storage = require('storage');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const userStreams = require('./localUserStreamsPG');
 const userEvents = require('./localUserEventsPG');
 const LocalTransactionPG = require('./LocalTransactionPG');
-const { getEventFiles } = require('../eventFiles/getEventFiles');
+const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
@@ -24,7 +24,7 @@ module.exports = ds.createDataStore({
     await SystemStreamsSerializer.init();
 
     // Get the shared DatabasePG instance
-    const { getDatabasePG } = require('../index');
+    const { getDatabasePG } = require('storage');
     const db = await getDatabasePG();
 
     // Init events
@@ -44,7 +44,7 @@ module.exports = ds.createDataStore({
   events: userEvents,
 
   async newTransaction () {
-    const { getDatabasePG } = require('../index');
+    const { getDatabasePG } = require('storage');
     const db = await getDatabasePG();
     const transaction = new LocalTransactionPG(db);
     await transaction.init();

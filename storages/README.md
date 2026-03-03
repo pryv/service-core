@@ -101,3 +101,8 @@ Plugins can request host capabilities via `requiredInternals` in their manifest:
 - `userLocalDirectory` — resolves per-user local filesystem paths
 - `SystemStreamsSerializer` — system streams metadata serializer
 - `storeKeyValueData` — key-value store for plugin metadata
+
+
+# License
+
+[BSD-3-Clause](LICENSE)

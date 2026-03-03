@@ -4,10 +4,6 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const Access = require('./user/Accesses');
-const Stream = require('./user/Streams');
-const Database = require('./Database');
-const DatabasePG = require('./DatabasePG');
 const StorageLayer = require('./StorageLayer');
 const { getConfigUnsafe, getConfig } = require('@pryv/boiler');
 const { dataBaseTracer } = require('tracing');
@@ -16,18 +12,7 @@ const getStorageEngine = require('./getStorageEngine');
 const pluginLoader = require('storages/pluginLoader');
 
 module.exports = {
-  Database: require('./Database'),
-  DatabasePG: require('./DatabasePG'),
-  PasswordResetRequests: require('./PasswordResetRequests'),
-  Sessions: require('./Sessions'),
   Size: require('./Size'),
-  Versions: require('./Versions'),
-  user: {
-    Accesses: Access,
-    Profile: require('./user/Profile'),
-    Streams: Stream,
-    Webhooks: require('./user/Webhooks')
-  },
   StorageLayer,
   getDatabase,
   getDatabasePG,
@@ -132,6 +117,7 @@ let database;
  */
 function _getDatabase (config) {
   if (!database) {
+    const Database = require('storages/engines/mongodb/src/Database');
     database = new Database(config.get('database'));
     dataBaseTracer(database);
   }
@@ -140,10 +126,11 @@ function _getDatabase (config) {
 
 let databasePG;
 /**
- * @returns {DatabasePG}
+ * @returns {any}
  */
 function _getDatabasePG (config) {
   if (!databasePG) {
+    const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
     databasePG = new DatabasePG(config.get('postgresql'));
   }
   return databasePG;

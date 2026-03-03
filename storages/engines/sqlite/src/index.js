@@ -19,23 +19,23 @@ function initStorageLayer (_storageLayer, _connection, _options) {
 }
 
 function getUserAccountStorage () {
-  return require('storage/src/userAccountStorageSqlite');
+  return require('./userAccountStorage');
 }
 
 function getUsersLocalIndex () {
-  return require('storage/src/usersLocalIndexSQLite');
+  return require('./usersLocalIndex');
 }
 
 // -- DataStore ----------------------------------------------------------
 
 function getDataStoreModule () {
-  return require('storage/src/localDataStoreSQLite');
+  return require('./dataStore');
 }
 
 // -- PlatformStorage ----------------------------------------------------
 
 function createPlatformDB () {
-  const DB = require('platform/src/DBsqlite');
+  const DB = require('./DBsqlite');
   return new DB();
 }
 

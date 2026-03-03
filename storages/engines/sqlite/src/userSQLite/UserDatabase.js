@@ -8,7 +8,7 @@
 const SQLite3 = require('better-sqlite3');
 const { Readable } = require('stream');
 
-const concurrentSafeWrite = require('../sqliteUtils/concurrentSafeWrite');
+const concurrentSafeWrite = require('../concurrentSafeWrite');
 const eventsSchema = require('./schema/events');
 const fullTextSearch = require('./fullTextSearch');
 const { toSQLiteQuery } = require('./streamQueryUtils');

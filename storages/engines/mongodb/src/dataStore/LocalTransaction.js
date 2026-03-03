@@ -4,7 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const { getDatabase } = require('../index');
+const { getDatabase } = require('storage');
 const defaultOptions = {
   readPreference: 'primary',
   readConcern: { level: 'local' },

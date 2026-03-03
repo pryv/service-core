@@ -18,7 +18,7 @@ const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const encryption = require('utils').encryption;
 
-const userLocalDirectory = require('./userLocalDirectory');
+const userLocalDirectory = require('storage/src/userLocalDirectory');
 const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
 
 const CACHE_SIZE = 100;

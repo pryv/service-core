@@ -6,7 +6,7 @@
  */
 
 require('test-helpers/src/api-server-tests-config');
-const concurrentSafeWrite = require('../../src/sqliteUtils/concurrentSafeWrite');
+const concurrentSafeWrite = require('storages/engines/sqlite/src/concurrentSafeWrite');
 const assert = require('node:assert');
 
 describe('[UCSQ] userSQLite Storage concurent Writes', () => {

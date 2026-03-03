@@ -12,7 +12,7 @@ const path = require('path');
 
 const { pipeline } = require('stream/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const userLocalDirectory = require('../userLocalDirectory');
+const userLocalDirectory = require('storage/src/userLocalDirectory');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 

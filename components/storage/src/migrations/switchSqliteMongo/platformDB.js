@@ -10,8 +10,8 @@
 const { getApplication } = require('api-server/src/application');
 
 async function switchDB () {
-  const Sqlite = require('platform/src/DBsqlite');
-  const Mongo = require('platform/src/DBmongodb');
+  const Sqlite = require('storages/engines/sqlite/src/DBsqlite');
+  const Mongo = require('storages/engines/mongodb/src/DBmongodb');
 
   getApplication();
 

@@ -22,13 +22,13 @@
  * @param {Object} options - { passwordResetRequestMaxAge, sessionMaxAge }
  */
 function initStorageLayer (storageLayer, connection, options) {
-  const Versions = require('storage/src/Versions');
-  const PasswordResetRequests = require('storage/src/PasswordResetRequests');
-  const Sessions = require('storage/src/Sessions');
-  const Accesses = require('storage/src/user/Accesses');
-  const Profile = require('storage/src/user/Profile');
-  const Streams = require('storage/src/user/Streams');
-  const Webhooks = require('storage/src/user/Webhooks');
+  const Versions = require('./Versions');
+  const PasswordResetRequests = require('./PasswordResetRequests');
+  const Sessions = require('./Sessions');
+  const Accesses = require('./user/Accesses');
+  const Profile = require('./user/Profile');
+  const Streams = require('./user/Streams');
+  const Webhooks = require('./user/Webhooks');
 
   storageLayer.connection = connection;
   storageLayer.versions = new Versions(connection, storageLayer.logger);
@@ -46,14 +46,14 @@ function initStorageLayer (storageLayer, connection, options) {
  * @returns {Object} userAccountStorage module
  */
 function getUserAccountStorage () {
-  return require('storage/src/userAccountStorageMongo');
+  return require('./userAccountStorage');
 }
 
 /**
  * @returns {Function} UsersLocalIndex constructor
  */
 function getUsersLocalIndex () {
-  return require('storage/src/usersLocalIndexMongoDB');
+  return require('./usersLocalIndex');
 }
 
 // -- DataStore ----------------------------------------------------------
@@ -62,7 +62,7 @@ function getUsersLocalIndex () {
  * @returns {Object} datastore module for mall
  */
 function getDataStoreModule () {
-  return require('storage/src/localDataStore');
+  return require('./dataStore');
 }
 
 // -- PlatformStorage ----------------------------------------------------
@@ -71,7 +71,7 @@ function getDataStoreModule () {
  * @returns {Object} PlatformDB instance (not yet init'd)
  */
 function createPlatformDB () {
-  const DB = require('platform/src/DBmongodb');
+  const DB = require('./DBmongodb');
   return new DB();
 }
 
@@ -82,7 +82,7 @@ function createPlatformDB () {
  * @returns {Object} InfluxConnection instance
  */
 function createSeriesConnection (config) {
-  const InfluxConnection = require('business/src/series/influx_connection');
+  const InfluxConnection = require('./influx_connection');
   return new InfluxConnection({ host: config.host, port: config.port });
 }
 

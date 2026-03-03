@@ -10,7 +10,7 @@ const SQLite3 = require('better-sqlite3');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');
-const concurrentSafeWrite = require('storage/src/sqliteUtils/concurrentSafeWrite');
+const concurrentSafeWrite = require('./concurrentSafeWrite');
 
 class DB {
   db;

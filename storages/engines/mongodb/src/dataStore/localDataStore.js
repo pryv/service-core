@@ -9,12 +9,12 @@
  * Local Data Store.
  */
 const ds = require('@pryv/datastore');
-const storage = require('../index');
+const storage = require('storage');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
 const userStreams = require('./localUserStreams');
 const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
-const { getEventFiles } = require('../eventFiles/getEventFiles');
+const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 

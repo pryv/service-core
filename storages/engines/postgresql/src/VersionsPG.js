@@ -6,9 +6,9 @@
  */
 
 const timestamp = require('unix-timestamp');
-const packageFile = require('../package.json');
-const migrations = require('./migrations/index');
-const MigrationContext = require('./migrations/MigrationContext');
+const packageFile = require('storage/package.json');
+const migrations = require('storage/src/migrations/index');
+const MigrationContext = require('storage/src/migrations/MigrationContext');
 
 /**
  * PostgreSQL implementation of Versions storage.

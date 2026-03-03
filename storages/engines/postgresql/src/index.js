@@ -16,13 +16,13 @@
 // -- BaseStorage --------------------------------------------------------
 
 function initStorageLayer (storageLayer, connection, options) {
-  const VersionsPG = require('storage/src/VersionsPG');
-  const PasswordResetRequestsPG = require('storage/src/PasswordResetRequestsPG');
-  const SessionsPG = require('storage/src/SessionsPG');
-  const AccessesPG = require('storage/src/user/AccessesPG');
-  const ProfilePG = require('storage/src/user/ProfilePG');
-  const StreamsPG = require('storage/src/user/StreamsPG');
-  const WebhooksPG = require('storage/src/user/WebhooksPG');
+  const VersionsPG = require('./VersionsPG');
+  const PasswordResetRequestsPG = require('./PasswordResetRequestsPG');
+  const SessionsPG = require('./SessionsPG');
+  const AccessesPG = require('./user/AccessesPG');
+  const ProfilePG = require('./user/ProfilePG');
+  const StreamsPG = require('./user/StreamsPG');
+  const WebhooksPG = require('./user/WebhooksPG');
 
   storageLayer.connection = connection;
   storageLayer.versions = new VersionsPG(connection, storageLayer.logger);
@@ -37,30 +37,30 @@ function initStorageLayer (storageLayer, connection, options) {
 }
 
 function getUserAccountStorage () {
-  return require('storage/src/userAccountStoragePG');
+  return require('./userAccountStorage');
 }
 
 function getUsersLocalIndex () {
-  return require('storage/src/usersLocalIndexPG');
+  return require('./usersLocalIndex');
 }
 
 // -- DataStore ----------------------------------------------------------
 
 function getDataStoreModule () {
-  return require('storage/src/localDataStorePG');
+  return require('./dataStore');
 }
 
 // -- PlatformStorage ----------------------------------------------------
 
 function createPlatformDB () {
-  const DB = require('platform/src/DBpostgresql');
+  const DB = require('./DBpostgresql');
   return new DB();
 }
 
 // -- SeriesStorage (PostgreSQL) -----------------------------------------
 
 async function createSeriesConnection (_config) {
-  const PGSeriesConnection = require('business/src/series/pg_connection');
+  const PGSeriesConnection = require('./pg_connection');
   const { getDatabasePG } = require('storage');
   const pgDb = await getDatabasePG();
   return new PGSeriesConnection(pgDb);

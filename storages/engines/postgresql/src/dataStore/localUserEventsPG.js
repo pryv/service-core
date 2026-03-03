@@ -11,8 +11,8 @@ const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const DatabasePG = require('../DatabasePG');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const DeletionModesFields = require('../DeletionModesFields');
-const { localStorePrepareOptions, localStorePrepareQuery } = require('../localStoreEventQueries');
+const DeletionModesFields = require('storage/src/DeletionModesFields');
+const { localStorePrepareOptions, localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
 const timestamp = require('unix-timestamp');
 
 /**

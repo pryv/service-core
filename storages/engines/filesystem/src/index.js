@@ -16,7 +16,7 @@
 // -- FileStorage --------------------------------------------------------
 
 async function createFileStorage (_config, _internals) {
-  const EventLocalFiles = require('storage/src/eventFiles/EventLocalFiles');
+  const EventLocalFiles = require('./EventLocalFiles');
   return new EventLocalFiles();
 }
 

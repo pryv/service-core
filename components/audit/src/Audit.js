@@ -4,7 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const { getStorage, closeStorage } = require('storage/src/userSQLite');
+const { getStorage, closeStorage } = require('storages/engines/sqlite/src/userSQLite');
 const { getSyslog } = require('./syslog');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit');

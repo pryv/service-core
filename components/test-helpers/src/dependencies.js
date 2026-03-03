@@ -11,6 +11,14 @@ const config = getConfigUnsafe(true);
 
 const database = storage.getDatabaseSync(true);
 
+// MongoDB-specific classes used as initial placeholders until init() provides engine-agnostic instances
+const Versions = require('storages/engines/mongodb/src/Versions');
+const PasswordResetRequests = require('storages/engines/mongodb/src/PasswordResetRequests');
+const Sessions = require('storages/engines/mongodb/src/Sessions');
+const Accesses = require('storages/engines/mongodb/src/user/Accesses');
+const Profile = require('storages/engines/mongodb/src/user/Profile');
+const Webhooks = require('storages/engines/mongodb/src/user/Webhooks');
+
 /**
  * Test process dependencies.
  */
@@ -18,13 +26,13 @@ module.exports = {
   settings: config.get(),
   storage: {
     database,
-    versions: new storage.Versions(database, getLogger('versions')),
-    passwordResetRequests: new storage.PasswordResetRequests(database),
-    sessions: new storage.Sessions(database),
+    versions: new Versions(database, getLogger('versions')),
+    passwordResetRequests: new PasswordResetRequests(database),
+    sessions: new Sessions(database),
     user: {
-      accesses: new storage.user.Accesses(database),
-      profile: new storage.user.Profile(database),
-      webhooks: new storage.user.Webhooks(database)
+      accesses: new Accesses(database),
+      profile: new Profile(database),
+      webhooks: new Webhooks(database)
     }
   },
   /**

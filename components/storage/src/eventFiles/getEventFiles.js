@@ -6,7 +6,7 @@
  */
 
 const { getConfig } = require('@pryv/boiler');
-const EventLocalFiles = require('./EventLocalFiles');
+const EventLocalFiles = require('storages/engines/filesystem/src/EventLocalFiles');
 const { validateEventFiles } = require('storages/interfaces/fileStorage/EventFiles');
 
 module.exports = {

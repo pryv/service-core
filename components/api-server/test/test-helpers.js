@@ -26,7 +26,7 @@ after(async () => {
   await context.shutdown();
 });
 const storage = require('storage');
-const InfluxConnection = require('business/src/series/influx_connection');
+const InfluxConnection = require('storages/engines/mongodb/src/influx_connection');
 /**
  * Returns the StorageLayer instance (engine-agnostic).
  * @returns {Promise<any>}
@@ -43,7 +43,7 @@ async function produceSeriesConnection (settings) {
   const engine = storage.getStorageEngine(settings, 'database');
   switch (engine) {
     case 'postgresql': {
-      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const PGSeriesConnection = require('storages/engines/postgresql/src/pg_connection');
       const pgDb = await storage.getDatabasePG();
       return new PGSeriesConnection(pgDb);
     }

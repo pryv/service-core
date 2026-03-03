@@ -7,7 +7,7 @@
 const _ = require('lodash');
 const async = require('async');
 
-const Versions = require('../../src/Versions');
+const Versions = require('storages/engines/mongodb/src/Versions');
 const migrations = require('../../src/migrations');
 const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;

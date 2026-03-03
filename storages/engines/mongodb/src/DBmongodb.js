@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const Database = require('storage').Database;
+const Database = require('./Database');
 
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform:db');

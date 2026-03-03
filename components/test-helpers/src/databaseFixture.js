@@ -11,7 +11,7 @@ const generateId = require('cuid');
 const logger = require('@pryv/boiler').getLogger('databaseFixture');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const storage = require('storage');
+const storage = require('storage'); // eslint-disable-line no-unused-vars -- used in JSDoc types
 const Webhook = require('business').webhooks.Webhook;
 const { getUsersRepository, User } = require('business/src/users');
 const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
@@ -115,10 +115,12 @@ class UserContext {
     }
     // Legacy raw DB path (MongoDB)
     const db = this.context.db;
+    const MongoAccesses = require('storages/engines/mongodb/src/user/Accesses');
+    const MongoWebhooks = require('storages/engines/mongodb/src/user/Webhooks');
     return {
       sessions: new Sessions(db),
-      accesses: new storage.user.Accesses(db),
-      webhooks: new storage.user.Webhooks(db)
+      accesses: new MongoAccesses(db),
+      webhooks: new MongoWebhooks(db)
     };
   }
 }
@@ -609,7 +611,8 @@ class FixtureSession extends FixtureItem {
    * @returns {{ _id: any; expires: any; data: { username: any; appId: any; }; }}
    */
   fakeAttributes () {
-    const getNewExpirationDate = storage.Sessions.prototype.getNewExpirationDate.bind({
+    const Sessions = require('storages/engines/mongodb/src/Sessions');
+    const getNewExpirationDate = Sessions.prototype.getNewExpirationDate.bind({
       options: {
         maxAge: 1000 * 60 * 60 * 24 * 14 // two weeks
       }

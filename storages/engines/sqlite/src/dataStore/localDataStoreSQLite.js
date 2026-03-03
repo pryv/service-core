@@ -8,14 +8,12 @@
 /**
  * Local Data Store.
  */
-const storage = require('../index');
 const ds = require('@pryv/datastore');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
-const userStreams = require('../localDataStore/localUserStreams');
+const userStreams = ds.createUserStreams({});
 const userEvents = require('./localUserEventsSQLite');
-const LocalTransaction = require('../localDataStore/LocalTransaction');
 const { getStorage } = require('../userSQLite');
-const { getEventFiles } = require('../eventFiles/getEventFiles');
+const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
@@ -23,7 +21,6 @@ module.exports = ds.createDataStore({
     this.settings = params.settings;
 
     await SystemStreamsSerializer.init();
-    const database = await storage.getDatabase();
 
     // init events
     const eventFilesStorage = await getEventFiles();
@@ -32,11 +29,7 @@ module.exports = ds.createDataStore({
     userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent);
     eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
-    // init streams
-    const streamsCollection = await database.getCollection({ name: 'streams' });
-    // TODO: clarify why we don't create indexes for streams as done in `localDataStore`
-    const userStreamsStorage = (await storage.getStorageLayer()).streams;
-    userStreams.init(streamsCollection, userStreamsStorage);
+    // streams not implemented for SQLite — stub via ds.createUserStreams({})
 
     return this;
   },
@@ -45,22 +38,14 @@ module.exports = ds.createDataStore({
 
   events: userEvents,
 
-  async newTransaction () {
-    const transaction = new LocalTransaction();
-    await transaction.init();
-    return transaction;
-  },
-
   async deleteUser (uid) {
-    await userStreams._deleteUser(uid);
+    // streams not implemented for SQLite — nothing to delete
     await userEvents._deleteUser(uid);
   },
 
   async getUserStorageInfos (uid) {
-    // TODO: ultimately here we should simply look at the DB file size
-    const streams = await userStreams._getStorageInfos(uid);
     const events = await userEvents._getStorageInfos(uid);
     const files = await userEvents._getFilesStorageInfos(uid);
-    return { streams, events, files };
+    return { streams: { count: 0 }, events, files };
   }
 });

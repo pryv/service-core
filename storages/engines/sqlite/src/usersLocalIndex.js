@@ -7,7 +7,7 @@
 
 const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
-const concurrentSafeWrite = require('./sqliteUtils/concurrentSafeWrite');
+const concurrentSafeWrite = require('./concurrentSafeWrite');
 
 const { getConfig } = require('@pryv/boiler');
 

@@ -85,7 +85,7 @@ class StorageLayer {
         yield doc;
       }
     } else {
-      const { rowToEvent } = require('./localDataStorePG/localUserEventsPG');
+      const { rowToEvent } = require('storages/engines/postgresql/src/dataStore/localUserEventsPG');
       const res = await this.connection.query('SELECT * FROM events');
       for (const row of res.rows) {
         yield rowToEvent(row);

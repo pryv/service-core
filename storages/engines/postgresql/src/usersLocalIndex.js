@@ -14,7 +14,7 @@ class UsersLocalIndexPG {
   db;
 
   async init () {
-    const { getDatabasePG } = require('./index');
+    const { getDatabasePG } = require('storage');
     this.db = await getDatabasePG();
   }
 

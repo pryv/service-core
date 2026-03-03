@@ -40,7 +40,7 @@ async function produceSeriesConnection () {
   const engine = storage.getStorageEngine(config, 'database');
   switch (engine) {
     case 'postgresql': {
-      const PGSeriesConnection = require('business/src/series/pg_connection');
+      const PGSeriesConnection = require('storages/engines/postgresql/src/pg_connection');
       const pgDb = await storage.getDatabasePG();
       return new PGSeriesConnection(pgDb);
     }
