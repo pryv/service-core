@@ -8,8 +8,7 @@
 /**
  * Engine-local internals registry.
  * Populated by the engine entry point's init() from barrel-provided values.
- * All engine files use require('./_internals') or require('../_internals')
- * instead of host require() calls.
+ * All engine files use require('./_internals') instead of host require() calls.
  */
 const registry = {};
 
@@ -29,13 +28,5 @@ module.exports = {
       }
     });
   },
-  get userLocalDirectory () { return registry.userLocalDirectory; },
-  get DeletionModesFields () { return registry.DeletionModesFields; },
-  get localStoreEventQueries () { return registry.localStoreEventQueries; },
-  get getEventFiles () { return registry.getEventFiles; },
-  get SystemStreamsSerializer () { return registry.SystemStreamsSerializer; },
-  get encryption () { return registry.encryption; },
-  get createUserAccountStorage () { return registry.createUserAccountStorage; },
-  get getLogger () { return registry.getLogger; },
-  get userFilesPath () { return registry.userFilesPath; }
+  get getLogger () { return registry.getLogger; }
 };

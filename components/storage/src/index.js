@@ -66,9 +66,12 @@ async function getStorageLayer () {
 let _lazyDatabase;
 function _ensureMongoDatabase () {
   if (!_lazyDatabase) {
-    const { getConfigUnsafe } = require('@pryv/boiler');
+    const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
     const { dataBaseTracer } = require('tracing');
     const config = getConfigUnsafe(true);
+    // Ensure engine _internals has getLogger before constructing Database
+    const mongoInternals = require('storages/engines/mongodb/src/_internals');
+    if (!mongoInternals.getLogger) mongoInternals.set('getLogger', getLogger);
     const Database = require('storages/engines/mongodb/src/Database');
     _lazyDatabase = new Database(config.get('database'));
     dataBaseTracer(_lazyDatabase);
@@ -109,8 +112,11 @@ async function getDatabasePG () {
   let db = require('storages').databasePG;
   if (!db) {
     if (!_lazyDatabasePG) {
-      const { getConfig } = require('@pryv/boiler');
+      const { getConfig, getLogger } = require('@pryv/boiler');
       const config = await getConfig();
+      // Ensure engine _internals has getLogger before constructing DatabasePG
+      const pgInternals = require('storages/engines/postgresql/src/_internals');
+      if (!pgInternals.getLogger) pgInternals.set('getLogger', getLogger);
       const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
       _lazyDatabasePG = new DatabasePG(config.get('postgresql'));
     }

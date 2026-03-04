@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 const influx = require('influx');
-const { getLogger } = require('@pryv/boiler');
+const _internals = require('./_internals');
 /** Connection to the influx database. Adds error handling and logging on top
  * of our database driver.
  */
@@ -15,7 +15,7 @@ class InfluxConnection {
   logger;
   constructor (connectionSettings) {
     this.conn = new influx.InfluxDB(connectionSettings);
-    this.logger = getLogger('influx');
+    this.logger = _internals.lazyLogger('influx');
   }
 
   /**

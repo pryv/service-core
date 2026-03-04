@@ -7,7 +7,7 @@
 const MongoClient = require('mongodb').MongoClient;
 const { setTimeout } = require('timers/promises');
 
-const { getLogger } = require('@pryv/boiler');
+const _internals = require('./_internals');
 
 /**
  * @typedef {{
@@ -54,7 +54,7 @@ class Database {
 
   constructor (settings) {
     const authPart = getAuthPart(settings);
-    this.logger = getLogger('database');
+    this.logger = _internals.getLogger('database');
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/`;
     this.databaseName = settings.name;
     this.options = {

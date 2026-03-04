@@ -8,8 +8,8 @@
 const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
 
-const { getLogger, getConfig } = require('@pryv/boiler');
-const logger = getLogger('platform:db');
+const _internals = require('./_internals');
+const logger = _internals.lazyLogger('platform:db');
 const concurrentSafeWrite = require('./concurrentSafeWrite');
 
 class DB {
@@ -17,8 +17,7 @@ class DB {
   queries;
 
   async init () {
-    const config = await getConfig();
-    const basePath = config.get('userFiles:path');
+    const basePath = _internals.userFilesPath;
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');

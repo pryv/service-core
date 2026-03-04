@@ -2,6 +2,15 @@
   "storageTypes": ["fileStorage"],
   "entrypoint": "src/index.js",
   "requiredInternals": [
-    "userLocalDirectory"
-  ]
+    "userLocalDirectory",
+    "getLogger",
+    "eventFilesConfig"
+  ],
+  "configuration": {
+    "configKey": "eventFiles",
+    "fields": {
+      "attachmentsDirPath":  { "type": "string",  "required": true,  "description": "Directory for event file attachments" },
+      "previewsDirPath":     { "type": "string",  "required": true,  "description": "Directory for event file previews" }
+    }
+  }
 }

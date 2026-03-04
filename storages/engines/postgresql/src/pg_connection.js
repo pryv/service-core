@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 
-const { getLogger } = require('@pryv/boiler');
+const _internals = require('./_internals');
 
 /**
  * PostgreSQL implementation of the InfluxConnection interface.
@@ -24,7 +24,7 @@ class PGSeriesConnection {
 
   constructor (db) {
     this.db = db;
-    this.logger = getLogger('pg-series');
+    this.logger = _internals.getLogger('pg-series');
   }
 
   /**

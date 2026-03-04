@@ -8,7 +8,6 @@
   "author": "Pryv <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js",
   "dependencies": {
-    "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#semver:^1.2.4",
     "@pryv/datastore": "https://github.com/pryv/pryv-datastore.git",
     "cuid": "^2.1.8",
     "mkdirp": "1.0.4"

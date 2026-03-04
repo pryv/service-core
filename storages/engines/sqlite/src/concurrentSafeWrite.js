@@ -6,7 +6,8 @@
  */
 
 const WAIT_LIST_MS = [1, 2, 5, 10, 15, 20, 25, 25, 25, 50, 50, 100];
-const logger = require('@pryv/boiler').getLogger('sqliteConcurentWrites');
+const _internals = require('./_internals');
+const logger = _internals.lazyLogger('sqliteConcurentWrites');
 const { setTimeout } = require('timers/promises');
 
 module.exports = {

@@ -14,13 +14,13 @@
 
 const pluginLoader = require('./pluginLoader');
 const internals = require('./internals');
-const { getConfig } = require('@pryv/boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 
 /**
  * Register all host internals that engines may need.
  * Called once during init(), after database connections are created.
  */
-function registerInternals (database, databasePG, storageLayer) {
+function registerInternals (config, database, databasePG, storageLayer) {
   // Live instances
   if (database) internals.register('database', database);
   if (databasePG) internals.register('databasePG', databasePG);
@@ -52,6 +52,12 @@ function registerInternals (database, databasePG, storageLayer) {
 
   // Interface factory
   internals.register('createUserAccountStorage', require('storages/interfaces/baseStorage/UserAccountStorage').createUserAccountStorage);
+
+  // Logger factory + config values (so engines don't need @pryv/boiler)
+  internals.register('getLogger', getLogger);
+  internals.register('databaseConfig', config.get('database'));
+  internals.register('userFilesPath', config.get('userFiles:path'));
+  internals.register('eventFilesConfig', config.get('eventFiles'));
 }
 
 /**
@@ -94,6 +100,15 @@ async function init (config) {
   if (!config) config = await getConfig();
   await pluginLoader.init(config);
 
+  // Pre-populate getLogger on all engine _internals so that
+  // Database/DatabasePG constructors (step 1) can use it before initEngines (step 3).
+  for (const engineName of pluginLoader.listEngines()) {
+    try {
+      const engineInternals = require(`./engines/${engineName}/src/_internals`);
+      engineInternals.set('getLogger', getLogger);
+    } catch (e) { /* engine may not have _internals.js */ }
+  }
+
   const getStorageEngine = require('storage/src/getStorageEngine');
   const StorageLayer = require('storage/src/StorageLayer');
   const { dataBaseTracer } = require('tracing');
@@ -118,7 +133,7 @@ async function init (config) {
 
   // 2. Register internals
   const storageLayer = new StorageLayer();
-  registerInternals(database, databasePG, storageLayer);
+  registerInternals(config, database, databasePG, storageLayer);
 
   // 3. Initialize engines (must be before storageLayer.init which calls engine.initStorageLayer)
   initEngines();

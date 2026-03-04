@@ -11,8 +11,7 @@ const fs = require('fs');
 const _internals = require('../../_internals');
 const UserDatabase = require('../UserDatabase');
 const migrate0to1 = require('./1');
-const { getLogger } = require('@pryv/boiler');
-const logger = getLogger('sqlite-storage-migration');
+const logger = _internals.lazyLogger('sqlite-storage-migration');
 
 module.exports = {
   migrateUserDBsIfNeeded

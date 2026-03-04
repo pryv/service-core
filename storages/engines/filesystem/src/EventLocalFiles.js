@@ -11,7 +11,6 @@ const mkdirp = require('mkdirp');
 const path = require('path');
 
 const { pipeline } = require('stream/promises');
-const { getConfig, getLogger } = require('@pryv/boiler');
 const _internals = require('./_internals');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
@@ -26,9 +25,8 @@ module.exports = EventFiles;
 function EventFiles () { }
 
 EventFiles.prototype.init = async function () {
-  const config = await getConfig();
-  this.settings = config.get('eventFiles');
-  this.logger = getLogger('storage:eventFiles');
+  this.settings = _internals.eventFilesConfig;
+  this.logger = _internals.getLogger('storage:eventFiles');
   await _internals.userLocalDirectory.init();
 };
 

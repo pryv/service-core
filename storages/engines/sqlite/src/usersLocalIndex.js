@@ -9,7 +9,7 @@ const mkdirp = require('mkdirp');
 const SQLite3 = require('better-sqlite3');
 const concurrentSafeWrite = require('./concurrentSafeWrite');
 
-const { getConfig } = require('@pryv/boiler');
+const _internals = require('./_internals');
 
 class DBIndex {
   db;
@@ -21,8 +21,7 @@ class DBIndex {
   queryDeleteById;
 
   async init () {
-    const config = await getConfig();
-    const basePath = config.get('userFiles:path');
+    const basePath = _internals.userFilesPath;
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/user-index.db');

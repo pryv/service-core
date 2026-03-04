@@ -9,7 +9,6 @@ const fs = require('fs/promises');
 const LRU = require('lru-cache');
 
 const UserDatabase = require('./UserDatabase');
-const { getConfig, getLogger } = require('@pryv/boiler');
 const migrations = require('./migrations');
 const _internals = require('../_internals');
 
@@ -27,7 +26,6 @@ class Storage {
       throw new Error('Database already initalized');
     }
     this.initialized = true;
-    this.config = await getConfig();
     await _internals.userLocalDirectory.init();
     await migrations.migrateUserDBsIfNeeded(this);
     this.logger.debug('DB initialized');
@@ -36,7 +34,7 @@ class Storage {
 
   constructor (id, options) {
     this.id = id;
-    this.logger = getLogger(this.id + ':storage');
+    this.logger = _internals.getLogger(this.id + ':storage');
     this.options = options || {};
     this.userDBsCache = new LRU({
       max: this.options.max || CACHE_SIZE,

@@ -11,8 +11,7 @@ const generateId = require('cuid');
 const util = require('util');
 const _ = require('lodash');
 const _internals = require('../_internals');
-const { getLogger } = require('@pryv/boiler');
-const logger = getLogger('storage:accesses');
+const logger = _internals.lazyLogger('storage:accesses');
 const timestamp = require('unix-timestamp');
 
 module.exports = Accesses;

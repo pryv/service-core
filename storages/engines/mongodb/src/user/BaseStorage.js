@@ -7,7 +7,8 @@
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const converters = require('./../converters');
-const logger = require('@pryv/boiler').getLogger('storage:base-storage');
+const _internals = require('../_internals');
+const logger = _internals.lazyLogger('storage:base-storage');
 
 const BULKWRITE_BATCH_SIZE = 1000;
 

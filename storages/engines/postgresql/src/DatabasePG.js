@@ -7,7 +7,7 @@
 
 const { Pool } = require('pg');
 const { setTimeout } = require('timers/promises');
-const { getLogger } = require('@pryv/boiler');
+const _internals = require('./_internals');
 
 /**
  * PostgreSQL connection wrapper with pooling.
@@ -32,7 +32,7 @@ class DatabasePG {
    * @param {number} [settings.max] - pool size (default 20)
    */
   constructor (settings) {
-    this.logger = getLogger('database-pg');
+    this.logger = _internals.getLogger('database-pg');
     this.poolConfig = {
       host: settings.host,
       port: settings.port,

@@ -11,6 +11,18 @@
  * Provides the series connection backed by InfluxDB.
  */
 
+const _internals = require('./_internals');
+
+/**
+ * Receive host internals from the barrel.
+ * @param {Object} receivedInternals - Map of name → value
+ */
+function init (receivedInternals) {
+  for (const [key, value] of Object.entries(receivedInternals)) {
+    _internals.set(key, value);
+  }
+}
+
 // -- SeriesStorage ----------------------------------------------------------
 
 /**
@@ -23,5 +35,6 @@ function createSeriesConnection (config) {
 }
 
 module.exports = {
+  init,
   createSeriesConnection
 };

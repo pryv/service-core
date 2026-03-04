@@ -8,10 +8,9 @@
 const BaseStoragePG = require('./BaseStoragePG');
 const generateId = require('cuid');
 const _internals = require('../_internals');
-const { getLogger } = require('@pryv/boiler');
 const timestamp = require('unix-timestamp');
 
-const logger = getLogger('storage:accesses-pg');
+const logger = _internals.lazyLogger('storage:accesses-pg');
 
 /**
  * PostgreSQL persistence for accesses.

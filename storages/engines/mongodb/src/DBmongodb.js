@@ -7,8 +7,8 @@
 
 const Database = require('./Database');
 
-const { getLogger, getConfig } = require('@pryv/boiler');
-const logger = getLogger('platform:db');
+const _internals = require('./_internals');
+const logger = _internals.lazyLogger('platform:db');
 
 class DB {
   platformUnique;
@@ -17,7 +17,7 @@ class DB {
   db;
 
   async init () {
-    const settings = structuredClone((await getConfig()).get('database'));
+    const settings = structuredClone(_internals.databaseConfig);
     settings.name = settings.name + '-platform';
     this.db = new Database(settings);
     this.platformUnique = await this.db.getCollection({
