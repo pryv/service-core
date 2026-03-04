@@ -13,6 +13,18 @@
  * code will be physically moved here in a later cleanup phase.
  */
 
+const _internals = require('./_internals');
+
+/**
+ * Receive host internals from the barrel.
+ * @param {Object} receivedInternals - Map of name → value
+ */
+function init (receivedInternals) {
+  for (const [key, value] of Object.entries(receivedInternals)) {
+    _internals.set(key, value);
+  }
+}
+
 // -- BaseStorage --------------------------------------------------------
 
 function initStorageLayer (storageLayer, connection, options) {
@@ -62,11 +74,12 @@ function createPlatformDB () {
 async function createSeriesConnection (config) {
   const PGSeriesConnection = require('./pg_connection');
   // Use provided databasePG (from barrel init) or fall back to storage
-  const pgDb = config.databasePG || await require('storage').getDatabasePG();
+  const pgDb = config.databasePG || _internals.databasePG;
   return new PGSeriesConnection(pgDb);
 }
 
 module.exports = {
+  init,
   initStorageLayer,
   getUserAccountStorage,
   getUsersLocalIndex,

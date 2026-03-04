@@ -25,7 +25,12 @@ const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 const userWithAttachments = 'u_0';
 const storage = require('storage');
 
+// MongoDB-specific migration test — skip in PG mode
 describe('[MG90] Migration - 1.9.0', function () {
+  if (process.env.STORAGE_ENGINE === 'postgresql') {
+    before(function () { this.skip(); });
+    return;
+  }
   this.timeout(20000);
   let userLocalDirectory;
 

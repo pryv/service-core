@@ -23,8 +23,13 @@ const userLocalDirectory = require('storage').userLocalDirectory;
 
 const { getVersions, compareIndexes } = require('./util');
 
+// MongoDB-specific migration test — skip in PG mode
 describe('[MG70] Migration - 1.7.x', function () {
   this.timeout(20000);
+  if (process.env.STORAGE_ENGINE === 'postgresql') {
+    before(function () { this.skip(); });
+    return;
+  }
 
   let eventsCollection;
   let usersCollection;

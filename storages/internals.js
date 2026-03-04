@@ -68,4 +68,13 @@ function clearAll () {
   }
 }
 
-module.exports = { register, resolve, listRegistered, clearAll };
+/**
+ * Check if a given internal is registered.
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isRegistered (name) {
+  return name in registry;
+}
+
+module.exports = { register, resolve, listRegistered, isRegistered, clearAll };

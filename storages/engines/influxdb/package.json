@@ -1,0 +1,11 @@
+{
+  "name": "@pryv/engine-influxdb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pryv InfluxDB series storage engine",
+  "main": "src/index.js",
+  "dependencies": {
+    "influx": "^5.0.6",
+    "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#semver:^1.2.4"
+  }
+}

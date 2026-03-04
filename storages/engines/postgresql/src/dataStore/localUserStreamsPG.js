@@ -8,12 +8,8 @@
 const bluebird = require('bluebird');
 const assert = require('assert');
 const _ = require('lodash');
-const cache = require('cache');
 const ds = require('@pryv/datastore');
-const { treeUtils } = require('utils');
-const { StreamProperties } = require('business/src/streams');
-const StreamPropsWithoutChildren = StreamProperties.filter((p) => p !== 'children');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const _internals = require('../_internals');
 let visibleStreamsTree = [];
 
 /**
@@ -36,7 +32,7 @@ module.exports = ds.createUserStreams({
     if (query.includeTrashed) {
       return structuredClone(allStreams);
     } else {
-      return treeUtils.filterTree(allStreams, false, (stream) => !stream.trashed);
+      return _internals.treeUtils.filterTree(allStreams, false, (stream) => !stream.trashed);
     }
   },
 
@@ -46,7 +42,7 @@ module.exports = ds.createUserStreams({
     const allStreams = await this._getAllFromAccountAndCache(userId);
     let stream = null;
 
-    const foundStream = treeUtils.findById(allStreams, streamId);
+    const foundStream = _internals.treeUtils.findById(allStreams, streamId);
     if (foundStream != null) {
       const childrenDepth = Object.hasOwnProperty.call(query, 'childrenDepth') ? query.childrenDepth : -1;
       stream = cloneStream(foundStream, childrenDepth);
@@ -56,14 +52,14 @@ module.exports = ds.createUserStreams({
 
     if (!query.includeTrashed) {
       if (stream.trashed) return null;
-      stream.children = treeUtils.filterTree(stream.children, false, (s) => !s.trashed);
+      stream.children = _internals.treeUtils.filterTree(stream.children, false, (s) => !s.trashed);
     }
 
     return stream;
   },
 
   async _getAllFromAccountAndCache (userId) {
-    let allStreamsForAccount = cache.getStreams(userId, 'local');
+    let allStreamsForAccount = _internals.cache.getStreams(userId, 'local');
     if (allStreamsForAccount != null) return allStreamsForAccount;
 
     // Get from DB via StorageLayer's StreamsPG (callback-based)
@@ -71,7 +67,7 @@ module.exports = ds.createUserStreams({
       this.userStreamsStorage.find({ id: userId }, {}, null, cb));
     // Add system streams
     allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
-    cache.setStreams(userId, 'local', allStreamsForAccount);
+    _internals.cache.setStreams(userId, 'local', allStreamsForAccount);
     return allStreamsForAccount;
   },
 
@@ -127,7 +123,7 @@ module.exports = ds.createUserStreams({
   async deleteAll (userId) {
     await bluebird.fromCallback((cb) =>
       this.userStreamsStorage.removeAll({ id: userId }, cb));
-    cache.unsetUserData(userId);
+    _internals.cache.unsetUserData(userId);
   },
 
   async _deleteUser (userId) {
@@ -146,6 +142,7 @@ function cloneStream (stream, childrenDepth) {
   if (childrenDepth === -1) {
     return structuredClone(stream);
   } else {
+    const StreamPropsWithoutChildren = _internals.StreamProperties.filter((p) => p !== 'children');
     const copy = _.pick(stream, StreamPropsWithoutChildren);
     if (childrenDepth === 0) {
       copy.childrenHidden = true;
@@ -159,7 +156,7 @@ function cloneStream (stream, childrenDepth) {
 
 function loadVisibleStreamsTree () {
   try {
-    visibleStreamsTree = SystemStreamsSerializer.getReadable();
+    visibleStreamsTree = _internals.SystemStreamsSerializer.getReadable();
     ds.defaults.applyOnStreams(visibleStreamsTree);
   } catch (err) {
     console.log('This should be fixed!! It happens when the system streams are not yet loaded during some test suites.. ', err);

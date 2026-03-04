@@ -4,7 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const { getDatabase } = require('storage');
+const _internals = require('../_internals');
 const defaultOptions = {
   readPreference: 'primary',
   readConcern: { level: 'local' },
@@ -25,8 +25,7 @@ class LocalTransaction {
    * @returns {Promise<void>}
    */
   async init () {
-    const database = await getDatabase();
-    this.transactionSession = await database.startSession();
+    this.transactionSession = await _internals.database.startSession();
   }
 
   /**

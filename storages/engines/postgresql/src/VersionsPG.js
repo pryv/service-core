@@ -6,9 +6,7 @@
  */
 
 const timestamp = require('unix-timestamp');
-const packageFile = require('storage/package.json');
-const migrations = require('storage/src/migrations/index');
-const MigrationContext = require('storage/src/migrations/MigrationContext');
+const _internals = require('./_internals');
 
 /**
  * PostgreSQL implementation of Versions storage.
@@ -22,7 +20,7 @@ class VersionsPG {
 
   constructor (db, logger, migrationsOverride) {
     this.db = db;
-    this.migrations = migrationsOverride || migrations;
+    this.migrations = migrationsOverride || _internals.migrations;
     this.logger = logger;
   }
 
@@ -48,7 +46,7 @@ class VersionsPG {
 
     if (!v) {
       // New install: init to package version
-      currentVNum = packageFile.version;
+      currentVNum = _internals.softwareVersion;
       await this.db.query(
         'INSERT INTO versions (id, initial_install) VALUES ($1, $2)',
         [currentVNum, timestamp.now()]
@@ -59,7 +57,7 @@ class VersionsPG {
       .filter((vNum) => vNum > currentVNum)
       .sort();
 
-    const context = new MigrationContext({
+    const context = new (_internals.MigrationContext)({
       database: this.db,
       logger: this.logger
     });

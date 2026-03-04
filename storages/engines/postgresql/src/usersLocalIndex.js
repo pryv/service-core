@@ -14,8 +14,9 @@ class UsersLocalIndexPG {
   db;
 
   async init () {
-    const { getDatabasePG } = require('storage');
-    this.db = await getDatabasePG();
+    const _internals = require('./_internals');
+    this.db = _internals.databasePG;
+    await this.db.ensureConnect();
   }
 
   async addUser (username, userId) {

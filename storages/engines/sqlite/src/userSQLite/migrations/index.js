@@ -8,7 +8,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const userLocalDirectory = require('storage').userLocalDirectory;
+const _internals = require('../../_internals');
 const UserDatabase = require('../UserDatabase');
 const migrate0to1 = require('./1');
 const { getLogger } = require('@pryv/boiler');
@@ -19,7 +19,7 @@ module.exports = {
 };
 
 async function migrateUserDBsIfNeeded (storage) {
-  const usersBaseDirectory = userLocalDirectory.getBasePath();
+  const usersBaseDirectory = _internals.userLocalDirectory.getBasePath();
   if (!fs.existsSync(usersBaseDirectory)) {
     fs.mkdirSync(usersBaseDirectory, { recursive: true });
   }

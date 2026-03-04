@@ -7,11 +7,9 @@
 const BaseStorage = require('./BaseStorage');
 const converters = require('./../converters');
 const util = require('util');
-const treeUtils = require('utils').treeUtils;
+const _internals = require('../_internals');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
-
-const cache = require('cache');
 
 module.exports = Streams;
 
@@ -31,7 +29,7 @@ function Streams (database) {
       // converters.deletionToDB,
     ],
     itemsToDB: [
-      treeUtils.flattenTree,
+      _internals.treeUtils.flattenTree,
       cleanupDeletions
     ],
     updateToDB: [
@@ -39,7 +37,7 @@ function Streams (database) {
       converters.getKeyValueSetUpdateFn('clientData')
     ],
     itemFromDB: [converters.deletionFromDB],
-    itemsFromDB: [treeUtils.buildTree],
+    itemsFromDB: [_internals.treeUtils.buildTree],
     convertIdToItemId: 'streamId'
   });
 
@@ -99,15 +97,15 @@ Streams.prototype.countAll = function (user, callback) {
 };
 
 Streams.prototype.insertOne = function (user, stream, callback) {
-  cache.unsetUserData(user.id);
+  _internals.cache.unsetUserData(user.id);
   Streams.super_.prototype.insertOne.call(this, user, stream, callback);
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   if (typeof updatedData.parentId !== 'undefined') { // clear ALL when a stream is moved
-    cache.unsetUserData(user.id);
+    _internals.cache.unsetUserData(user.id);
   } else { // only stream Structure
-    cache.unsetStreams(user.id, 'local');
+    _internals.cache.unsetStreams(user.id, 'local');
   }
   Streams.super_.prototype.updateOne.call(this, user, query, updatedData, callback);
 };
@@ -117,7 +115,7 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
  */
 Streams.prototype.delete = function (userOrUserId, query, callback) {
   const userId = userOrUserId.id || userOrUserId;
-  cache.unsetUserData(userId);
+  _internals.cache.unsetUserData(userId);
   const update = {
     $set: { deleted: timestamp.now() },
     $unset: {

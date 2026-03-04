@@ -41,6 +41,9 @@ function addAccessStreamIdPrefix (accessId) {
 base.init({
   methods: ['events', 'streams', 'service', 'auth/login', 'auth/register', 'accesses'],
   beforeInitTests: async () => {
+    // Barrel must be initialized before audit so that SQLite engine internals
+    // (e.g. userLocalDirectory) are available when audit creates its storage.
+    await require('storages').init();
     await audit.init();
     global.audit = audit;
   },

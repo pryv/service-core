@@ -22,8 +22,13 @@ const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 
 const { getVersions } = require('./util');
 
+// MongoDB-specific migration test — skip in PG mode
 describe('[MG75] Migration - 1.7.5', function () {
   this.timeout(20000);
+  if (process.env.STORAGE_ENGINE === 'postgresql') {
+    before(function () { this.skip(); });
+    return;
+  }
 
   let accessesCollection;
 

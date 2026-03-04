@@ -27,7 +27,12 @@ const { getUsersLocalIndex } = require('storage');
 
 const { platform } = require('platform');
 
+// MongoDB-specific migration test — skip in PG mode
 describe('[MG80] Migration - 1.8.0', function () {
+  if (process.env.STORAGE_ENGINE === 'postgresql') {
+    before(function () { this.skip(); });
+    return;
+  }
   this.timeout(20000);
   let initialEventsUsers;
   let usersIndex;

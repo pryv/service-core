@@ -40,7 +40,9 @@ const initTracer = require('jaeger-client').initTracer;
  */
 async function createContext (config) {
   const logger = getLogger('setup');
-  const influx = require('storages').seriesConnection;
+  const storages = require('storages');
+  await storages.init(config);
+  const influx = storages.seriesConnection;
   if (!influx) {
     throw new Error('Series storage not available.');
   }

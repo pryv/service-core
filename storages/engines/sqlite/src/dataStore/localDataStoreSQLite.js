@@ -9,21 +9,20 @@
  * Local Data Store.
  */
 const ds = require('@pryv/datastore');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
+const _internals = require('../_internals');
 const userStreams = ds.createUserStreams({});
 const userEvents = require('./localUserEventsSQLite');
 const { getStorage } = require('../userSQLite');
-const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
 
-    await SystemStreamsSerializer.init();
+    await _internals.SystemStreamsSerializer.init();
 
     // init events
-    const eventFilesStorage = await getEventFiles();
+    const eventFilesStorage = await _internals.getEventFiles();
 
     const userStorage = await getStorage('local');
     userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent);

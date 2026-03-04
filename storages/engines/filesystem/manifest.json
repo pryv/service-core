@@ -1,4 +1,7 @@
 {
   "storageTypes": ["fileStorage"],
-  "entrypoint": "src/index.js"
+  "entrypoint": "src/index.js",
+  "requiredInternals": [
+    "userLocalDirectory"
+  ]
 }

@@ -16,10 +16,7 @@ const path = require('path');
 const SQLite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
-const encryption = require('utils').encryption;
-
-const userLocalDirectory = require('storage/src/userLocalDirectory');
-const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
+const _internals = require('./_internals');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';
@@ -34,7 +31,7 @@ const InitStates = {
 };
 let initState = InitStates.NOT_INITIALIZED;
 
-module.exports = createUserAccountStorage({
+module.exports = _internals.createUserAccountStorage({
   init,
   addPasswordHash,
   getPasswordHash,
@@ -59,7 +56,7 @@ async function init () {
   }
   initState = InitStates.INITIALIZING;
 
-  await userLocalDirectory.init();
+  await _internals.userLocalDirectory.init();
 
   dbCache = new LRU({
     max: CACHE_SIZE,
@@ -97,7 +94,7 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   const db = await getUserDB(userId);
   const getLastN = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT ?');
   for (const entry of getLastN.iterate(historyLength)) {
-    if (await encryption.compare(password, entry.hash)) {
+    if (await _internals.encryption.compare(password, entry.hash)) {
       return true;
     }
   }
@@ -238,7 +235,7 @@ async function getUserDB (userId) {
 }
 
 async function openUserDB (userId) {
-  const userPath = await userLocalDirectory.ensureUserDirectory(userId);
+  const userPath = await _internals.userLocalDirectory.ensureUserDirectory(userId);
   const dbPath = path.join(userPath, `account-${VERSION}.sqlite`);
   const db = new SQLite3(dbPath, DB_OPTIONS);
   db.pragma('journal_mode = WAL');

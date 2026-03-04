@@ -7,9 +7,7 @@
 
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
-const packageFile = require('storage/package.json');
-const migrations = require('storage/src/migrations/index');
-const MigrationContext = require('storage/src/migrations/MigrationContext');
+const _internals = require('./_internals');
 
 const collectionInfo = {
   name: 'versions',
@@ -37,7 +35,7 @@ module.exports = Versions;
  */
 function Versions (database, logger, migrationsOverride) {
   this.database = database;
-  this.migrations = migrationsOverride || migrations;
+  this.migrations = migrationsOverride || _internals.migrations;
   this.logger = logger;
 }
 
@@ -53,7 +51,7 @@ Versions.prototype.migrateIfNeeded = async function () {
   let currentVNum = v?._id;
   if (!v) {
     // new install: init to package version
-    currentVNum = packageFile.version;
+    currentVNum = _internals.softwareVersion;
     await bluebird.fromCallback((cb) => {
       this.database.insertOne(collectionInfo, {
         _id: currentVNum,
@@ -64,7 +62,7 @@ Versions.prototype.migrateIfNeeded = async function () {
   const migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
     return vNum > currentVNum;
   }).sort();
-  const context = new MigrationContext({
+  const context = new (_internals.MigrationContext)({
     database: this.database,
     logger: this.logger
   });

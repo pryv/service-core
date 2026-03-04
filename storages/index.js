@@ -13,7 +13,65 @@
  */
 
 const pluginLoader = require('./pluginLoader');
+const internals = require('./internals');
 const { getConfig } = require('@pryv/boiler');
+
+/**
+ * Register all host internals that engines may need.
+ * Called once during init(), after database connections are created.
+ */
+function registerInternals (database, databasePG, storageLayer) {
+  // Live instances
+  if (database) internals.register('database', database);
+  if (databasePG) internals.register('databasePG', databasePG);
+  internals.register('storageLayer', storageLayer);
+
+  // Static modules from storage
+  internals.register('userLocalDirectory', require('storage/src/userLocalDirectory'));
+  internals.register('DeletionModesFields', require('storage/src/DeletionModesFields'));
+  internals.register('localStoreEventQueries', require('storage/src/localStoreEventQueries'));
+  internals.register('getEventFiles', require('storage/src/eventFiles/getEventFiles').getEventFiles);
+  internals.register('migrations', require('storage/src/migrations/index'));
+  internals.register('MigrationContext', require('storage/src/migrations/MigrationContext'));
+  internals.register('softwareVersion', require('storage/package.json').version);
+
+  // Static modules from business
+  internals.register('SystemStreamsSerializer', require('business/src/system-streams/serializer'));
+  internals.register('StreamProperties', require('business/src/streams').StreamProperties);
+  internals.register('integrityAccesses', require('business/src/integrity').accesses);
+
+  // Static module from api-server
+  internals.register('streamsQueryUtils', require('api-server/src/methods/helpers/streamsQueryUtils'));
+
+  // Cache component
+  internals.register('cache', require('cache'));
+
+  // Utils
+  internals.register('encryption', require('utils').encryption);
+  internals.register('treeUtils', require('utils').treeUtils);
+
+  // Interface factory
+  internals.register('createUserAccountStorage', require('storages/interfaces/baseStorage/UserAccountStorage').createUserAccountStorage);
+}
+
+/**
+ * Initialize all discovered engines whose requiredInternals are all registered.
+ * Engines whose internals aren't satisfied (e.g. postgresql when only MongoDB is
+ * configured) are silently skipped.
+ */
+function initEngines () {
+  for (const engineName of pluginLoader.listEngines()) {
+    const manifest = pluginLoader.getManifest(engineName);
+    if (!manifest || !manifest.requiredInternals || manifest.requiredInternals.length === 0) continue;
+    // Skip engines whose internals are not all registered
+    if (!manifest.requiredInternals.every(name => internals.isRegistered(name))) continue;
+    const resolved = internals.resolve(manifest.requiredInternals, engineName);
+    const mod = pluginLoader.getEngineModule(engineName);
+    if (typeof mod.init === 'function') {
+      mod.init(resolved);
+    }
+  }
+}
 
 let instances = null;
 let initializing = false;
@@ -58,21 +116,27 @@ async function init (config) {
   _earlyDatabase = database;
   _earlyDatabasePG = databasePG;
 
-  // 2. StorageLayer
+  // 2. Register internals
   const storageLayer = new StorageLayer();
+  registerInternals(database, databasePG, storageLayer);
+
+  // 3. Initialize engines (must be before storageLayer.init which calls engine.initStorageLayer)
+  initEngines();
+
+  // 4. StorageLayer
   await storageLayer.init(connection);
 
-  // 3. UserAccountStorage
+  // 5. UserAccountStorage
   const uaEngine = getStorageEngine(config, 'storageUserAccount');
   const uaModule = pluginLoader.getEngineModule(uaEngine);
   const userAccountStorage = uaModule.getUserAccountStorage();
   await userAccountStorage.init();
 
-  // 4. UsersLocalIndex (wrapper singleton — caching, logging around raw DB)
+  // 6. UsersLocalIndex (wrapper singleton — caching, logging around raw DB)
   const usersLocalIndex = require('storage/src/usersLocalIndex');
   await usersLocalIndex.init();
 
-  // 5. PlatformDB
+  // 7. PlatformDB
   const { validatePlatformDB } = require('storages/interfaces/platformStorage/PlatformDB');
   const platEngine = pluginLoader.getEngineFor('platformStorage');
   const platModule = pluginLoader.getEngineModule(platEngine);
@@ -80,7 +144,7 @@ async function init (config) {
   await platformDB.init();
   validatePlatformDB(platformDB);
 
-  // 6. Series connection (skip if engine missing or lacks support)
+  // 8. Series connection (skip if engine missing or lacks support)
   let seriesConnection = null;
   const seriesEngine = pluginLoader.getEngineFor('seriesStorage');
   if (seriesEngine) {
@@ -97,7 +161,7 @@ async function init (config) {
     }
   }
 
-  // 7. DataStore module (for mall)
+  // 9. DataStore module (for mall)
   const dsEngine = getStorageEngine(config, 'database');
   const dsModule = pluginLoader.getEngineModule(dsEngine);
   const dataStoreModule = dsModule.getDataStoreModule();
@@ -124,6 +188,7 @@ function reset () {
   initializing = false;
   _earlyDatabase = null;
   _earlyDatabasePG = null;
+  internals.clearAll();
   pluginLoader.reset();
 }
 

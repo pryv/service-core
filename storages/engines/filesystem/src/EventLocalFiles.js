@@ -12,7 +12,7 @@ const path = require('path');
 
 const { pipeline } = require('stream/promises');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const userLocalDirectory = require('storage/src/userLocalDirectory');
+const _internals = require('./_internals');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 
@@ -29,7 +29,7 @@ EventFiles.prototype.init = async function () {
   const config = await getConfig();
   this.settings = config.get('eventFiles');
   this.logger = getLogger('storage:eventFiles');
-  await userLocalDirectory.init();
+  await _internals.userLocalDirectory.init();
 };
 
 /**
@@ -175,5 +175,5 @@ function getEventPath (userId, eventId) {
  * @param {String} userId
  */
 function getUserPath (userId) {
-  return userLocalDirectory.getPathForUser(userId, ATTACHMENT_DIRNAME);
+  return _internals.userLocalDirectory.getPathForUser(userId, ATTACHMENT_DIRNAME);
 }

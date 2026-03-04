@@ -55,7 +55,9 @@ async function getMall () {
   }
 
   // Load built-in data store from storages barrel
-  const dataStoreModule = require('storages').dataStoreModule;
+  const storages = require('storages');
+  await storages.init(config);
+  const dataStoreModule = storages.dataStoreModule;
   const localSettings = {
     attachments: { setFileReadToken: true },
     versioning: config.get('versioning')

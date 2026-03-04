@@ -6,15 +6,14 @@
  */
 
 const timestamp = require('unix-timestamp');
-const encryption = require('utils').encryption;
-const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
+const _internals = require('./_internals');
 
 let db;
 
-module.exports = createUserAccountStorage({
+module.exports = _internals.createUserAccountStorage({
   async init () {
-    const { getDatabasePG } = require('storage');
-    db = await getDatabasePG();
+    db = _internals.databasePG;
+    await db.ensureConnect();
   },
 
   async getPasswordHash (userId) {
@@ -48,7 +47,7 @@ module.exports = createUserAccountStorage({
       [userId, historyLength]
     );
     for (const row of res.rows) {
-      if (await encryption.compare(password, row.hash)) {
+      if (await _internals.encryption.compare(password, row.hash)) {
         return true;
       }
     }

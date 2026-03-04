@@ -81,7 +81,7 @@ class WebhooksPG extends BaseStoragePG {
         callback(null, result);
       })
       .catch((err) => {
-        const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
+        const DatabasePG = require('../DatabasePG');
         DatabasePG.handleDuplicateError(err);
         callback(err);
       });

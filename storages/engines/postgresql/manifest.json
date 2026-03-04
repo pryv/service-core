@@ -1,5 +1,21 @@
 {
   "storageTypes": ["baseStorage", "dataStore", "platformStorage", "seriesStorage"],
   "entrypoint": "src/index.js",
-  "requiredInternals": ["userLocalDirectory"]
+  "requiredInternals": [
+    "databasePG",
+    "storageLayer",
+    "DeletionModesFields",
+    "localStoreEventQueries",
+    "getEventFiles",
+    "migrations",
+    "MigrationContext",
+    "softwareVersion",
+    "SystemStreamsSerializer",
+    "StreamProperties",
+    "integrityAccesses",
+    "cache",
+    "encryption",
+    "treeUtils",
+    "createUserAccountStorage"
+  ]
 }

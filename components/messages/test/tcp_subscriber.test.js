@@ -90,6 +90,7 @@ describe('[NSUB] TcpSubscriber', () => {
 
       it('[47BP] ignores messages from other users', async () => {
         rawClient.write(JSON.stringify({ t: 'pub', scope: 'barbaz', event: 'onTestMessage1', payload: '' }) + '\n');
+        await new Promise((resolve) => setTimeout(resolve, 100));
         rawClient.write(JSON.stringify({ t: 'pub', scope: 'foobar', event: 'onTestMessage2', payload: '' }) + '\n');
         while (msgs.length === 0) {
           await new Promise((resolve) => setTimeout(resolve, 50));

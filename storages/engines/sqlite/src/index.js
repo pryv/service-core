@@ -12,6 +12,18 @@
  * Note: dataStore streams fallback to MongoDB (incomplete).
  */
 
+const _internals = require('./_internals');
+
+/**
+ * Receive host internals from the barrel.
+ * @param {Object} receivedInternals - Map of name → value
+ */
+function init (receivedInternals) {
+  for (const [key, value] of Object.entries(receivedInternals)) {
+    _internals.set(key, value);
+  }
+}
+
 // -- BaseStorage --------------------------------------------------------
 
 function initStorageLayer (_storageLayer, _connection, _options) {
@@ -40,6 +52,7 @@ function createPlatformDB () {
 }
 
 module.exports = {
+  init,
   initStorageLayer,
   getUserAccountStorage,
   getUsersLocalIndex,

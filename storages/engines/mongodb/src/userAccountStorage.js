@@ -12,8 +12,7 @@
  */
 
 const timestamp = require('unix-timestamp');
-const encryption = require('utils').encryption;
-const { createUserAccountStorage } = require('storages/interfaces/baseStorage/UserAccountStorage');
+const _internals = require('./_internals');
 
 let passwordsCollection = null;
 let storesKeyValueCollection = null;
@@ -25,7 +24,7 @@ const InitStates = {
 };
 let initState = InitStates.NOT_INITIALIZED;
 
-module.exports = createUserAccountStorage({
+module.exports = _internals.createUserAccountStorage({
   init,
   addPasswordHash,
   getPasswordHash,
@@ -47,8 +46,7 @@ async function init () {
     return;
   }
   initState = InitStates.INITIALIZING;
-  const { getDatabase } = require('storage');
-  const db = await getDatabase();
+  const db = await _internals.database;
   passwordsCollection = await db.getCollection({
     name: 'passwords',
     indexes: [
@@ -107,7 +105,7 @@ async function getCurrentPasswordTime (userId) {
 async function passwordExistsInHistory (userId, password, historyLength) {
   const lastCursor = await passwordsCollection.find({ userId }, { sort: { time: -1 }, limit: historyLength });
   for await (const entry of lastCursor) {
-    if (await encryption.compare(password, entry.hash)) {
+    if (await _internals.encryption.compare(password, entry.hash)) {
       return true;
     }
   }

@@ -11,7 +11,12 @@ const timestamp = require('unix-timestamp');
 const { getVersions } = require('./util');
 const { getConfig } = require('@pryv/boiler');
 
-describe('[MGNI] Migrations - new install', () => {
+// MongoDB-specific migration test — skip in PG mode
+describe('[MGNI] Migrations - new install', function () {
+  if (process.env.STORAGE_ENGINE === 'postgresql') {
+    before(function () { this.skip(); });
+    return;
+  }
   const versions = getVersions();
   let isOpenSource = false;
 

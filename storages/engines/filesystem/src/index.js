@@ -13,6 +13,18 @@
  * code will be physically moved here in a later cleanup phase.
  */
 
+const _internals = require('./_internals');
+
+/**
+ * Receive host internals from the barrel.
+ * @param {Object} receivedInternals - Map of name → value
+ */
+function init (receivedInternals) {
+  for (const [key, value] of Object.entries(receivedInternals)) {
+    _internals.set(key, value);
+  }
+}
+
 // -- FileStorage --------------------------------------------------------
 
 async function createFileStorage (_config, _internals) {
@@ -21,5 +33,6 @@ async function createFileStorage (_config, _internals) {
 }
 
 module.exports = {
+  init,
   createFileStorage
 };

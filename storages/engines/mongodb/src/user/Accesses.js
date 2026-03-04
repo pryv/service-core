@@ -10,7 +10,7 @@ const converters = require('./../converters');
 const generateId = require('cuid');
 const util = require('util');
 const _ = require('lodash');
-const integrity = require('business/src/integrity');
+const _internals = require('../_internals');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('storage:accesses');
 const timestamp = require('unix-timestamp');
@@ -55,8 +55,8 @@ function createTokenIfMissing (access) {
 }
 
 function addIntegrity (accessData) {
-  if (!integrity.accesses.isActive) return accessData;
-  integrity.accesses.set(accessData);
+  if (!_internals.integrityAccesses.isActive) return accessData;
+  _internals.integrityAccesses.set(accessData);
   return accessData;
 }
 
@@ -137,7 +137,7 @@ Accesses.prototype.generateToken = function () {
 };
 
 Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) {
-  if (update.modified == null || !integrity.accesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
+  if (update.modified == null || !_internals.integrityAccesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
     Accesses.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, callback);
     return;
   }
@@ -154,7 +154,7 @@ Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) 
 
     const integrityCheck = accessData.integrity;
     try {
-      integrity.accesses.set(accessData, true);
+      _internals.integrityAccesses.set(accessData, true);
     } catch (errIntegrity) {
       return callback(errIntegrity, accessData);
     }
@@ -198,7 +198,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
   update.$unset.integrity = 1;
 
   // not active return the normal callback
-  if (!integrity.accesses.isActive) return callback;
+  if (!_internals.integrityAccesses.isActive) return callback;
 
   // add a random "code" to the original update find out which events have been modified
   const integrityBatchCode = Math.random();
@@ -216,7 +216,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
     function updateIfNeeded (access) {
       delete access.integrityBatchCode; // remove integrity batch code for computation
       const previousIntegrity = access.integrity;
-      integrity.accesses.set(access, true);
+      _internals.integrityAccesses.set(access, true);
       if (previousIntegrity === access.integrity) return null;
       return {
         $unset: { integrityBatchCode: 1 },

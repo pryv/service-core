@@ -5,13 +5,10 @@
  * Refer to LICENSE file
  */
 const Readable = require('stream').Readable;
-const streamsQueryUtils = require('api-server/src/methods/helpers/streamsQueryUtils');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const handleDuplicateError = require('../Database').handleDuplicateError;
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const DeletionModesFields = require('storage/src/DeletionModesFields');
-const { localStorePrepareOptions, localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
+const _internals = require('../_internals');
 const timestamp = require('unix-timestamp');
 
 /**
@@ -35,7 +32,7 @@ module.exports = ds.createUserEvents({
 
     // prepare deletion settings
     this.deletionSettings.mode = this.settings.versioning?.deletionMode || 'keep-nothing';
-    this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.fields = _internals.DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     for (const field of this.deletionSettings.fields) {
       this.deletionSettings.updateOperatorForHistory.$unset[field] = '';
     }
@@ -50,16 +47,16 @@ module.exports = ds.createUserEvents({
   },
 
   async get (userId, query, options) {
-    const localQuery = localStorePrepareQuery(query);
-    const localOptions = localStorePrepareOptions(options);
+    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
     const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     const res = (await cursor.toArray()).map((value) => cleanResult({ value }));
     return res;
   },
 
   async getStreamed (userId, query, options) {
-    const localQuery = localStorePrepareQuery(query);
-    const localOptions = localStorePrepareOptions(options);
+    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
     const cursor = this._getCursor(userId, getMongoQuery(localQuery), localOptions);
     return readableStreamFromEventCursor(cursor);
   },
@@ -205,7 +202,7 @@ module.exports = ds.createUserEvents({
    * Local stores only - as long as SystemStreams are embedded
    */
   async removeAllNonAccountEventsForUser (userId) {
-    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const allAccountStreamIds = _internals.SystemStreamsSerializer.getAccountStreamIds();
     const query = { userId, streamIds: { $nin: allAccountStreamIds } };
     const res = await this.eventsCollection.deleteMany(query, {});
     await this.eventsFileStorage.removeAllForUser(userId);
@@ -275,7 +272,7 @@ const converters = {
     return { type: { $in: list.map(getTypeQueryValue) } };
   },
   streamsQuery: (content) => {
-    return streamsQueryUtils.toMongoDBQuery(content);
+    return _internals.streamsQueryUtils.toMongoDBQuery(content);
   }
 };
 

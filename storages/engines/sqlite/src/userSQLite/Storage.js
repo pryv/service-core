@@ -11,8 +11,7 @@ const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const migrations = require('./migrations');
-const userLocalDirectory = require('storage').userLocalDirectory;
-const ensureUserDirectory = userLocalDirectory.ensureUserDirectory;
+const _internals = require('../_internals');
 
 const CACHE_SIZE = 500;
 const VERSION = '1.0.0';
@@ -29,7 +28,7 @@ class Storage {
     }
     this.initialized = true;
     this.config = await getConfig();
-    await userLocalDirectory.init();
+    await _internals.userLocalDirectory.init();
     await migrations.migrateUserDBsIfNeeded(this);
     this.logger.debug('DB initialized');
     return this;
@@ -92,7 +91,7 @@ class Storage {
   }
 
   async dbgetPathForUser (userId) {
-    const userPath = await ensureUserDirectory(userId);
+    const userPath = await _internals.userLocalDirectory.ensureUserDirectory(userId);
     return path.join(userPath, this.id + '-' + this.getVersion() + '.sqlite');
   }
 }

@@ -7,7 +7,7 @@
 
 const BaseStoragePG = require('./BaseStoragePG');
 const generateId = require('cuid');
-const integrity = require('business/src/integrity');
+const _internals = require('../_internals');
 const { getLogger } = require('@pryv/boiler');
 const timestamp = require('unix-timestamp');
 
@@ -46,8 +46,8 @@ class AccessesPG extends BaseStoragePG {
     // apiEndpoint is a computed field — not stored in PG
     delete copy.apiEndpoint;
     // Compute integrity
-    if (integrity.accesses.isActive) {
-      integrity.accesses.set(copy);
+    if (_internals.integrityAccesses.isActive) {
+      _internals.integrityAccesses.set(copy);
     }
     return copy;
   }
@@ -81,7 +81,7 @@ class AccessesPG extends BaseStoragePG {
       $unset: { integrity: 1 }
     };
 
-    if (!integrity.accesses.isActive) {
+    if (!_internals.integrityAccesses.isActive) {
       return this.updateMany(userOrUserId, query, updateData, callback);
     }
 
@@ -96,7 +96,7 @@ class AccessesPG extends BaseStoragePG {
       const updateIfNeeded = (access) => {
         delete access.integrityBatchCode;
         const previousIntegrity = access.integrity;
-        integrity.accesses.set(access, true);
+        _internals.integrityAccesses.set(access, true);
         if (previousIntegrity === access.integrity) return null;
         return {
           $unset: { integrityBatchCode: 1 },
@@ -119,7 +119,7 @@ class AccessesPG extends BaseStoragePG {
    * Override: updateOne with integrity recomputation.
    */
   updateOne (userOrUserId, query, update, callback) {
-    if (update.modified == null || !integrity.accesses.isActive) {
+    if (update.modified == null || !_internals.integrityAccesses.isActive) {
       return this.findOneAndUpdate(userOrUserId, query, update, callback);
     }
 
@@ -135,7 +135,7 @@ class AccessesPG extends BaseStoragePG {
 
       const integrityCheck = accessData.integrity;
       try {
-        integrity.accesses.set(accessData, true);
+        _internals.integrityAccesses.set(accessData, true);
       } catch (errIntegrity) {
         return callback(errIntegrity, accessData);
       }

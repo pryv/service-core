@@ -10,9 +10,7 @@ const cuid = require('cuid');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const DatabasePG = require('../DatabasePG');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const DeletionModesFields = require('storage/src/DeletionModesFields');
-const { localStorePrepareOptions, localStorePrepareQuery } = require('storage/src/localStoreEventQueries');
+const _internals = require('../_internals');
 const timestamp = require('unix-timestamp');
 
 /**
@@ -96,7 +94,7 @@ module.exports = ds.createUserEvents({
     this.deletionSettings = {
       mode: settings.versioning?.deletionMode || 'keep-nothing'
     };
-    this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.fields = _internals.DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
     this.keepHistory = settings.versioning?.forceKeepHistory || false;
   },
@@ -112,16 +110,16 @@ module.exports = ds.createUserEvents({
   },
 
   async get (userId, query, options) {
-    const localQuery = localStorePrepareQuery(query);
-    const localOptions = localStorePrepareOptions(options);
+    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
     const { sql, params } = buildEventQuery(userId, localQuery, localOptions);
     const res = await this.db.query(sql, params);
     return res.rows.map(rowToEvent);
   },
 
   async getStreamed (userId, query, options) {
-    const localQuery = localStorePrepareQuery(query);
-    const localOptions = localStorePrepareOptions(options);
+    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
     const { sql, params } = buildEventQuery(userId, localQuery, localOptions);
     const res = await this.db.query(sql, params);
     return readableStreamFromRows(res.rows);
@@ -388,7 +386,7 @@ module.exports = ds.createUserEvents({
    * Local stores only — as long as SystemStreams are embedded.
    */
   async removeAllNonAccountEventsForUser (userId) {
-    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const allAccountStreamIds = _internals.SystemStreamsSerializer.getAccountStreamIds();
     if (allAccountStreamIds.length === 0) {
       await this.db.query('DELETE FROM event_streams WHERE user_id = $1', [userId]);
       await this.db.query('DELETE FROM events WHERE user_id = $1', [userId]);

@@ -9,24 +9,22 @@
  * Local Data Store.
  */
 const ds = require('@pryv/datastore');
-const storage = require('storage');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer'); // loaded just to init upfront
+const _internals = require('../_internals');
 const userStreams = require('./localUserStreams');
 const userEvents = require('./localUserEvents');
 const LocalTransaction = require('./LocalTransaction');
-const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
-    await SystemStreamsSerializer.init();
-    const database = await storage.getDatabase();
+    await _internals.SystemStreamsSerializer.init();
+    const database = _internals.database;
 
     // init events
     const eventsCollection = await database.getCollection({ name: 'events' });
     // file storage
-    const eventFilesStorage = await getEventFiles();
+    const eventFilesStorage = await _internals.getEventFiles();
 
     for (const item of eventsIndexes) {
       item.options.background = true;
@@ -43,7 +41,7 @@ module.exports = ds.createDataStore({
       item.options.background = true;
       await streamsCollection.createIndex(item.index, item.options);
     }
-    const userStreamsStorage = (await storage.getStorageLayer()).streams;
+    const userStreamsStorage = _internals.storageLayer.streams;
     userStreams.init(streamsCollection, userStreamsStorage);
 
     return this;

@@ -1,0 +1,16 @@
+{
+  "name": "@pryv/engine-sqlite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pryv SQLite storage engine",
+  "main": "src/index.js",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "mkdirp": "1.0.4",
+    "lru-cache": "^7.14.1",
+    "cuid": "^2.1.8",
+    "unix-timestamp": "^1.0.3",
+    "@pryv/boiler": "https://github.com/pryv/pryv-boiler.git#semver:^1.2.4",
+    "@pryv/datastore": "https://github.com/pryv/pryv-datastore.git"
+  }
+}

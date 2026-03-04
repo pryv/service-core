@@ -13,6 +13,20 @@
  * code will be physically moved here in a later cleanup phase.
  */
 
+const _internals = require('./_internals');
+
+/**
+ * Receive host internals from the barrel.
+ * Populates the engine-local _internals registry so that all engine
+ * files can access host capabilities without direct require() calls.
+ * @param {Object} receivedInternals - Map of name → value
+ */
+function init (receivedInternals) {
+  for (const [key, value] of Object.entries(receivedInternals)) {
+    _internals.set(key, value);
+  }
+}
+
 // -- BaseStorage --------------------------------------------------------
 
 /**
@@ -76,6 +90,7 @@ function createPlatformDB () {
 }
 
 module.exports = {
+  init,
   initStorageLayer,
   getUserAccountStorage,
   getUsersLocalIndex,

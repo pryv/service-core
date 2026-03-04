@@ -10,30 +10,27 @@
  * Implements the @pryv/datastore DataStore interface.
  */
 const ds = require('@pryv/datastore');
-const storage = require('storage');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const _internals = require('../_internals');
 const userStreams = require('./localUserStreamsPG');
 const userEvents = require('./localUserEventsPG');
 const LocalTransactionPG = require('./LocalTransactionPG');
-const { getEventFiles } = require('storage/src/eventFiles/getEventFiles');
 
 module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
-    await SystemStreamsSerializer.init();
+    await _internals.SystemStreamsSerializer.init();
 
     // Get the shared DatabasePG instance
-    const { getDatabasePG } = require('storage');
-    const db = await getDatabasePG();
+    const db = _internals.databasePG;
 
     // Init events
-    const eventFilesStorage = await getEventFiles();
+    const eventFilesStorage = await _internals.getEventFiles();
     userEvents.init(db, eventFilesStorage, this.settings, params.integrity.setOnEvent);
     eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
     // Init streams — reuses StorageLayer's StreamsPG via the same pattern as MongoDB
-    const userStreamsStorage = (await storage.getStorageLayer()).streams;
+    const userStreamsStorage = _internals.storageLayer.streams;
     userStreams.init(userStreamsStorage);
 
     return this;
@@ -44,9 +41,7 @@ module.exports = ds.createDataStore({
   events: userEvents,
 
   async newTransaction () {
-    const { getDatabasePG } = require('storage');
-    const db = await getDatabasePG();
-    const transaction = new LocalTransactionPG(db);
+    const transaction = new LocalTransactionPG(_internals.databasePG);
     await transaction.init();
     return transaction;
   },

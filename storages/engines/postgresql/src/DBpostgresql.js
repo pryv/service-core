@@ -15,8 +15,9 @@ class DBpostgresql {
   closed;
 
   async init () {
-    const { getDatabasePG } = require('storage');
-    this.db = await getDatabasePG();
+    const _internals = require('./_internals');
+    this.db = _internals.databasePG;
+    await this.db.ensureConnect();
     this.closed = false;
   }
 
