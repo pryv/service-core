@@ -17,7 +17,7 @@ class DB {
   queries;
 
   async init () {
-    const basePath = _internals.userFilesPath;
+    const basePath = _internals.config.path;
     mkdirp.sync(basePath);
 
     this.db = new SQLite3(basePath + '/platform-wide.db');

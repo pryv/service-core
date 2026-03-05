@@ -37,5 +37,6 @@ module.exports = {
   get softwareVersion () { return registry.softwareVersion; },
   get cache () { return registry.cache; },
   get createUserAccountStorage () { return registry.createUserAccountStorage; },
-  get getLogger () { return registry.getLogger; }
+  get getLogger () { return registry.getLogger; },
+  get config () { return registry.config; }
 };

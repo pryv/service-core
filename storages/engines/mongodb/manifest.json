@@ -9,9 +9,7 @@
     "MigrationContext",
     "softwareVersion",
     "cache",
-    "createUserAccountStorage",
-    "getLogger",
-    "databaseConfig"
+    "createUserAccountStorage"
   ],
   "configuration": {
     "configKey": "database",

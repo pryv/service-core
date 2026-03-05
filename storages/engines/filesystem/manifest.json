@@ -2,9 +2,7 @@
   "storageTypes": ["fileStorage"],
   "entrypoint": "src/index.js",
   "requiredInternals": [
-    "userLocalDirectory",
-    "getLogger",
-    "eventFilesConfig"
+    "userLocalDirectory"
   ],
   "configuration": {
     "configKey": "eventFiles",

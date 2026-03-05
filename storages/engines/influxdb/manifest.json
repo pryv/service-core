@@ -1,9 +1,7 @@
 {
   "storageTypes": ["seriesStorage"],
   "entrypoint": "src/index.js",
-  "requiredInternals": [
-    "getLogger"
-  ],
+  "requiredInternals": [],
   "configuration": {
     "configKey": "influxdb",
     "fields": {

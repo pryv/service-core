@@ -4,9 +4,7 @@
   "requiredInternals": [
     "userLocalDirectory",
     "getEventFiles",
-    "createUserAccountStorage",
-    "getLogger",
-    "userFilesPath"
+    "createUserAccountStorage"
   ],
   "configuration": {
     "configKey": "userFiles",

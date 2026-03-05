@@ -28,5 +28,6 @@ module.exports = {
       }
     });
   },
-  get getLogger () { return registry.getLogger; }
+  get getLogger () { return registry.getLogger; },
+  get config () { return registry.config; }
 };

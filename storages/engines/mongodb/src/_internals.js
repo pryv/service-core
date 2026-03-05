@@ -38,5 +38,5 @@ module.exports = {
   get cache () { return registry.cache; },
   get createUserAccountStorage () { return registry.createUserAccountStorage; },
   get getLogger () { return registry.getLogger; },
-  get databaseConfig () { return registry.databaseConfig; }
+  get config () { return registry.config; }
 };

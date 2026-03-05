@@ -16,5 +16,5 @@ module.exports = {
   set (name, value) { registry[name] = value; },
   get userLocalDirectory () { return registry.userLocalDirectory; },
   get getLogger () { return registry.getLogger; },
-  get eventFilesConfig () { return registry.eventFilesConfig; }
+  get config () { return registry.config; }
 };

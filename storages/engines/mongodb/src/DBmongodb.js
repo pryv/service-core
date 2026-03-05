@@ -17,7 +17,7 @@ class DB {
   db;
 
   async init () {
-    const settings = structuredClone(_internals.databaseConfig);
+    const settings = structuredClone(_internals.config);
     settings.name = settings.name + '-platform';
     this.db = new Database(settings);
     this.platformUnique = await this.db.getCollection({

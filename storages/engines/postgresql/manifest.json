@@ -9,8 +9,7 @@
     "MigrationContext",
     "softwareVersion",
     "cache",
-    "createUserAccountStorage",
-    "getLogger"
+    "createUserAccountStorage"
   ],
   "configuration": {
     "configKey": "postgresql",

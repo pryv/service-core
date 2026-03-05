@@ -33,5 +33,5 @@ module.exports = {
   get getEventFiles () { return registry.getEventFiles; },
   get createUserAccountStorage () { return registry.createUserAccountStorage; },
   get getLogger () { return registry.getLogger; },
-  get userFilesPath () { return registry.userFilesPath; }
+  get config () { return registry.config; }
 };

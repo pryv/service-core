@@ -17,10 +17,14 @@ const _internals = require('./_internals');
 
 /**
  * Receive host internals from the barrel.
- * @param {Object} receivedInternals - Map of name → value
+ * @param {Object} config - Engine-specific configuration from manifest configKey
+ * @param {Function} getLogger - Logger factory
+ * @param {Object} internals - Map of name → value (remaining host internals)
  */
-function init (receivedInternals) {
-  for (const [key, value] of Object.entries(receivedInternals)) {
+function init (config, getLogger, internals) {
+  _internals.set('config', config);
+  _internals.set('getLogger', getLogger);
+  for (const [key, value] of Object.entries(internals)) {
     _internals.set(key, value);
   }
 }

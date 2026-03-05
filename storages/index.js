@@ -39,11 +39,8 @@ function registerInternals (config, database, databasePG, storageLayer) {
   // Interface factory
   internals.register('createUserAccountStorage', require('storages/interfaces/baseStorage/UserAccountStorage').createUserAccountStorage);
 
-  // Logger factory + config values (so engines don't need @pryv/boiler)
-  internals.register('getLogger', getLogger);
-  internals.register('databaseConfig', config.get('database'));
-  internals.register('userFilesPath', config.get('userFiles:path'));
-  internals.register('eventFilesConfig', config.get('eventFiles'));
+  // Note: getLogger, databaseConfig, userFilesPath, eventFilesConfig removed —
+  // engines now receive these via init(config, getLogger, internals).
 }
 
 /**
@@ -51,16 +48,20 @@ function registerInternals (config, database, databasePG, storageLayer) {
  * Engines whose internals aren't satisfied (e.g. postgresql when only MongoDB is
  * configured) are silently skipped.
  */
-function initEngines () {
+function initEngines (config) {
   for (const engineName of pluginLoader.listEngines()) {
     const manifest = pluginLoader.getManifest(engineName);
-    if (!manifest || !manifest.requiredInternals || manifest.requiredInternals.length === 0) continue;
+    if (!manifest) continue;
+    const required = manifest.requiredInternals || [];
     // Skip engines whose internals are not all registered
-    if (!manifest.requiredInternals.every(name => internals.isRegistered(name))) continue;
-    const resolved = internals.resolve(manifest.requiredInternals, engineName);
+    if (!required.every(name => internals.isRegistered(name))) continue;
+    const resolved = internals.resolve(required, engineName);
+    const engineConfig = manifest.configuration?.configKey
+      ? config.get(manifest.configuration.configKey) || {}
+      : {};
     const mod = pluginLoader.getEngineModule(engineName);
     if (typeof mod.init === 'function') {
-      mod.init(resolved);
+      mod.init(engineConfig, getLogger, resolved);
     }
   }
 }
@@ -86,12 +87,17 @@ async function init (config) {
   if (!config) config = await getConfig();
   await pluginLoader.init(config);
 
-  // Pre-populate getLogger on all engine _internals so that
-  // Database/DatabasePG constructors (step 1) can use it before initEngines (step 3).
+  // Pre-populate getLogger and config on all engine _internals so that
+  // Database/DatabasePG constructors (step 1) can use them before initEngines (step 3).
   for (const engineName of pluginLoader.listEngines()) {
     try {
       const engineInternals = require(`./engines/${engineName}/src/_internals`);
       engineInternals.set('getLogger', getLogger);
+      const manifest = pluginLoader.getManifest(engineName);
+      const engineConfig = manifest?.configuration?.configKey
+        ? config.get(manifest.configuration.configKey) || {}
+        : {};
+      engineInternals.set('config', engineConfig);
     } catch (e) { /* engine may not have _internals.js */ }
   }
 
@@ -122,7 +128,7 @@ async function init (config) {
   registerInternals(config, database, databasePG, storageLayer);
 
   // 3. Initialize engines (must be before storageLayer.init which calls engine.initStorageLayer)
-  initEngines();
+  initEngines(config);
 
   // 4. StorageLayer
   const integrityAccesses = require('business/src/integrity').accesses;

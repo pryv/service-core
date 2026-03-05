@@ -25,7 +25,7 @@ module.exports = EventFiles;
 function EventFiles () { }
 
 EventFiles.prototype.init = async function () {
-  this.settings = _internals.eventFilesConfig;
+  this.settings = _internals.config;
   this.logger = _internals.getLogger('storage:eventFiles');
   await _internals.userLocalDirectory.init();
 };
