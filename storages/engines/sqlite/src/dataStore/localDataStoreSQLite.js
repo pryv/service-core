@@ -19,13 +19,11 @@ module.exports = ds.createDataStore({
   async init (params) {
     this.settings = params.settings;
 
-    await _internals.SystemStreamsSerializer.init();
-
     // init events
     const eventFilesStorage = await _internals.getEventFiles();
 
     const userStorage = await getStorage('local');
-    userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent);
+    userEvents.init(userStorage, eventFilesStorage, this.settings, params.integrity.setOnEvent, params.systemStreams);
     eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
     // streams not implemented for SQLite — stub via ds.createUserStreams({})

@@ -16,12 +16,13 @@ const logger = _internals.lazyLogger('storage:accesses-pg');
  * PostgreSQL persistence for accesses.
  */
 class AccessesPG extends BaseStoragePG {
-  constructor (db) {
+  constructor (db, integrityAccesses) {
     super(db);
     this.tableName = 'accesses';
     this.hasDeletedCol = true;
     this.hasHeadIdCol = false;
     this.defaultSort = 'name ASC';
+    this.integrityAccesses = integrityAccesses || { isActive: false, set: () => {} };
   }
 
   /**
@@ -45,8 +46,8 @@ class AccessesPG extends BaseStoragePG {
     // apiEndpoint is a computed field — not stored in PG
     delete copy.apiEndpoint;
     // Compute integrity
-    if (_internals.integrityAccesses.isActive) {
-      _internals.integrityAccesses.set(copy);
+    if (this.integrityAccesses.isActive) {
+      this.integrityAccesses.set(copy);
     }
     return copy;
   }
@@ -80,7 +81,7 @@ class AccessesPG extends BaseStoragePG {
       $unset: { integrity: 1 }
     };
 
-    if (!_internals.integrityAccesses.isActive) {
+    if (!this.integrityAccesses.isActive) {
       return this.updateMany(userOrUserId, query, updateData, callback);
     }
 
@@ -95,7 +96,7 @@ class AccessesPG extends BaseStoragePG {
       const updateIfNeeded = (access) => {
         delete access.integrityBatchCode;
         const previousIntegrity = access.integrity;
-        _internals.integrityAccesses.set(access, true);
+        this.integrityAccesses.set(access, true);
         if (previousIntegrity === access.integrity) return null;
         return {
           $unset: { integrityBatchCode: 1 },
@@ -118,7 +119,7 @@ class AccessesPG extends BaseStoragePG {
    * Override: updateOne with integrity recomputation.
    */
   updateOne (userOrUserId, query, update, callback) {
-    if (update.modified == null || !_internals.integrityAccesses.isActive) {
+    if (update.modified == null || !this.integrityAccesses.isActive) {
       return this.findOneAndUpdate(userOrUserId, query, update, callback);
     }
 
@@ -134,7 +135,7 @@ class AccessesPG extends BaseStoragePG {
 
       const integrityCheck = accessData.integrity;
       try {
-        _internals.integrityAccesses.set(accessData, true);
+        this.integrityAccesses.set(accessData, true);
       } catch (errIntegrity) {
         return callback(errIntegrity, accessData);
       }

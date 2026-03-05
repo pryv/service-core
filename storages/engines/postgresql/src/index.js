@@ -42,7 +42,7 @@ function initStorageLayer (storageLayer, connection, options) {
     maxAge: options.passwordResetRequestMaxAge
   });
   storageLayer.sessions = new SessionsPG(connection, { maxAge: options.sessionMaxAge });
-  storageLayer.accesses = new AccessesPG(connection);
+  storageLayer.accesses = new AccessesPG(connection, options.integrityAccesses);
   storageLayer.profile = new ProfilePG(connection);
   storageLayer.streams = new StreamsPG(connection);
   storageLayer.webhooks = new WebhooksPG(connection);

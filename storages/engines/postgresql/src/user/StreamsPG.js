@@ -8,13 +8,14 @@
 const BaseStoragePG = require('./BaseStoragePG');
 const _internals = require('../_internals');
 const timestamp = require('unix-timestamp');
+const treeUtils = require('../../../../shared/treeUtils');
 
 /**
  * PostgreSQL persistence for streams (StorageLayer component).
  *
  * Notes on tree handling:
- * - MongoDB stores streams flat and rebuilds the tree on read (_internals.treeUtils.buildTree).
- * - MongoDB flattens the tree on write (_internals.treeUtils.flattenTree).
+ * - MongoDB stores streams flat and rebuilds the tree on read (treeUtils.buildTree).
+ * - MongoDB flattens the tree on write (treeUtils.flattenTree).
  * - In PG, streams are stored flat with a `path` column for descendant queries.
  * - We still build/flatten the tree for API compatibility.
  */
@@ -58,7 +59,7 @@ class StreamsPG extends BaseStoragePG {
     this.db.query(sql, where.params)
       .then((res) => {
         const items = this.applyExclusions(this.rowsToItems(res.rows), excludeProps);
-        callback(null, _internals.treeUtils.buildTree(items));
+        callback(null, treeUtils.buildTree(items));
       })
       .catch(callback);
   }
@@ -135,7 +136,7 @@ class StreamsPG extends BaseStoragePG {
    */
   insertMany (userOrUserId, items, callback) {
     // Flatten tree structure to a flat array
-    let flatItems = _internals.treeUtils.flattenTree(items);
+    let flatItems = treeUtils.flattenTree(items);
     // Build paths from the tree structure and clean up deletions
     const pathMap = {};
     flatItems = flatItems.map((s) => {

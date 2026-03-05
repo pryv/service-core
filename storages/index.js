@@ -28,27 +28,13 @@ function registerInternals (config, database, databasePG, storageLayer) {
 
   // Static modules from storage
   internals.register('userLocalDirectory', require('storage/src/userLocalDirectory'));
-  internals.register('DeletionModesFields', require('storage/src/DeletionModesFields'));
-  internals.register('localStoreEventQueries', require('storage/src/localStoreEventQueries'));
   internals.register('getEventFiles', require('storage/src/eventFiles/getEventFiles').getEventFiles);
   internals.register('migrations', require('storage/src/migrations/index'));
   internals.register('MigrationContext', require('storage/src/migrations/MigrationContext'));
   internals.register('softwareVersion', require('storage/package.json').version);
 
-  // Static modules from business
-  internals.register('SystemStreamsSerializer', require('business/src/system-streams/serializer'));
-  internals.register('StreamProperties', require('business/src/streams').StreamProperties);
-  internals.register('integrityAccesses', require('business/src/integrity').accesses);
-
-  // Static module from api-server
-  internals.register('streamsQueryUtils', require('api-server/src/methods/helpers/streamsQueryUtils'));
-
   // Cache component
   internals.register('cache', require('cache'));
-
-  // Utils
-  internals.register('encryption', require('utils').encryption);
-  internals.register('treeUtils', require('utils').treeUtils);
 
   // Interface factory
   internals.register('createUserAccountStorage', require('storages/interfaces/baseStorage/UserAccountStorage').createUserAccountStorage);
@@ -139,7 +125,8 @@ async function init (config) {
   initEngines();
 
   // 4. StorageLayer
-  await storageLayer.init(connection);
+  const integrityAccesses = require('business/src/integrity').accesses;
+  await storageLayer.init(connection, { integrityAccesses });
 
   // 5. UserAccountStorage
   const uaEngine = getStorageEngine(config, 'storageUserAccount');

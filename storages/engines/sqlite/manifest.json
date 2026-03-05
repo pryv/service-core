@@ -3,11 +3,7 @@
   "entrypoint": "src/index.js",
   "requiredInternals": [
     "userLocalDirectory",
-    "DeletionModesFields",
-    "localStoreEventQueries",
     "getEventFiles",
-    "SystemStreamsSerializer",
-    "encryption",
     "createUserAccountStorage",
     "getLogger",
     "userFilesPath"

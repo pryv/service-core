@@ -69,6 +69,15 @@ class Mall {
     const { getUserAccountStorage } = require('storage');
     const userAccountStorage = await getUserAccountStorage();
     const { integrity } = require('business');
+
+    // Pre-compute system streams data so engines don't need the serializer
+    const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+    await SystemStreamsSerializer.init();
+    const systemStreams = {
+      accountStreamIds: SystemStreamsSerializer.getAccountStreamIds(),
+      readableTree: SystemStreamsSerializer.getReadable()
+    };
+
     for (const [storeId, store] of this.storesById) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
       const params = {
@@ -77,6 +86,9 @@ class Mall {
         logger: getLogger(`mall:${storeId}`),
         integrity: { setOnEvent: getEventIntegrityFn(storeId, integrity) }
       };
+      if (storeId === 'local') {
+        params.systemStreams = systemStreams;
+      }
       await store.init(params);
     }
     this._streams = new MallUserStreams(this);

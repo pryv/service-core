@@ -18,7 +18,6 @@ module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
-    await _internals.SystemStreamsSerializer.init();
     const database = _internals.database;
 
     // init events
@@ -32,7 +31,7 @@ module.exports = ds.createDataStore({
     }
     // forward settings to userEvents
     userEvents.settings = this.settings;
-    userEvents.init(eventsCollection, eventFilesStorage, params.integrity.setOnEvent);
+    userEvents.init(eventsCollection, eventFilesStorage, params.integrity.setOnEvent, params.systemStreams);
     eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
     // init streams
@@ -42,7 +41,7 @@ module.exports = ds.createDataStore({
       await streamsCollection.createIndex(item.index, item.options);
     }
     const userStreamsStorage = _internals.storageLayer.streams;
-    userStreams.init(streamsCollection, userStreamsStorage);
+    userStreams.init(streamsCollection, userStreamsStorage, params.systemStreams);
 
     return this;
   },

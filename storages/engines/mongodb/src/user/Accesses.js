@@ -20,10 +20,19 @@ module.exports = Accesses;
  * DB persistence for accesses.
  *
  * @param {Database} database
+ * @param {Object} integrityAccesses - { isActive, set } from business/integrity
  * @constructor
  */
-function Accesses (database) {
+function Accesses (database, integrityAccesses) {
   Accesses.super_.call(this, database);
+  this.integrityAccesses = integrityAccesses || { isActive: false, set: () => {} };
+
+  const self = this;
+  function addIntegrity (accessData) {
+    if (!self.integrityAccesses.isActive) return accessData;
+    self.integrityAccesses.set(accessData);
+    return accessData;
+  }
 
   _.extend(this.converters, {
     itemDefaults: [
@@ -51,12 +60,6 @@ util.inherits(Accesses, BaseStorage);
 function createTokenIfMissing (access) {
   access.token = access.token || generateId();
   return access;
-}
-
-function addIntegrity (accessData) {
-  if (!_internals.integrityAccesses.isActive) return accessData;
-  _internals.integrityAccesses.set(accessData);
-  return accessData;
 }
 
 const indexes = [
@@ -136,7 +139,7 @@ Accesses.prototype.generateToken = function () {
 };
 
 Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) {
-  if (update.modified == null || !_internals.integrityAccesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
+  if (update.modified == null || !this.integrityAccesses.isActive) { // update only if "modified" is set .. to avoid all "calls" and "lastused" updated
     Accesses.super_.prototype.findOneAndUpdate.call(this, userOrUserId, query, update, callback);
     return;
   }
@@ -153,7 +156,7 @@ Accesses.prototype.updateOne = function (userOrUserId, query, update, callback) 
 
     const integrityCheck = accessData.integrity;
     try {
-      _internals.integrityAccesses.set(accessData, true);
+      that.integrityAccesses.set(accessData, true);
     } catch (errIntegrity) {
       return callback(errIntegrity, accessData);
     }
@@ -197,7 +200,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
   update.$unset.integrity = 1;
 
   // not active return the normal callback
-  if (!_internals.integrityAccesses.isActive) return callback;
+  if (!accessesStore.integrityAccesses.isActive) return callback;
 
   // add a random "code" to the original update find out which events have been modified
   const integrityBatchCode = Math.random();
@@ -215,7 +218,7 @@ function getResetIntegrity (accessesStore, userOrUserId, update, callback) {
     function updateIfNeeded (access) {
       delete access.integrityBatchCode; // remove integrity batch code for computation
       const previousIntegrity = access.integrity;
-      _internals.integrityAccesses.set(access, true);
+      accessesStore.integrityAccesses.set(access, true);
       if (previousIntegrity === access.integrity) return null;
       return {
         $unset: { integrityBatchCode: 1 },

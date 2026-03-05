@@ -19,19 +19,18 @@ module.exports = ds.createDataStore({
 
   async init (params) {
     this.settings = params.settings;
-    await _internals.SystemStreamsSerializer.init();
 
     // Get the shared DatabasePG instance
     const db = _internals.databasePG;
 
     // Init events
     const eventFilesStorage = await _internals.getEventFiles();
-    userEvents.init(db, eventFilesStorage, this.settings, params.integrity.setOnEvent);
+    userEvents.init(db, eventFilesStorage, this.settings, params.integrity.setOnEvent, params.systemStreams);
     eventFilesStorage.attachToEventStore(userEvents, params.integrity.setOnEvent);
 
     // Init streams — reuses StorageLayer's StreamsPG via the same pattern as MongoDB
     const userStreamsStorage = _internals.storageLayer.streams;
-    userStreams.init(userStreamsStorage);
+    userStreams.init(userStreamsStorage, params.systemStreams);
 
     return this;
   },

@@ -10,8 +10,9 @@ const cuid = require('cuid');
 const ds = require('@pryv/datastore');
 const errors = ds.errors;
 const DatabasePG = require('../DatabasePG');
-const _internals = require('../_internals');
 const timestamp = require('unix-timestamp');
+const DeletionModesFields = require('../../../../shared/DeletionModesFields');
+const localStoreEventQueries = require('../../../../shared/localStoreEventQueries');
 
 /**
  * Column mapping: camelCase → snake_case for events table.
@@ -86,15 +87,16 @@ module.exports = ds.createUserEvents({
   keepHistory: false,
   setIntegrityOnEvent: null,
 
-  init (db, eventsFileStorage, settings, setIntegrityOnEventFn) {
+  init (db, eventsFileStorage, settings, setIntegrityOnEventFn, systemStreams) {
     this.db = db;
     this.eventsFileStorage = eventsFileStorage;
     this.settings = settings;
     this.setIntegrityOnEvent = setIntegrityOnEventFn;
+    this.accountStreamIds = systemStreams?.accountStreamIds || [];
     this.deletionSettings = {
       mode: settings.versioning?.deletionMode || 'keep-nothing'
     };
-    this.deletionSettings.fields = _internals.DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
+    this.deletionSettings.fields = DeletionModesFields[this.deletionSettings.mode] || ['integrity'];
     this.deletionSettings.removeAttachments = this.deletionSettings.fields.includes('attachments');
     this.keepHistory = settings.versioning?.forceKeepHistory || false;
   },
@@ -110,16 +112,16 @@ module.exports = ds.createUserEvents({
   },
 
   async get (userId, query, options) {
-    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
-    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
+    const localQuery = localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = localStoreEventQueries.localStorePrepareOptions(options);
     const { sql, params } = buildEventQuery(userId, localQuery, localOptions);
     const res = await this.db.query(sql, params);
     return res.rows.map(rowToEvent);
   },
 
   async getStreamed (userId, query, options) {
-    const localQuery = _internals.localStoreEventQueries.localStorePrepareQuery(query);
-    const localOptions = _internals.localStoreEventQueries.localStorePrepareOptions(options);
+    const localQuery = localStoreEventQueries.localStorePrepareQuery(query);
+    const localOptions = localStoreEventQueries.localStorePrepareOptions(options);
     const { sql, params } = buildEventQuery(userId, localQuery, localOptions);
     const res = await this.db.query(sql, params);
     return readableStreamFromRows(res.rows);
@@ -386,7 +388,7 @@ module.exports = ds.createUserEvents({
    * Local stores only — as long as SystemStreams are embedded.
    */
   async removeAllNonAccountEventsForUser (userId) {
-    const allAccountStreamIds = _internals.SystemStreamsSerializer.getAccountStreamIds();
+    const allAccountStreamIds = this.accountStreamIds;
     if (allAccountStreamIds.length === 0) {
       await this.db.query('DELETE FROM event_streams WHERE user_id = $1', [userId]);
       await this.db.query('DELETE FROM events WHERE user_id = $1', [userId]);

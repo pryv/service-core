@@ -7,6 +7,7 @@
 
 const timestamp = require('unix-timestamp');
 const _internals = require('./_internals');
+const encryption = require('../../../shared/encryption');
 
 let db;
 
@@ -47,7 +48,7 @@ module.exports = _internals.createUserAccountStorage({
       [userId, historyLength]
     );
     for (const row of res.rows) {
-      if (await _internals.encryption.compare(password, row.hash)) {
+      if (await encryption.compare(password, row.hash)) {
         return true;
       }
     }

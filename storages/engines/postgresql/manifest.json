@@ -4,18 +4,11 @@
   "requiredInternals": [
     "databasePG",
     "storageLayer",
-    "DeletionModesFields",
-    "localStoreEventQueries",
     "getEventFiles",
     "migrations",
     "MigrationContext",
     "softwareVersion",
-    "SystemStreamsSerializer",
-    "StreamProperties",
-    "integrityAccesses",
     "cache",
-    "encryption",
-    "treeUtils",
     "createUserAccountStorage",
     "getLogger"
   ],

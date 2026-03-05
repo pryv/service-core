@@ -36,8 +36,10 @@ class StorageLayer {
    * Initialize the storage layer.
    * @param {Object} connection - Database connection (MongoDB Database instance,
    *   DatabasePG instance, or null for SQLite).
+   * @param {Object} [options] - Additional options from the barrel.
+   * @param {Object} [options.integrityAccesses] - Integrity module for accesses.
    */
-  async init (connection) {
+  async init (connection, options = {}) {
     if (this.connection != null) {
       this.logger.info('Already initialized');
       return;
@@ -54,7 +56,8 @@ class StorageLayer {
     const engineModule = pluginLoader.getEngineModule(this.engine);
     engineModule.initStorageLayer(this, connection, {
       passwordResetRequestMaxAge,
-      sessionMaxAge
+      sessionMaxAge,
+      integrityAccesses: options.integrityAccesses
     });
 
     // Validate all storage instances against their interface contracts

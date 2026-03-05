@@ -9,6 +9,7 @@ const converters = require('./../converters');
 const util = require('util');
 const _internals = require('../_internals');
 const _ = require('lodash');
+const treeUtils = require('../../../../shared/treeUtils');
 const timestamp = require('unix-timestamp');
 
 module.exports = Streams;
@@ -29,7 +30,7 @@ function Streams (database) {
       // converters.deletionToDB,
     ],
     itemsToDB: [
-      _internals.treeUtils.flattenTree,
+      treeUtils.flattenTree,
       cleanupDeletions
     ],
     updateToDB: [
@@ -37,7 +38,7 @@ function Streams (database) {
       converters.getKeyValueSetUpdateFn('clientData')
     ],
     itemFromDB: [converters.deletionFromDB],
-    itemsFromDB: [_internals.treeUtils.buildTree],
+    itemsFromDB: [treeUtils.buildTree],
     convertIdToItemId: 'streamId'
   });
 

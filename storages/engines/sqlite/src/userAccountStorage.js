@@ -17,6 +17,7 @@ const SQLite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const _internals = require('./_internals');
+const encryption = require('../../../shared/encryption');
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';
@@ -94,7 +95,7 @@ async function passwordExistsInHistory (userId, password, historyLength) {
   const db = await getUserDB(userId);
   const getLastN = db.prepare('SELECT hash, time FROM passwords ORDER BY time DESC LIMIT ?');
   for (const entry of getLastN.iterate(historyLength)) {
-    if (await _internals.encryption.compare(password, entry.hash)) {
+    if (await encryption.compare(password, entry.hash)) {
       return true;
     }
   }

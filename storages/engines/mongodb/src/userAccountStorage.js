@@ -13,6 +13,7 @@
 
 const timestamp = require('unix-timestamp');
 const _internals = require('./_internals');
+const encryption = require('../../../shared/encryption');
 
 let passwordsCollection = null;
 let storesKeyValueCollection = null;
@@ -105,7 +106,7 @@ async function getCurrentPasswordTime (userId) {
 async function passwordExistsInHistory (userId, password, historyLength) {
   const lastCursor = await passwordsCollection.find({ userId }, { sort: { time: -1 }, limit: historyLength });
   for await (const entry of lastCursor) {
-    if (await _internals.encryption.compare(password, entry.hash)) {
+    if (await encryption.compare(password, entry.hash)) {
       return true;
     }
   }

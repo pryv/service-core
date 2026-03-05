@@ -10,6 +10,13 @@ const assert = require('assert');
 const _ = require('lodash');
 const ds = require('@pryv/datastore');
 const _internals = require('../_internals');
+const treeUtils = require('../../../../shared/treeUtils');
+
+const STREAM_PROPERTIES = [
+  'id', 'name', 'parentId', 'clientData', 'children',
+  'trashed', 'created', 'createdBy', 'modified', 'modifiedBy'
+];
+
 let visibleStreamsTree = [];
 
 /**
@@ -19,10 +26,10 @@ module.exports = ds.createUserStreams({
   userStreamsStorage: null,
   streamsCollection: null,
 
-  init (streamsCollection, userStreamsStorage) {
+  init (streamsCollection, userStreamsStorage, systemStreams) {
     this.userStreamsStorage = userStreamsStorage;
     this.streamsCollection = streamsCollection;
-    loadVisibleStreamsTree();
+    loadVisibleStreamsTree(systemStreams);
   },
 
   async get (userId, query) {
@@ -31,7 +38,7 @@ module.exports = ds.createUserStreams({
       return structuredClone(allStreams);
     } else {
       // i.e. default behavior (return non-trashed items)
-      return _internals.treeUtils.filterTree(allStreams, false /* no orphans */, (stream) => !stream.trashed);
+      return treeUtils.filterTree(allStreams, false /* no orphans */, (stream) => !stream.trashed);
     }
   },
 
@@ -41,7 +48,7 @@ module.exports = ds.createUserStreams({
     const allStreams = await this._getAllFromAccountAndCache(userId);
     let stream = null;
 
-    const foundStream = _internals.treeUtils.findById(allStreams, streamId); // find the stream
+    const foundStream = treeUtils.findById(allStreams, streamId); // find the stream
     if (foundStream != null) {
       const childrenDepth = Object.hasOwnProperty.call(query, 'childrenDepth') ? query.childrenDepth : -1;
       stream = cloneStream(foundStream, childrenDepth);
@@ -52,7 +59,7 @@ module.exports = ds.createUserStreams({
     if (!query.includeTrashed) {
       if (stream.trashed) return null;
       // i.e. default behavior (return non-trashed items)
-      stream.children = _internals.treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
+      stream.children = treeUtils.filterTree(stream.children, false /* no orphans */, (stream) => !stream.trashed);
     }
 
     return stream;
@@ -134,7 +141,7 @@ function cloneStream (stream, childrenDepth) {
   if (childrenDepth === -1) {
     return structuredClone(stream);
   } else {
-    const StreamPropsWithoutChildren = _internals.StreamProperties.filter((p) => p !== 'children');
+    const StreamPropsWithoutChildren = STREAM_PROPERTIES.filter((p) => p !== 'children');
     const copy = _.pick(stream, StreamPropsWithoutChildren);
     if (childrenDepth === 0) {
       copy.childrenHidden = true;
@@ -149,11 +156,9 @@ function cloneStream (stream, childrenDepth) {
 /**
  * @returns {void}
  */
-function loadVisibleStreamsTree () {
-  try {
-    visibleStreamsTree = _internals.SystemStreamsSerializer.getReadable();
+function loadVisibleStreamsTree (systemStreams) {
+  if (systemStreams?.readableTree) {
+    visibleStreamsTree = systemStreams.readableTree;
     ds.defaults.applyOnStreams(visibleStreamsTree);
-  } catch (err) {
-    console.log('This should be fixed!! It happens when the system streams are not yet loaded during some test suites.. ', err);
   }
 }
