@@ -6,7 +6,7 @@
  */
 
 const cuid = require('cuid');
-const userLocalDirectory = require('../../src/userLocalDirectory');
+const userLocalDirectory = require('../../../test/helpers').userLocalDirectory;
 const Storage = require('storages/engines/sqlite/src/userSQLite/Storage');
 const conformanceTests = require('storages/interfaces/auditStorage/conformance/AuditStorage.test');
 

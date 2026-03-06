@@ -5,7 +5,6 @@
  * Refer to LICENSE file
  */
 
-require('test-helpers/src/api-server-tests-config');
 const concurrentSafeWrite = require('storages/engines/sqlite/src/concurrentSafeWrite');
 const assert = require('node:assert');
 

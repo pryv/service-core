@@ -5,10 +5,8 @@
  * Refer to LICENSE file
  */
 
-require('../../test-helpers');
-
-const InfluxConnection = require('business').series.InfluxConnection;
-const conformanceTests = require('../../conformance/InfluxConnection.test');
+const InfluxConnection = require('../src/influx_connection');
+const conformanceTests = require('./conformance/InfluxConnection.test');
 
 describe('[ICFM] InfluxConnection conformance', () => {
   conformanceTests(() => new InfluxConnection({ host: '127.0.0.1' }));

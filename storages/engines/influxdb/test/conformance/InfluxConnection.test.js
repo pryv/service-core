@@ -16,7 +16,7 @@
  */
 module.exports = function conformanceTests (getConnection) {
   const assert = require('node:assert');
-  const { validateInfluxConnection } = require('../../src/interfaces/InfluxConnection');
+  const { validateSeriesConnection: validateInfluxConnection } = require('storages/interfaces/seriesStorage/SeriesConnection');
 
   const testDbName = 'pryv_test_conformance_influx';
 

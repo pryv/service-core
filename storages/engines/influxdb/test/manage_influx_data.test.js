@@ -5,25 +5,22 @@
  * Refer to LICENSE file
  */
 
-require('../../test-helpers');
-
 const assert = require('node:assert');
 
 // Tests pertaining to managing influx data - acceptance tests that actually write.
 
-const { getConfig } = require('@pryv/boiler');
+const helpers = require('../../../test/helpers');
 const influx = require('influx');
 const series = require('business').series;
 const Repository = series.Repository;
 const DataMatrix = series.DataMatrix;
-const userStorage = require('test-helpers').dependencies.storage.user.events;
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const userStorage = helpers.dependencies.storage.user.events;
+const SystemStreamsSerializer = helpers.SystemStreamsSerializer;
 describe('[MXDB] Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: '127.0.0.1'
   });
   before(async () => {
-    await getConfig();
     SystemStreamsSerializer.init();
   });
   // TODO beforeEach delete the measurement

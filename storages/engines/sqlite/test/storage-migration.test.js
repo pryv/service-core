@@ -7,7 +7,7 @@
 
 /* global assert */
 
-const setUserBasePathTestOnly = require('storage').userLocalDirectory.setBasePathTestOnly;
+const setUserBasePathTestOnly = require('../../../test/helpers').userLocalDirectory.setBasePathTestOnly;
 
 const path = require('path');
 const { copy, pathExists } = require('fs-extra');
@@ -15,7 +15,7 @@ const cuid = require('cuid');
 const migrate0to1 = require('storages/engines/sqlite/src/userSQLite/migrations/1');
 const UserDatabase = require('storages/engines/sqlite/src/userSQLite/UserDatabase');
 const os = require('os');
-const { getLogger } = require('@pryv/boiler');
+const { getLogger } = require('../../../test/helpers');
 const Storage = require('storages/engines/sqlite/src/userSQLite/Storage');
 
 describe('[SQLM] SQLite user-centric storage migration', () => {
