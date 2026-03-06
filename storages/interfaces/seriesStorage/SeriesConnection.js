@@ -17,9 +17,7 @@ const REQUIRED_METHODS = [
   'dropMeasurement',
   'writePoints',
   'query',
-  'getDatabases',
-  'exportDatabase',
-  'importDatabase'
+  'getDatabases'
 ];
 
 /**

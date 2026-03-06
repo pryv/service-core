@@ -11,8 +11,5 @@ module.exports = {
   Repository: require('./series/repository'),
   BatchRequest: batchRequest.BatchRequest,
   DataMatrix: require('./series/data_matrix'),
-  ParseFailure: require('./series/errors').ParseFailure,
-  interfaces: {
-    InfluxConnection: require('./interfaces/InfluxConnection')
-  }
+  ParseFailure: require('./series/errors').ParseFailure
 };
