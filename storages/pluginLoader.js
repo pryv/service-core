@@ -15,24 +15,24 @@
  * Usage:
  *   const pluginLoader = require('storages/pluginLoader');
  *   await pluginLoader.init(config);
- *   const baseStorage = await pluginLoader.create('baseStorage', engineConfig);
+ *   const engine = pluginLoader.getEngineModule(pluginLoader.getEngineFor('platformStorage'));
+ *   const platformDB = engine.createPlatformDB();
  */
 
 const path = require('path');
 const fs = require('fs');
 const { validateManifest, VALID_STORAGE_TYPES } = require('./manifest-schema');
-const internals = require('./internals');
 
 const ENGINES_DIR = path.join(__dirname, 'engines');
 
-// storageType → factory function name
-const FACTORY_NAMES = {
-  baseStorage: 'createBaseStorage',
-  dataStore: 'createDataStore',
-  platformStorage: 'createPlatformStorage',
-  seriesStorage: 'createSeriesStorage',
-  fileStorage: 'createFileStorage',
-  auditStorage: 'createAuditStorage'
+// storageType → required exported methods
+const REQUIRED_EXPORTS = {
+  baseStorage: ['initStorageLayer', 'getUserAccountStorage', 'getUsersLocalIndex'],
+  platformStorage: ['createPlatformDB'],
+  dataStore: ['getDataStoreModule'],
+  seriesStorage: ['createSeriesConnection'],
+  fileStorage: ['createFileStorage'],
+  auditStorage: ['createAuditStorage']
 };
 
 /**
@@ -76,8 +76,30 @@ function discover () {
     engines[engineName] = {
       manifest,
       dir: engineDir,
-      module: null // lazy-loaded on first create()
+      module: null // lazy-loaded on first getEngineModule()
     };
+  }
+}
+
+/**
+ * Validate that all discovered engines export the required methods
+ * for their declared storageTypes. Called after discover().
+ */
+function validateEngineExports () {
+  for (const [engineName, engine] of Object.entries(engines)) {
+    const mod = getEngineModule(engineName);
+    for (const storageType of engine.manifest.storageTypes) {
+      const required = REQUIRED_EXPORTS[storageType];
+      if (!required) continue;
+      for (const method of required) {
+        if (typeof mod[method] !== 'function') {
+          throw new Error(
+            `Engine "${engineName}" declares storageType "${storageType}" ` +
+            `but does not export required method "${method}"`
+          );
+        }
+      }
+    }
   }
 }
 
@@ -217,6 +239,7 @@ function resolveLegacyEngine (config, storageType) {
 async function init (config) {
   if (initialized) return;
   discover();
+  validateEngineExports();
   resolveConfig(config);
   initialized = true;
 }
@@ -245,46 +268,6 @@ function getConfigFor (storageType) {
   }
   const entry = resolvedConfig[storageType];
   return entry ? entry.config : {};
-}
-
-/**
- * Create a storage instance for the given storageType.
- * Calls the engine's factory function with config and internals.
- *
- * @param {string} storageType - One of VALID_STORAGE_TYPES
- * @param {Object} [extraConfig] - Additional config to merge with engine config
- * @returns {Promise<Object>} The created storage instance
- */
-async function create (storageType, extraConfig) {
-  const engineName = getEngineFor(storageType);
-  if (!engineName) {
-    throw new Error(`No engine configured for storageType "${storageType}"`);
-  }
-
-  const engine = engines[engineName];
-  if (!engine) {
-    throw new Error(`Engine "${engineName}" for storageType "${storageType}" not found. Discovered engines: ${Object.keys(engines).join(', ') || '(none)'}`);
-  }
-
-  // Check this engine supports the requested storageType
-  if (!engine.manifest.storageTypes.includes(storageType)) {
-    throw new Error(`Engine "${engineName}" does not support storageType "${storageType}". It supports: ${engine.manifest.storageTypes.join(', ')}`);
-  }
-
-  const factoryName = FACTORY_NAMES[storageType];
-  const mod = getEngineModule(engineName);
-
-  if (typeof mod[factoryName] !== 'function') {
-    throw new Error(`Engine "${engineName}" does not export factory "${factoryName}" for storageType "${storageType}"`);
-  }
-
-  // Resolve internals
-  const resolvedInternals = internals.resolve(engine.manifest.requiredInternals, engineName);
-
-  // Merge engine config with extra config
-  const config = { ...getConfigFor(storageType), ...extraConfig };
-
-  return await mod[factoryName](config, resolvedInternals);
 }
 
 /**
@@ -319,13 +302,12 @@ function reset () {
 module.exports = {
   init,
   discover,
-  create,
   getEngineFor,
   getConfigFor,
   getEngineModule,
   listEngines,
   getManifest,
   reset,
-  FACTORY_NAMES,
+  REQUIRED_EXPORTS,
   VALID_STORAGE_TYPES
 };
