@@ -10,29 +10,18 @@
  */
 
 const { promisify } = require('util');
-const helpers = require('test-helpers');
+const helpers = require('../../../../test/helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
 
 const assert = require('node:assert');
-
-const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
-
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { SystemStreamsSerializer, getUsersLocalIndex, platform, config } = helpers;
+const mongoFolder = config.mongoFolder;
 
 const { getVersions } = require('./util');
 
-const { getUsersLocalIndex } = require('storage');
-
-const { platform } = require('platform');
-
-// MongoDB-specific migration test — skip in PG mode
 describe('[MG80] Migration - 1.8.0', function () {
-  if (process.env.STORAGE_ENGINE === 'postgresql') {
-    before(function () { this.skip(); });
-    return;
-  }
   this.timeout(20000);
   let initialEventsUsers;
   let usersIndex;

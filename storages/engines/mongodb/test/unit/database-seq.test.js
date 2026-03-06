@@ -7,14 +7,13 @@
 
 const assert = require('node:assert');
 const Database = require('storages/engines/mongodb/src/Database');
-const { getConfig } = require('@pryv/boiler');
+const { config } = require('../../../../test/helpers');
 
 describe('[DBSE] Database', () => {
   let connectionSettings;
   let database;
   beforeEach(async () => {
-    const config = await getConfig();
-    connectionSettings = structuredClone(config.get('database'));
+    connectionSettings = structuredClone(config);
     connectionSettings.name = 'pryv-node-test';
     database = new Database(connectionSettings);
     await database.ensureConnect();

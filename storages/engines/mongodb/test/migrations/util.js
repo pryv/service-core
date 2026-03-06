@@ -8,11 +8,9 @@ const _ = require('lodash');
 const async = require('async');
 
 const Versions = require('storages/engines/mongodb/src/Versions');
-const migrations = require('../../src/migrations');
-const helpers = require('test-helpers');
+const helpers = require('../../../../test/helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
-const { getLogger } = require('@pryv/boiler');
 
 module.exports = {
   compareIndexes,
@@ -43,10 +41,10 @@ function compareIndexes (expected, actual) {
 
 function getVersions (/* migration1Id, migration2Id, ... */) {
   const pickArgs = [].slice.call(arguments);
-  pickArgs.unshift(migrations);
+  pickArgs.unshift(helpers.migrations);
   const pickedMigrations = _.pick.apply(_, pickArgs);
   return new Versions(database,
-    getLogger('versions'),
+    helpers.getLogger('versions'),
     pickedMigrations);
 }
 

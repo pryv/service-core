@@ -12,6 +12,7 @@ const fs = require('fs'),
       chalk = require('chalk');
 
 const componentsPath = path.resolve(__dirname, '../components'),
+      storagesPath = path.resolve(__dirname, '../storages'),
       args = process.argv.slice(2);
 
 if (args.length === 0) {
@@ -39,14 +40,41 @@ process.on('SIGINT', () => {
 });
 
 let status = 0;
-const components = fs.readdirSync(componentsPath);
-for (const name of components) {
-  if (interrupted) break;
 
-  const subPath = path.join(componentsPath, name);
-  if (!fs.existsSync(path.join(subPath, 'package.json'))) {
-    continue;
+// Build list of runnable entries: components/* + storages/ + storages/engines/*
+const entries = [];
+for (const name of fs.readdirSync(componentsPath)) {
+  const dir = path.join(componentsPath, name);
+  if (fs.existsSync(path.join(dir, 'package.json'))) {
+    entries.push({ name, dir });
   }
+}
+if (fs.existsSync(path.join(storagesPath, 'package.json'))) {
+  entries.push({ name: 'storages', dir: storagesPath });
+}
+const enginesDir = path.join(storagesPath, 'engines');
+const storageEngine = process.env.STORAGE_ENGINE || '';
+if (fs.existsSync(enginesDir)) {
+  for (const eng of fs.readdirSync(enginesDir)) {
+    const dir = path.join(enginesDir, eng);
+    if (!fs.existsSync(path.join(dir, 'package.json'))) continue;
+    // Skip engine test suites that don't match the active STORAGE_ENGINE.
+    // e.g. when STORAGE_ENGINE=postgresql, skip storages:mongodb and vice versa.
+    if (storageEngine && eng !== storageEngine) {
+      const manifestPath = path.join(dir, 'manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (manifest.storageTypes && manifest.storageTypes.includes('baseStorage')) {
+          continue; // this is a primary storage engine that doesn't match — skip
+        }
+      }
+    }
+    entries.push({ name: `storages:${eng}`, dir });
+  }
+}
+
+for (const { name, dir: subPath } of entries) {
+  if (interrupted) break;
 
   if (singleComponent && singleComponent != name) {
     continue;

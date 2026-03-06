@@ -10,33 +10,22 @@
  */
 
 const util = require('util');
-const helpers = require('test-helpers');
+const helpers = require('../../../../test/helpers');
 const testData = helpers.data;
-const { getMall } = require('mall');
-const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
 const { remove } = require('fs-extra');
 const path = require('path');
-
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { getMall, SystemStreamsSerializer, userLocalDirectory, integrityFinalCheck, config } = helpers;
+const mongoFolder = config.mongoFolder;
 
 const { getVersions } = require('./util');
 
-const integrityFinalCheck = require('test-helpers/src/integrity-final-check');
 const userWithAttachments = 'u_0';
-const storage = require('storage');
 
-// MongoDB-specific migration test — skip in PG mode
 describe('[MG90] Migration - 1.9.0', function () {
-  if (process.env.STORAGE_ENGINE === 'postgresql') {
-    before(function () { this.skip(); });
-    return;
-  }
   this.timeout(20000);
-  let userLocalDirectory;
 
   before(async function () {
     // remove user attachments
-    userLocalDirectory = storage.userLocalDirectory;
     await userLocalDirectory.init();
     const userLocalDir = await userLocalDirectory.getPathForUser(userWithAttachments);
     const newAttachmentDirPath = path.join(userLocalDir, 'attachments');

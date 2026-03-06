@@ -12,23 +12,17 @@
 /* global assert */
 
 const { promisify } = require('util');
-const helpers = require('test-helpers');
+const helpers = require('../../../../test/helpers');
 const storage = helpers.dependencies.storage;
 const database = storage.database;
 const testData = helpers.data;
-const userLocalDirectory = require('storage').userLocalDirectory;
-
-const mongoFolder = __dirname + '../../../../../var-pryv/mongodb-bin';
+const { userLocalDirectory, config } = helpers;
+const mongoFolder = config.mongoFolder;
 
 const { getVersions } = require('./util');
 
-// MongoDB-specific migration test — skip in PG mode
 describe('[MG75] Migration - 1.7.5', function () {
   this.timeout(20000);
-  if (process.env.STORAGE_ENGINE === 'postgresql') {
-    before(function () { this.skip(); });
-    return;
-  }
 
   let accessesCollection;
 

@@ -8,22 +8,16 @@
 /* global assert */
 
 const timestamp = require('unix-timestamp');
+const helpers = require('../../../../test/helpers');
 const { getVersions } = require('./util');
-const { getConfig } = require('@pryv/boiler');
+const { softwareVersion } = helpers;
+const isOpenSource = process.env.OPEN_SOURCE === 'true';
 
-// MongoDB-specific migration test — skip in PG mode
 describe('[MGNI] Migrations - new install', function () {
-  if (process.env.STORAGE_ENGINE === 'postgresql') {
-    before(function () { this.skip(); });
-    return;
-  }
   const versions = getVersions();
-  let isOpenSource = false;
 
   before(async () => {
-    const config = await getConfig();
     await versions.removeAll();
-    isOpenSource = config.get('openSource:isActive');
   });
 
   it('[OVYL] must set the initial version to the package file version and not perform other migrations', async () => {
@@ -31,9 +25,9 @@ describe('[MGNI] Migrations - new install', function () {
     const v = await versions.getCurrent();
     assert.ok(v != null);
     if (isOpenSource) {
-      assert.strictEqual(process.env.npm_package_version.startsWith(v._id), true, process.env.npm_package_version + ' should starts with' + v.id);
+      assert.strictEqual(softwareVersion.startsWith(v._id), true, softwareVersion + ' should starts with' + v._id);
     } else {
-      assert.strictEqual(v._id, process.env.npm_package_version);
+      assert.strictEqual(v._id, softwareVersion);
     }
     assert.ok(Math.abs(v.initialInstall - timestamp.now()) <= 1000);
   });

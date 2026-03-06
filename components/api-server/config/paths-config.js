@@ -7,13 +7,18 @@
 
 const path = require('path');
 
+const varPryvFolder = path.join(__dirname, '../../../var-pryv');
+
 module.exports = {
   userFiles: {
-    path: path.join(__dirname, '../../../var-pryv/users')
+    path: path.join(varPryvFolder, 'users')
   },
   eventFiles: {
-    attachmentsDirPath: path.join(__dirname, '../../../var-pryv/attachments'),
-    previewsDirPath: path.join(__dirname, '../../../var-pryv/previews')
+    attachmentsDirPath: path.join(varPryvFolder, 'attachments'),
+    previewsDirPath: path.join(varPryvFolder, 'previews')
+  },
+  database: {
+    mongoFolder: path.join(varPryvFolder, 'mongodb-bin')
   },
   customExtensions: {
     defaultFolder: path.join(__dirname, '../../../custom-extensions')
