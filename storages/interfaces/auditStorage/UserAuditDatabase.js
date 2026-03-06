@@ -6,10 +6,10 @@
  */
 
 /**
- * UserSQLiteDatabase interface — contract for a single per-user SQLite database.
+ * UserAuditDatabase interface — contract for a single per-user audit database.
  * Covers event CRUD, history, streaming, and audit queries.
  *
- * Use {@link validateUserSQLiteDatabase} to verify prototype-based instances.
+ * Use {@link validateUserAuditDatabase} to verify prototype-based instances.
  */
 
 const REQUIRED_METHODS = [
@@ -35,14 +35,14 @@ const REQUIRED_METHODS = [
 ];
 
 /**
- * Validate that a class instance implements all required UserSQLiteDatabase methods.
+ * Validate that a class instance implements all required UserAuditDatabase methods.
  * @param {Object} instance
  * @returns {Object} The instance itself
  */
-module.exports.validateUserSQLiteDatabase = function validateUserSQLiteDatabase (instance) {
+module.exports.validateUserAuditDatabase = function validateUserAuditDatabase (instance) {
   for (const method of REQUIRED_METHODS) {
     if (typeof instance[method] !== 'function') {
-      throw new Error(`UserSQLiteDatabase implementation missing method: ${method}`);
+      throw new Error(`UserAuditDatabase implementation missing method: ${method}`);
     }
   }
   return instance;

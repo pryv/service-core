@@ -152,6 +152,17 @@ async function init (config) {
   await platformDB.init();
   validatePlatformDB(platformDB);
 
+  // 7.5 AuditStorage (optional — skip if no engine declares auditStorage)
+  let auditStorage = null;
+  const auditEngine = pluginLoader.getEngineFor('auditStorage');
+  if (auditEngine) {
+    const { validateAuditStorage } = require('storages/interfaces/auditStorage/AuditStorage');
+    const auditModule = pluginLoader.getEngineModule(auditEngine);
+    auditStorage = auditModule.createAuditStorage();
+    await auditStorage.init();
+    validateAuditStorage(auditStorage);
+  }
+
   // 8. Series connection (skip if engine missing or lacks support)
   let seriesConnection = null;
   const seriesEngine = pluginLoader.getEngineFor('seriesStorage');
@@ -182,6 +193,7 @@ async function init (config) {
     userAccountStorage,
     usersLocalIndex,
     platformDB,
+    auditStorage,
     seriesConnection,
     dataStoreModule
   };
@@ -192,6 +204,9 @@ async function init (config) {
  * Reset all state (for testing).
  */
 function reset () {
+  if (instances?.auditStorage) {
+    try { instances.auditStorage.close(); } catch (e) { /* ignore */ }
+  }
   instances = null;
   initializing = false;
   _earlyDatabase = null;
@@ -211,6 +226,7 @@ module.exports = {
   get userAccountStorage () { return instances?.userAccountStorage; },
   get usersLocalIndex () { return instances?.usersLocalIndex; },
   get platformDB () { return instances?.platformDB; },
+  get auditStorage () { return instances?.auditStorage; },
   get seriesConnection () { return instances?.seriesConnection; },
   get dataStoreModule () { return instances?.dataStoreModule; }
 };

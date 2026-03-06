@@ -25,8 +25,8 @@ module.exports = {
     Sessions: require('storages/interfaces/baseStorage/Sessions'),
     PasswordResetRequests: require('storages/interfaces/baseStorage/PasswordResetRequests'),
     Versions: require('storages/interfaces/baseStorage/Versions'),
-    UserSQLiteStorage: require('storages/interfaces/baseStorage/UserSQLiteStorage'),
-    UserSQLiteDatabase: require('storages/interfaces/baseStorage/UserSQLiteDatabase')
+    AuditStorage: require('storages/interfaces/auditStorage/AuditStorage'),
+    UserAuditDatabase: require('storages/interfaces/auditStorage/UserAuditDatabase')
   }
 };
 

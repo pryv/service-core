@@ -31,7 +31,8 @@ const FACTORY_NAMES = {
   dataStore: 'createDataStore',
   platformStorage: 'createPlatformStorage',
   seriesStorage: 'createSeriesStorage',
-  fileStorage: 'createFileStorage'
+  fileStorage: 'createFileStorage',
+  auditStorage: 'createAuditStorage'
 };
 
 /**
@@ -165,6 +166,8 @@ function resolveLegacyEngine (config, storageType) {
         return 'influxdb';
       case 'fileStorage':
         return 'filesystem';
+      case 'auditStorage':
+        return 'sqlite';
       default:
         return globalOverride;
     }
@@ -198,6 +201,9 @@ function resolveLegacyEngine (config, storageType) {
 
     case 'fileStorage':
       return 'filesystem'; // always filesystem
+
+    case 'auditStorage':
+      return 'sqlite'; // always sqlite
 
     default:
       return null;

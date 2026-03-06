@@ -6,10 +6,10 @@
  */
 
 /**
- * UserSQLiteStorage interface — contract for the LRU-cached SQLite storage manager.
- * Manages per-user SQLite databases (audit, etc.).
+ * AuditStorage interface — contract for the LRU-cached audit storage manager.
+ * Manages per-user audit databases.
  *
- * Use {@link validateUserSQLiteStorage} to verify class-based instances.
+ * Use {@link validateAuditStorage} to verify class-based instances.
  */
 
 const REQUIRED_METHODS = [
@@ -22,14 +22,14 @@ const REQUIRED_METHODS = [
 ];
 
 /**
- * Validate that a class instance implements all required UserSQLiteStorage methods.
+ * Validate that a class instance implements all required AuditStorage methods.
  * @param {Object} instance
  * @returns {Object} The instance itself
  */
-module.exports.validateUserSQLiteStorage = function validateUserSQLiteStorage (instance) {
+module.exports.validateAuditStorage = function validateAuditStorage (instance) {
   for (const method of REQUIRED_METHODS) {
     if (typeof instance[method] !== 'function') {
-      throw new Error(`UserSQLiteStorage implementation missing method: ${method}`);
+      throw new Error(`AuditStorage implementation missing method: ${method}`);
     }
   }
   return instance;

@@ -1,5 +1,5 @@
 {
-  "storageTypes": ["baseStorage", "dataStore", "platformStorage"],
+  "storageTypes": ["baseStorage", "dataStore", "platformStorage", "auditStorage"],
   "entrypoint": "src/index.js",
   "requiredInternals": [
     "userLocalDirectory",

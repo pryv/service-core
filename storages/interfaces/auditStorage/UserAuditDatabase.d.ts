@@ -20,10 +20,10 @@ interface DeleteParams {
 }
 
 /**
- * UserSQLiteDatabase interface — per-user SQLite database for audit events.
+ * UserAuditDatabase interface — per-user audit database for audit events.
  * Mixed sync/async API matching the existing implementation.
  */
-export interface UserSQLiteDatabase {
+export interface UserAuditDatabase {
   init(): Promise<void>;
   close(): void;
 
@@ -50,6 +50,6 @@ export interface UserSQLiteDatabase {
   importAllEvents(events: any[]): Promise<void>;
 }
 
-export declare function validateUserSQLiteDatabase(instance: any): UserSQLiteDatabase;
+export declare function validateUserAuditDatabase(instance: any): UserAuditDatabase;
 
 export declare const REQUIRED_METHODS: string[];

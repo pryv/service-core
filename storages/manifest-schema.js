@@ -20,7 +20,7 @@
  *   scripts           — setup/start scripts paths
  */
 
-const VALID_STORAGE_TYPES = ['baseStorage', 'dataStore', 'platformStorage', 'seriesStorage', 'fileStorage'];
+const VALID_STORAGE_TYPES = ['baseStorage', 'dataStore', 'platformStorage', 'seriesStorage', 'fileStorage', 'auditStorage'];
 
 /**
  * @param {Object} manifest - Parsed manifest.json object

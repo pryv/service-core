@@ -5,21 +5,21 @@
  * Refer to LICENSE file
  */
 
-import { UserSQLiteDatabase } from './UserSQLiteDatabase';
+import { UserAuditDatabase } from './UserAuditDatabase';
 
 /**
- * UserSQLiteStorage interface — LRU-cached manager for per-user SQLite databases.
+ * AuditStorage interface — LRU-cached manager for per-user audit databases.
  * Async/await API.
  */
-export interface UserSQLiteStorage {
+export interface AuditStorage {
   init(): Promise<this>;
   getVersion(): string;
   checkInitialized(): void;
-  forUser(userId: string): Promise<UserSQLiteDatabase>;
+  forUser(userId: string): Promise<UserAuditDatabase>;
   deleteUser(userId: string): Promise<void>;
   close(): void;
 }
 
-export declare function validateUserSQLiteStorage(instance: any): UserSQLiteStorage;
+export declare function validateAuditStorage(instance: any): AuditStorage;
 
 export declare const REQUIRED_METHODS: string[];

@@ -6,7 +6,7 @@
  */
 
 /**
- * UserSQLiteStorage + UserSQLiteDatabase conformance test suite.
+ * AuditStorage + UserAuditDatabase conformance test suite.
  * Tests the LRU-cached Storage manager and the per-user Database contract.
  *
  * @param {Function} getStorage - async function returning an initialized Storage instance
@@ -15,10 +15,10 @@
  */
 module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
   const assert = require('node:assert');
-  const { validateUserSQLiteStorage } = require('../UserSQLiteStorage');
-  const { validateUserSQLiteDatabase } = require('../UserSQLiteDatabase');
+  const { validateAuditStorage } = require('../AuditStorage');
+  const { validateUserAuditDatabase } = require('../UserAuditDatabase');
 
-  describe('UserSQLiteStorage conformance', () => {
+  describe('AuditStorage conformance', () => {
     let storage;
     let userId;
     let userDb;
@@ -33,8 +33,8 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
       if (cleanupFn) await cleanupFn(userId);
     });
 
-    it('[SQ01] must pass validateUserSQLiteStorage', () => {
-      validateUserSQLiteStorage(storage);
+    it('[SQ01] must pass validateAuditStorage', () => {
+      validateAuditStorage(storage);
     });
 
     it('[SQ02] getVersion() must return a version string', () => {
@@ -53,9 +53,9 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
       assert.strictEqual(userDb, userDb2);
     });
 
-    describe('UserSQLiteDatabase conformance', () => {
-      it('[SQ05] must pass validateUserSQLiteDatabase', () => {
-        validateUserSQLiteDatabase(userDb);
+    describe('UserAuditDatabase conformance', () => {
+      it('[SQ05] must pass validateUserAuditDatabase', () => {
+        validateUserAuditDatabase(userDb);
       });
 
       it('[SQ06] countEvents() must return 0 initially', () => {

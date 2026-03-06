@@ -4,7 +4,6 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const { getStorage, closeStorage } = require('storages/engines/sqlite/src/userSQLite');
 const { getSyslog } = require('./syslog');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('audit');
@@ -48,7 +47,7 @@ class Audit {
   async init () {
     logger.debug('Audit initiating...');
     const config = await getConfig();
-    this._storage = await getStorage('audit');
+    this._storage = require('storages').auditStorage;
     this._syslog = await getSyslog();
     this.filter = new AuditFilter({
       syslogFilter: config.get('audit:syslog:filter'),
@@ -141,7 +140,7 @@ class Audit {
    * @returns {void}
    */
   close () {
-    closeStorage();
+    // auditStorage lifecycle is managed by the barrel (storages.reset())
   }
 }
 module.exports = Audit;

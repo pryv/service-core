@@ -55,11 +55,19 @@ function createPlatformDB () {
   return new DB();
 }
 
+// -- AuditStorage -------------------------------------------------------
+
+function createAuditStorage () {
+  const Storage = require('./userSQLite/Storage');
+  return new Storage('audit');
+}
+
 module.exports = {
   init,
   initStorageLayer,
   getUserAccountStorage,
   getUsersLocalIndex,
   getDataStoreModule,
-  createPlatformDB
+  createPlatformDB,
+  createAuditStorage
 };
