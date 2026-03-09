@@ -35,9 +35,6 @@ This database is a per-server index to map userId and userName. In the future it
 
 Settings to activate MongoDB instead of SQLite: `storageUserIndex:engine = 'mongodb'`
 
-Script to migrate userIndex from SQLite to MongoDB:  [read first](#sql2mongo)
-`LOGS=info node components/storage/src/migrations/switchSqliteMongo/usersIndex.js --config configs/api.yml`
-
 #### User account storage
 
 base code: [components/storage/src/userAccountStorage*.js](components/storage/src/)  *: Mongo or Sqlite
@@ -48,9 +45,6 @@ This database contains the password and passwords history of the user.
 - With MongoDB the collection is `passwords` and stored in the main host database `pryv-node`
 
 Settings to activate MongoDB instead of SQLite: `storageUserAccount:engine = 'mongodb'`
-
-Script to migrate from SQLite to MongoDB:  [read first](#sql2mongo)
-`LOGS=info node components/storage/src/migrations/switchSqliteMongo/userAccountStorage.js --config configs/api.yml`
 
 #### Platform Wide Shared Storage
 
@@ -64,10 +58,6 @@ In the Enterprise version of Pryv, it acts as a local cache and report to `servi
 - With MongoDB 
 
 Settings to activate MongoDB instead of SQLite:`storagePlatform:engine = 'mongodb'`
-
-Script to migrate from SQLite to MongoDB: [read first](#sql2mongo)
-
-`LOGS=info node components/storage/src/migrations/switchSqliteMongo/platformDB.js --config configs/api.yml`
 
 #### Events, Streams & Attachments Storage
 
@@ -86,15 +76,6 @@ Only implemented for MongoDB - Expecting full SQLite implementation in v1.9.3
 
 ### Notes
 
-#### Known issues 
+#### Known issues
 
 - [ ] test B2I7 is failing when testing `storage` with `full-mongo` as indexes for password is not yet created. Run `just test-full-mongo storage` to reproduce
-
-#### <a name="sql2mongo"/>Using SQlite to MongoDB migration scripts
-
-1. Make sure that all Pryv.io components are stopped but `MongoDB`
-2. Do not set the `storage*:engine` setting to `mongodb` yet !
-3. Run the scripts
-4. Change appropriate setting to  `storage*:engine = 'mongodb'`
-5. Start all services and check
-6. If all is fine, related SQLite DB should be deleted manually
