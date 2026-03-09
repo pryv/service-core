@@ -1,4 +1,22 @@
 
+## 2.0.0-pre
+
+### 2.0.0-pre.1
+
+- Introduce storage plugin architecture: engines (MongoDB, PostgreSQL, SQLite, filesystem, InfluxDB) are now plugins under `storages/engines/` with manifest-driven configuration
+- Add `storages/` npm workspace as single barrel for engine initialization
+- Remove all direct `@pryv/boiler` imports from engines — configuration and logging injected via `_internals.js` pattern
+- Move engine-specific scripts (start, setup) from `scripts/` to `storages/engines/<engine>/scripts/`
+- Add `storages/interfaces/` with formal contracts for baseStorage, platformStorage, fileStorage, seriesStorage, auditStorage
+- Make test helpers engine-agnostic: `produceSeriesConnection()` uses barrel, `cleanEverything()` uses `storageLayer.clearCollection()`
+- Remove dead engine-specific code from production paths outside `storages/`
+- Move engine-specific tests to `storages/engines/<engine>/test/`
+- Standardize engine init signature: `init(config, getLogger, internals)`
+- Reduce internal dependencies from 22 to 10
+- Extract audit as `auditStorage` type, decouple from SQLite engine internals
+- Update Node.js target to 22.x
+- Update linting to neostandard with `{ semi: true }`
+
 ## 1.9
 
 ### 1.9.3
