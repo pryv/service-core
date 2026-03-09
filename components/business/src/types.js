@@ -11,7 +11,7 @@ const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
 let defaultTypes = require('./types/event-types.default.json');
 const errors = require('./types/errors');
-const InfluxRowType = require('./types/influx_row_type');
+const SeriesRowType = require('./types/series_row_type');
 const BasicType = require('./types/basic_type');
 const ComplexType = require('./types/complex_type');
 const SERIES_PREFIX = 'series:';
@@ -156,7 +156,7 @@ class TypeRepository {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       const leafType = this.lookupLeafType(leafTypeName);
-      return new InfluxRowType(leafType);
+      return new SeriesRowType(leafType);
     }
     // assert: Not a series type, must be a leaf type.
     return this.lookupLeafType(name);
@@ -225,7 +225,7 @@ class TypeRepository {
 }
 module.exports = {
   TypeRepository,
-  InfluxRowType,
+  SeriesRowType,
   isSeriesType,
   errors
 };

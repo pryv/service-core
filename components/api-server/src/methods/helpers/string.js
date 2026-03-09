@@ -21,6 +21,6 @@ string.isReservedId = function (s) {
   }
 };
 
-string.toMongoKey = function (s) {
+string.sanitizeFieldKey = function (s) {
   return (s[0] === '$' ? '_' + s.substr(1) : s).replace('.', ':');
 };

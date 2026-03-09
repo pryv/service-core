@@ -29,8 +29,8 @@ function registerInternals (config, database, databasePG, storageLayer) {
   // Static modules from storage
   internals.register('userLocalDirectory', require('storage/src/userLocalDirectory'));
   internals.register('getEventFiles', require('storage/src/eventFiles/getEventFiles').getEventFiles);
-  internals.register('migrations', require('storage/src/migrations/index'));
-  internals.register('MigrationContext', require('storage/src/migrations/MigrationContext'));
+  internals.register('migrations', require('storages/engines/mongodb/src/migrations/index'));
+  internals.register('MigrationContext', require('storages/engines/mongodb/src/migrations/MigrationContext'));
   internals.register('softwareVersion', require('storage/package.json').version);
 
   // Cache component

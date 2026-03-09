@@ -4,9 +4,20 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const { isoOrTimeToDate, formatDate } = require('influx/lib/src/grammar/times');
 const DataMatrix = require('./data_matrix');
-/** Represents a single data series in influxDB.
+
+/**
+ * Convert a timestamp (seconds) or ISO string to a quoted date string
+ * for InfluxQL / series WHERE clauses.
+ * @param {number|string} v - timestamp in seconds or ISO date string
+ * @returns {string} e.g. "'2021-01-01 00:00:00.000000000'"
+ */
+function timestampToDateString (v) {
+  const date = new Date(typeof v === 'number' ? v * 1000 : v);
+  return "'" + date.toISOString().replace('T', ' ').replace('Z', '000000') + "'";
+}
+
+/** Represents a single data series.
  *
  * This is the high level internal interface to series. Series can be
  * manipulated through this interface.
@@ -105,15 +116,11 @@ class Series {
    */
   buildExpression (query) {
     const subConditions = [];
-    // Replace double quotes with single quotes, since the influx library gets
-    // the date format for influx wrong...
-    const correct = (v) => `'${v.slice(1, v.length - 2)}'`;
-    const dateToString = (v) => correct(formatDate(isoOrTimeToDate(v, 's')));
     if (query.from) {
-      subConditions.push(`time >= ${dateToString(query.from)}`);
+      subConditions.push(`time >= ${timestampToDateString(query.from)}`);
     }
     if (query.to) {
-      subConditions.push(`time < ${dateToString(query.to)}`);
+      subConditions.push(`time < ${timestampToDateString(query.to)}`);
     }
     return subConditions;
   }

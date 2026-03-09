@@ -12,7 +12,7 @@ const logger = require('@pryv/boiler').getLogger('metadata_cache');
 const storage = require('storage');
 const MethodContext = require('business').MethodContext;
 const errors = require('errors').factory;
-const { InfluxRowType } = require('business').types;
+const { SeriesRowType } = require('business').types;
 const { pubsub } = require('messages');
 const { getMall } = require('mall');
 // A single HFS server will keep at maximum this many credentials in cache.
@@ -281,7 +281,7 @@ class SeriesMetadataImpl {
     //  value we'll return from this function. If duck-typing via 'isSeries' is
     //  ever needed, you'll need to find a different way of providing the same
     //  static guarantee (think interfaces...).
-    if (!type.isSeries() || !(type instanceof InfluxRowType)) { throw errors.invalidOperation("High Frequency data can only be stored in events whose type starts with 'series:'."); }
+    if (!type.isSeries() || !(type instanceof SeriesRowType)) { throw errors.invalidOperation("High Frequency data can only be stored in events whose type starts with 'series:'."); }
     type.setSeriesMeta(this);
     return type;
   }

@@ -29,7 +29,6 @@ require('@pryv/boiler').init({
 const logger = require('@pryv/boiler').getLogger('test-helpers');
 const testHelpers = require('test-helpers');
 const storage = require('storage');
-const business = require('business');
 // Produces an engine-agnostic series connection (InfluxDB or PG).
 /**
  * @returns {Promise<any>}
@@ -45,7 +44,10 @@ async function produceSeriesConnection () {
       return new PGSeriesConnection(pgDb);
     }
     default:
-      return new business.series.InfluxConnection({ host: '127.0.0.1' });
+    {
+      const InfluxConnection = require('storages/engines/influxdb/src/influx_connection');
+      return new InfluxConnection({ host: '127.0.0.1' });
+    }
   }
 }
 exports.produceSeriesConnection = produceSeriesConnection;

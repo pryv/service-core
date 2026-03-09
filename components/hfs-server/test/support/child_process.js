@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 const Application = require('../../src/application');
-const { InfluxRowType, TypeRepository } = require('business').types;
+const { SeriesRowType, TypeRepository } = require('business').types;
 const ChildProcess = require('test-helpers').child_process;
 const { getConfig } = require('@pryv/boiler');
 const typeRepo = new TypeRepository();
@@ -40,7 +40,7 @@ class ApplicationLauncher {
       canRead: () => authTokenValid,
       isTrashedOrDeleted: () => false,
       namespaceAndName: () => ['test', 'foo'],
-      produceRowType: () => new InfluxRowType(typeRepo.lookup('mass/kg'))
+      produceRowType: () => new SeriesRowType(typeRepo.lookup('mass/kg'))
     };
     return {
       forSeries: function forSeries () {

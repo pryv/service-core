@@ -31,12 +31,12 @@ module.exports = async function getUpdateAccessUsageStats () {
         const update = { lastUsed: timestamp.now(), $inc: {} };
         if (context.accessUsageStats == null) {
           // standard call
-          const calledMethodKey = string.toMongoKey(context.methodId);
+          const calledMethodKey = string.sanitizeFieldKey(context.methodId);
           update.$inc['calls.' + calledMethodKey] = 1;
         } else {
           // from batch calll
           for (const methodId of Object.keys(context.accessUsageStats)) {
-            const calledMethodKey = string.toMongoKey(methodId);
+            const calledMethodKey = string.sanitizeFieldKey(methodId);
             update.$inc['calls.' + calledMethodKey] =
                             context.accessUsageStats[methodId];
           }

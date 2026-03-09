@@ -23,7 +23,7 @@ class DataMatrix {
   //
   /** @static
    * @param {unknown} obj
-   * @param {InfluxRowType} type
+   * @param {SeriesRowType} type
    * @returns {DataMatrix}
    */
   static parse (obj, type) {
@@ -150,7 +150,7 @@ class Parser {
 
   /**
    * @param {unknown} obj
-   * @param {InfluxRowType} type
+   * @param {SeriesRowType} type
    * @returns {void}
    */
   parse (obj, type) {

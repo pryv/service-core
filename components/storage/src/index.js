@@ -60,16 +60,14 @@ async function getStorageLayer () {
   return (await ensureBarrel()).storageLayer;
 }
 
-// Lazy-created MongoDB database — used by getDatabase/getDatabaseSync when
-// the barrel was initialized for a different engine (e.g. postgresql) or
-// before barrel init completes.
+// Lazy-created MongoDB database — used by getDatabaseSync before barrel init
+// (e.g. test-helpers/dependencies.js at module load).
 let _lazyDatabase;
 function _ensureMongoDatabase () {
   if (!_lazyDatabase) {
     const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
     const { dataBaseTracer } = require('tracing');
     const config = getConfigUnsafe(true);
-    // Ensure engine _internals has getLogger before constructing Database
     const mongoInternals = require('storages/engines/mongodb/src/_internals');
     if (!mongoInternals.getLogger) mongoInternals.set('getLogger', getLogger);
     const Database = require('storages/engines/mongodb/src/Database');
@@ -81,6 +79,7 @@ function _ensureMongoDatabase () {
 
 /**
  * Get the MongoDB database connection (sync).
+ * Falls back to lazy construction for test code that needs it before barrel init.
  * @returns {Object}
  */
 function getDatabaseSync () {
@@ -89,7 +88,6 @@ function getDatabaseSync () {
 
 /**
  * Get the MongoDB database connection.
- * Always returns a MongoDB connection (even when primary engine is PG/SQLite).
  * @returns {Promise<Object>}
  */
 async function getDatabase () {
@@ -105,7 +103,7 @@ let _lazyDatabasePG;
 
 /**
  * Get the PostgreSQL database connection.
- * @returns {Promise<Object>}
+ * @returns {Promise<Object|null>}
  */
 async function getDatabasePG () {
   await ensureBarrel();
@@ -114,7 +112,6 @@ async function getDatabasePG () {
     if (!_lazyDatabasePG) {
       const { getConfig, getLogger } = require('@pryv/boiler');
       const config = await getConfig();
-      // Ensure engine _internals has getLogger before constructing DatabasePG
       const pgInternals = require('storages/engines/postgresql/src/_internals');
       if (!pgInternals.getLogger) pgInternals.set('getLogger', getLogger);
       const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');

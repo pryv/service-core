@@ -5,7 +5,6 @@
  * Refer to LICENSE file
  */
 
-const bluebird = require('bluebird');
 const { getConfig, getLogger } = require('@pryv/boiler');
 const { validateUserStorage } = require('storages/interfaces/baseStorage/UserStorage');
 const { validateSessions } = require('storages/interfaces/baseStorage/Sessions');
@@ -70,30 +69,7 @@ class StorageLayer {
     validateVersions(this.versions);
   }
 
-  /**
-   * Async generator that yields ALL events across all users (no filtering).
-   * Used for cross-user scans like integrity checking.
-   */
-  async * iterateAllEvents () {
-    if (this.engine === 'mongodb') {
-      const cursor = await bluebird.fromCallback(cb =>
-        this.connection.findCursor({ name: 'events' }, {}, {}, cb)
-      );
-      while (await cursor.hasNext()) {
-        const doc = await cursor.next();
-        doc.id = doc._id;
-        delete doc._id;
-        delete doc.userId;
-        yield doc;
-      }
-    } else {
-      const { rowToEvent } = require('storages/engines/postgresql/src/dataStore/localUserEventsPG');
-      const res = await this.connection.query('SELECT * FROM events');
-      for (const row of res.rows) {
-        yield rowToEvent(row);
-      }
-    }
-  }
+  // iterateAllEvents() is set by the engine's initStorageLayer()
 
   /**
    * @returns {Promise<any>}

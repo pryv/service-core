@@ -4,13 +4,13 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const logger = require('@pryv/boiler').getLogger('influx_row_type');
+const logger = require('@pryv/boiler').getLogger('series_row_type');
 const FIELD_DELTATIME = 'deltaTime';
 const FIELD_TIMESTAMP = 'timestamp';
-// Represents the type of the deltaTime column in influx input data.
+// Represents the type of the deltaTime column in series input data.
 //
 
-class InfluxDateType {
+class SeriesDateType {
   deltaTo;
   constructor (eventTime) {
     this.deltaTo = eventTime;
@@ -40,10 +40,10 @@ class InfluxDateType {
     throw new Error(`Cannot coerce ${value} into deltaTime.`);
   }
 }
-// Represents the type of a row in influx input data.
+// Represents the type of a row in series input data.
 //
 
-class InfluxRowType {
+class SeriesRowType {
   eventType;
 
   seriesMeta;
@@ -181,7 +181,7 @@ class InfluxRowType {
    */
   forField (name) {
     if (name === FIELD_DELTATIME) {
-      return new InfluxDateType(this.applyDeltaTimeToSerie);
+      return new SeriesDateType(this.applyDeltaTimeToSerie);
     } else {
       return this.eventType.forField(name);
     }
@@ -237,7 +237,7 @@ class InfluxRowType {
   callValidator (validator,
 
     content) {
-    return Promise.reject(new Error('No validation for influx row types.'));
+    return Promise.reject(new Error('No validation for series row types.'));
   }
 }
-module.exports = InfluxRowType;
+module.exports = SeriesRowType;

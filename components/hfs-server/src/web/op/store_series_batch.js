@@ -104,7 +104,7 @@ class EventMetaDataCache {
   }
 
   // Loads an event, checks access rights for the current token, then looks
-  // up the type of the event and returns it as an InfluxRowType.
+  // up the type of the event and returns it as a SeriesRowType.
   //
   /**
    * @param {string} eventId

@@ -13,6 +13,7 @@
  * code will be physically moved here in a later cleanup phase.
  */
 
+const bluebird = require('bluebird');
 const _internals = require('./_internals');
 
 /**
@@ -58,6 +59,24 @@ function initStorageLayer (storageLayer, connection, options) {
   storageLayer.profile = new Profile(connection);
   storageLayer.streams = new Streams(connection);
   storageLayer.webhooks = new Webhooks(connection);
+
+  storageLayer.iterateAllEvents = async function * () {
+    const cursor = await bluebird.fromCallback(cb =>
+      connection.findCursor({ name: 'events' }, {}, {}, cb)
+    );
+    while (await cursor.hasNext()) {
+      const doc = await cursor.next();
+      doc.id = doc._id;
+      delete doc._id;
+      delete doc.userId;
+      yield doc;
+    }
+  };
+
+  storageLayer.getAllUserIdsFromCollection = async function (collectionName) {
+    const collection = await connection.getCollection({ name: collectionName });
+    return await collection.distinct('userId', {});
+  };
 }
 
 /**

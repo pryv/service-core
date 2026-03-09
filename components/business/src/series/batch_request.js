@@ -135,4 +135,4 @@ class ElementParser {
 }
 module.exports = { BatchRequest, BatchRequestElement, ParseFailure };
 
-/** @typedef {(eventId: string) => Promise<InfluxRowType>} TypeResolveFunction */
+/** @typedef {(eventId: string) => Promise<SeriesRowType>} TypeResolveFunction */

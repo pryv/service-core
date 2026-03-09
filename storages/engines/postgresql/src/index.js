@@ -50,6 +50,19 @@ function initStorageLayer (storageLayer, connection, options) {
   storageLayer.profile = new ProfilePG(connection);
   storageLayer.streams = new StreamsPG(connection);
   storageLayer.webhooks = new WebhooksPG(connection);
+
+  storageLayer.iterateAllEvents = async function * () {
+    const { rowToEvent } = require('./dataStore/localUserEventsPG');
+    const res = await connection.query('SELECT * FROM events');
+    for (const row of res.rows) {
+      yield rowToEvent(row);
+    }
+  };
+
+  storageLayer.getAllUserIdsFromCollection = async function (collectionName) {
+    const res = await connection.query(`SELECT DISTINCT user_id FROM ${collectionName}`);
+    return res.rows.map(r => r.user_id);
+  };
 }
 
 function getUserAccountStorage () {

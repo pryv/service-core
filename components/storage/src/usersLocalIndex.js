@@ -127,19 +127,8 @@ class UsersLocalIndex {
 
 async function getAllKnownUserIdsFromDB (collectionName) {
   const storage = require('storage'); // placed here to avoid some circular dependency
-  const config = await getConfig();
-  const engine = getStorageEngine(config, 'database');
-
-  if (engine === 'postgresql') {
-    const db = await storage.getDatabasePG();
-    const res = await db.query(`SELECT DISTINCT user_id FROM ${collectionName}`);
-    return res.rows.map(r => r.user_id);
-  }
-  // MongoDB
-  const database = await storage.getDatabase();
-  const collection = await database.getCollection({ name: collectionName });
-  const userIds = await collection.distinct('userId', {});
-  return userIds;
+  const storageLayer = await storage.getStorageLayer();
+  return await storageLayer.getAllUserIdsFromCollection(collectionName);
 }
 
 module.exports = new UsersLocalIndex();

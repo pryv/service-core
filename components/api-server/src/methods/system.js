@@ -152,7 +152,7 @@ module.exports = async function (systemAPI, api) {
   }
 
   function getAPIMethodKeys () {
-    return api.getMethodKeys().map(string.toMongoKey);
+    return api.getMethodKeys().map(string.sanitizeFieldKey);
   }
 
   function getAccessStatsKey (access) {
