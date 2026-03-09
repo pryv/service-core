@@ -26,7 +26,6 @@ after(async () => {
   await context.shutdown();
 });
 const storage = require('storage');
-const InfluxConnection = require('storages/engines/influxdb/src/influx_connection');
 /**
  * Returns the StorageLayer instance (engine-agnostic).
  * @returns {Promise<any>}
@@ -35,24 +34,12 @@ async function produceConnection () {
   return await storage.getStorageLayer();
 }
 /**
- * Produces an engine-agnostic series connection (InfluxDB or PG).
- * @param {any} settings
+ * Returns the pre-initialized series connection from the storages barrel.
  * @returns {Promise<any>}
  */
-async function produceSeriesConnection (settings) {
-  const engine = storage.getStorageEngine(settings, 'database');
-  switch (engine) {
-    case 'postgresql': {
-      const PGSeriesConnection = require('storages/engines/postgresql/src/pg_connection');
-      const pgDb = await storage.getDatabasePG();
-      return new PGSeriesConnection(pgDb);
-    }
-    default: {
-      const host = settings.get('influxdb:host');
-      const port = settings.get('influxdb:port');
-      return new InfluxConnection({ host, port });
-    }
-  }
+async function produceSeriesConnection () {
+  const storages = require('storages');
+  return storages.seriesConnection;
 }
 module.exports = {
   context,

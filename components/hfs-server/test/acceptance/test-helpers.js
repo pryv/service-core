@@ -29,26 +29,13 @@ require('@pryv/boiler').init({
 const logger = require('@pryv/boiler').getLogger('test-helpers');
 const testHelpers = require('test-helpers');
 const storage = require('storage');
-// Produces an engine-agnostic series connection (InfluxDB or PG).
+// Returns the pre-initialized series connection from the storages barrel.
 /**
  * @returns {Promise<any>}
  */
 async function produceSeriesConnection () {
-  const { getConfig } = require('@pryv/boiler');
-  const config = await getConfig();
-  const engine = storage.getStorageEngine(config, 'database');
-  switch (engine) {
-    case 'postgresql': {
-      const PGSeriesConnection = require('storages/engines/postgresql/src/pg_connection');
-      const pgDb = await storage.getDatabasePG();
-      return new PGSeriesConnection(pgDb);
-    }
-    default:
-    {
-      const InfluxConnection = require('storages/engines/influxdb/src/influx_connection');
-      return new InfluxConnection({ host: '127.0.0.1' });
-    }
-  }
+  const storages = require('storages');
+  return storages.seriesConnection;
 }
 exports.produceSeriesConnection = produceSeriesConnection;
 /**

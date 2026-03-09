@@ -77,6 +77,10 @@ function initStorageLayer (storageLayer, connection, options) {
     const collection = await connection.getCollection({ name: collectionName });
     return await collection.distinct('userId', {});
   };
+
+  storageLayer.clearCollection = async function (collectionName) {
+    await bluebird.fromCallback((cb) => connection.deleteMany({ name: collectionName }, {}, cb));
+  };
 }
 
 /**

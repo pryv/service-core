@@ -63,6 +63,10 @@ function initStorageLayer (storageLayer, connection, options) {
     const res = await connection.query(`SELECT DISTINCT user_id FROM ${collectionName}`);
     return res.rows.map(r => r.user_id);
   };
+
+  storageLayer.clearCollection = async function (collectionName) {
+    await connection.query(`DELETE FROM ${collectionName}`);
+  };
 }
 
 function getUserAccountStorage () {

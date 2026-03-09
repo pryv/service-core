@@ -55,19 +55,9 @@ class Context {
    */
   async cleanEverything () {
     if (this.storageLayer) {
-      // Engine-agnostic path: clear global tables via StorageLayer.
-      // mall.deleteUser only cascades events/streams; accesses, webhooks
-      // and sessions live on the StorageLayer and must be cleared explicitly.
-      const sl = this.storageLayer;
-      const conn = sl.connection;
-      if (sl.engine === 'postgresql') {
-        for (const table of ['accesses', 'sessions', 'webhooks']) {
-          await conn.query(`DELETE FROM ${table}`);
-        }
-      } else {
-        for (const name of ['accesses', 'sessions', 'webhooks']) {
-          await bluebird.fromCallback((cb) => conn.deleteMany({ name }, {}, cb));
-        }
+      // Engine-agnostic path via StorageLayer.clearCollection()
+      for (const name of ['accesses', 'sessions', 'webhooks']) {
+        await this.storageLayer.clearCollection(name);
       }
     } else {
       // Legacy raw DB path (MongoDB)
@@ -611,15 +601,10 @@ class FixtureSession extends FixtureItem {
    * @returns {{ _id: any; expires: any; data: { username: any; appId: any; }; }}
    */
   fakeAttributes () {
-    const Sessions = require('storages/engines/mongodb/src/Sessions');
-    const getNewExpirationDate = Sessions.prototype.getNewExpirationDate.bind({
-      options: {
-        maxAge: 1000 * 60 * 60 * 24 * 14 // two weeks
-      }
-    });
+    const twoWeeksMs = 1000 * 60 * 60 * 24 * 14;
     return {
       _id: generateId(),
-      expires: getNewExpirationDate(),
+      expires: new Date(Date.now() + twoWeeksMs),
       data: {
         username: this.context.user.username,
         appId: Charlatan.App.name()
