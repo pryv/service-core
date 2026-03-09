@@ -5,7 +5,7 @@
 ./scripts/setup-dev-env
 
 # Install influxdb
-./scripts/setup-influx
+./storages/engines/influxdb/scripts/setup
 
 # Install graphicsmagick for preview functionality
 sudo apt-get install graphicsmagick
@@ -19,4 +19,4 @@ sudo apt-get install graphicsmagick
 sudo service influxdb start
 
 # Start mongodb
-IS_CI=true ./scripts/start-mongo
+IS_CI=true ./storages/engines/mongodb/scripts/start

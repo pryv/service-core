@@ -12,9 +12,9 @@ Prerequisites:
 - [Node.js](https://nodejs.org/en/download/) 16
   - Use [nvm](https://github.com/nvm-sh/nvm), [nodenv](https://github.com/nodenv/nodenv) or [n](https://github.com/tj/n) to manage multiple versions
 - Mongo DB 4.2 (needs at least 4GB of free disk space for the initial database)
-  - MacOS & Linux: already included in `scripts/setup-dev-env`
+  - MacOS & Linux: already included in `scripts/setup-dev-env` (installs via `storages/engines/mongodb/scripts/setup`)
 - InfluxDB 1.2
-  - Linux: `scripts/setup-influx`
+  - Linux: `storages/engines/influxdb/scripts/setup`
   - MacOS: e.g. `brew install influxdb@1`
 - graphicsmagick (for image events preview)
   - Linux: e.g. `sudo apt-get install graphicsmagick`

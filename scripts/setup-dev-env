@@ -37,7 +37,7 @@ mkdir -p $ATTACHMENTS_FOLDER
 
 # database
 
-. scripts/setup-mongodb
+. storages/engines/mongodb/scripts/setup
 EXIT_CODE=$?
 if [[ ${EXIT_CODE} -ne 0 ]]; then
   echo ""

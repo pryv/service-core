@@ -18,7 +18,7 @@ cd $SCRIPT_FOLDER/
 # --- Resolve VAR_PRYV_FOLDER ---
 
 if [[ -z "$VAR_PRYV_FOLDER" ]]; then
-  VAR_PRYV_FOLDER=$SCRIPT_FOLDER/../var-pryv
+  VAR_PRYV_FOLDER=$SCRIPT_FOLDER/../../../../var-pryv
 fi
 mkdir -p "$VAR_PRYV_FOLDER"
 VAR_PRYV_FOLDER="$(cd "$VAR_PRYV_FOLDER" && pwd)"
@@ -124,5 +124,5 @@ echo ""
 echo "PostgreSQL setup complete."
 echo ""
 echo "To start PostgreSQL (creates 'pryv' role and 'pryv-node' database automatically):"
-echo "    ./scripts/start-postgresql"
+echo "    ./storages/engines/postgresql/scripts/start"
 echo ""

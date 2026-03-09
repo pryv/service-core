@@ -9,7 +9,7 @@
 #   default           — detached, create pryv-node DB
 
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
-VAR_PRYV_FOLDER=${VAR_PRYV_FOLDER:-$SCRIPT_FOLDER/../var-pryv}
+VAR_PRYV_FOLDER=${VAR_PRYV_FOLDER:-$SCRIPT_FOLDER/../../../../var-pryv}
 VAR_PRYV_FOLDER="$(cd "$VAR_PRYV_FOLDER" && pwd)"
 
 PG_BIN=$VAR_PRYV_FOLDER/postgresql-bin/bin
@@ -18,13 +18,13 @@ PG_LOGS=$VAR_PRYV_FOLDER/postgresql-logs
 
 if [[ ! -x "$PG_BIN/pg_ctl" ]]; then
   echo "Error: PostgreSQL not found at $PG_BIN"
-  echo "Run ./scripts/setup-postgresql first."
+  echo "Run ./storages/engines/postgresql/scripts/setup first."
   exit 1
 fi
 
 if [[ ! -d "$PG_DATA" ]]; then
   echo "Error: Data directory not found at $PG_DATA"
-  echo "Run ./scripts/setup-postgresql first."
+  echo "Run ./storages/engines/postgresql/scripts/setup first."
   exit 1
 fi
 

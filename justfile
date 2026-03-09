@@ -34,7 +34,7 @@ install-stable:
 start-deps:
     DEVELOPMENT=true concurrently --names "mongo,influx" \
         --prefix-colors "green,magenta" \
-        scripts/start-mongo influxd
+        storages/engines/mongodb/scripts/start influxd
 
 # Start the given server component for dev (expects '{component}/bin/server')
 start component *params:
@@ -168,7 +168,7 @@ clean-data:
     rm -rf ./var-pryv/users/*
     (killall mongod && sleep 2) || echo "MongoDB was not running"
     rm -rf ./var-pryv/mongodb-data/*
-    DEVELOPMENT=true ./scripts/start-mongo
+    DEVELOPMENT=true ./storages/engines/mongodb/scripts/start
 
 # Run security assessment and output to `security-assessment`
 security-assessment:
