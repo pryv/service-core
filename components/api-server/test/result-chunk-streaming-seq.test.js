@@ -19,9 +19,9 @@ const STORAGE_ENGINE = process.env.STORAGE_ENGINE;
 describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
 
-  let mongoFixtures;
+  let fixtures;
   before(async function () {
-    mongoFixtures = databaseFixture(await produceStorageConnection());
+    fixtures = databaseFixture(await produceStorageConnection());
   });
 
   let apiServer;
@@ -34,7 +34,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
     username = 'test-stream-' + cuid.slug();
     streamId = 'test';
     appAccessToken = cuid();
-    user = await mongoFixtures.user(username, {});
+    user = await fixtures.user(username, {});
     await user.stream({
       id: streamId
     });
@@ -57,7 +57,7 @@ describe('[EVST] events streaming with ' + N_ITEMS + ' entries', function () {
   });
 
   after(async function () {
-    if (mongoFixtures) await mongoFixtures.clean();
+    if (fixtures) await fixtures.clean();
     await apiServer.stop();
   });
 
