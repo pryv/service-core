@@ -456,7 +456,9 @@ exports.addStoreStreams = async function (streams, storesId, atTheEnd) {
   return streams;
 
   function isShown (storeId) {
-    if (storeId === 'local') return false;
+    const storeDataUtils = require('mall/src/helpers/storeDataUtils');
+    // Passthrough stores (local, account) don't have pseudo-root streams
+    if (storeDataUtils.isPassthroughStore(storeId)) return false;
     if (storesId == null) return true;
     return storesId.includes(storeId);
   }

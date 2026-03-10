@@ -63,6 +63,10 @@ async function getMall () {
     versioning: config.get('versioning')
   };
   mall.addStore(dataStoreModule, { id: 'local', name: 'Local', settings: localSettings });
+  // account (system streams backed by baseStorage account fields)
+  const accountStore = require('storages/datastores/account');
+  mall.addStore(accountStore, { id: 'account', name: 'Account', settings: {} });
+
   // audit
   if (config.get('audit:active')) {
     const auditDataStore = require('audit/src/datastore/auditDataStore');

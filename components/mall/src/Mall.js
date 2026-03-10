@@ -78,6 +78,10 @@ class Mall {
       readableTree: SystemStreamsSerializer.getReadable()
     };
 
+    // Build account store stream tree from system streams config (includes type info)
+    const { treeUtils } = require('utils');
+    const accountRoot = treeUtils.findById(SystemStreamsSerializer.getAll(), ':_system:account');
+
     for (const [storeId, store] of this.storesById) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
       const params = {
@@ -88,6 +92,11 @@ class Mall {
       };
       if (storeId === 'local') {
         params.systemStreams = systemStreams;
+      }
+      if (storeId === 'account' && accountRoot) {
+        params.settings = Object.assign({}, params.settings, {
+          streamTree: [structuredClone(accountRoot)]
+        });
       }
       await store.init(params);
     }

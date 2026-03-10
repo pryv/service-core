@@ -144,7 +144,8 @@ class MallUserStreams {
     function getChildlessRootStreamsForOtherStores (storeNames) {
       const res = [];
       for (const [storeId, storeName] of storeNames) {
-        if (storeId !== storeDataUtils.LocalStoreId) {
+        // Passthrough stores (local, account) don't get pseudo-root streams
+        if (!storeDataUtils.isPassthroughStore(storeId)) {
           res.push(streamsUtils.createStoreRootStream({
             id: storeId,
             name: storeName

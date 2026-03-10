@@ -10,15 +10,32 @@ const { errors: dataStoreErrors } = require('@pryv/datastore');
 Object.assign(dataStoreErrors, apiErrors);
 
 const LOCAL_STORE_ID = 'local';
+const ACCOUNT_STORE_ID = 'account';
 const STORE_ID_MARKER = ':';
 
 const storeDataUtils = module.exports = {
   LocalStoreId: LOCAL_STORE_ID,
+  AccountStoreId: ACCOUNT_STORE_ID,
   parseStoreIdAndStoreItemId,
   getFullItemId,
+  isPassthroughStore,
   throwAPIError
 };
 Object.freeze(storeDataUtils);
+
+/**
+ * Whether the given store uses "passthrough" IDs — i.e. store-internal IDs
+ * are the same as external IDs (no prefix add/remove by Mall).
+ *
+ * - `local`: items have no store prefix (e.g. `myStream`)
+ * - `account`: items keep their `:_system:` / `:system:` prefix as-is
+ *
+ * @param {string} storeId
+ * @returns {boolean}
+ */
+function isPassthroughStore (storeId) {
+  return storeId === LOCAL_STORE_ID || storeId === ACCOUNT_STORE_ID;
+}
 
 /**
  * Extract the store id and the in-store item id (without the store reference) from the given item id.
@@ -32,6 +49,8 @@ function parseStoreIdAndStoreItemId (fullItemId) {
   const endMarkerIndex = fullItemId.indexOf(STORE_ID_MARKER, 1);
   const storeId = fullItemId.substring(1, endMarkerIndex);
 
+  // System streams currently route to local store (Phase 4 will switch to ACCOUNT_STORE_ID
+  // once data migration is done — account store uses prefixed IDs: :_system:email, :system:phone)
   if (storeId === 'system' || storeId === '_system') return [LOCAL_STORE_ID, fullItemId];
 
   let storeItemId;
@@ -47,11 +66,12 @@ function parseStoreIdAndStoreItemId (fullItemId) {
  * Get full item id from the given store id and in-store item id.
  * For streams, converts the `*` id to the store's root pseudo-stream (`:store:`).
  * @param {string} storeId
- * @param {storeStreamId}
+ * @param {string} storeItemId
  * @returns {string}
  */
 function getFullItemId (storeId, storeItemId) {
-  if (storeId === LOCAL_STORE_ID) return storeItemId;
+  // Passthrough stores: store-internal IDs ARE the external IDs
+  if (isPassthroughStore(storeId)) return storeItemId;
   return STORE_ID_MARKER + storeId + STORE_ID_MARKER + (storeItemId === '*' ? '' : storeItemId);
 }
 
