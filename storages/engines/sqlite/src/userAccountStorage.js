@@ -40,6 +40,11 @@ module.exports = _internals.createUserAccountStorage({
   passwordExistsInHistory,
   clearHistory,
   getKeyValueDataForStore,
+  getAccountFields,
+  getAccountField,
+  setAccountField,
+  getAccountFieldHistory,
+  deleteAccountField,
   _getPasswordHistory,
   _getAllStoreData,
   _clearStoreData,
@@ -100,6 +105,55 @@ async function passwordExistsInHistory (userId, password, historyLength) {
     }
   }
   return false;
+}
+
+// ACCOUNT FIELDS
+
+async function getAccountFields (userId) {
+  const db = await getUserDB(userId);
+  // Get the latest value per field (highest time wins)
+  const rows = db.prepare(
+    'SELECT field, value FROM account_fields WHERE (field, time) IN ' +
+    '(SELECT field, MAX(time) FROM account_fields GROUP BY field)'
+  ).all();
+  const fields = {};
+  for (const row of rows) {
+    fields[row.field] = JSON.parse(row.value);
+  }
+  return fields;
+}
+
+async function getAccountField (userId, field) {
+  const db = await getUserDB(userId);
+  const row = db.prepare(
+    'SELECT value FROM account_fields WHERE field = ? ORDER BY time DESC LIMIT 1'
+  ).get(field);
+  return row ? JSON.parse(row.value) : null;
+}
+
+async function setAccountField (userId, field, value, createdBy, time = timestamp.now()) {
+  const db = await getUserDB(userId);
+  const item = { field, value: JSON.stringify(value), time, createdBy };
+  db.prepare(
+    'INSERT INTO account_fields (field, value, time, createdBy) VALUES (@field, @value, @time, @createdBy)'
+  ).run(item);
+  return { field, value, time, createdBy };
+}
+
+async function getAccountFieldHistory (userId, field, limit) {
+  const db = await getUserDB(userId);
+  let stmt;
+  if (limit != null) {
+    stmt = db.prepare('SELECT value, time, createdBy FROM account_fields WHERE field = ? ORDER BY time DESC LIMIT ?');
+    return stmt.all(field, limit).map(r => ({ value: JSON.parse(r.value), time: r.time, createdBy: r.createdBy }));
+  }
+  stmt = db.prepare('SELECT value, time, createdBy FROM account_fields WHERE field = ? ORDER BY time DESC');
+  return stmt.all(field).map(r => ({ value: JSON.parse(r.value), time: r.time, createdBy: r.createdBy }));
+}
+
+async function deleteAccountField (userId, field) {
+  const db = await getUserDB(userId);
+  db.prepare('DELETE FROM account_fields WHERE field = ?').run(field);
 }
 
 /**
@@ -202,7 +256,10 @@ async function clearHistory (userId) {
 async function _exportAll (userId) {
   const passwords = await _getPasswordHistory(userId);
   const storeKeyValues = await _getAllStoreData(userId);
-  return { passwords, storeKeyValues };
+  const db = await getUserDB(userId);
+  const accountFields = db.prepare('SELECT field, value, time, createdBy FROM account_fields ORDER BY field, time DESC').all()
+    .map(r => ({ field: r.field, value: JSON.parse(r.value), time: r.time, createdBy: r.createdBy }));
+  return { passwords, storeKeyValues, accountFields };
 }
 
 async function _importAll (userId, data) {
@@ -222,11 +279,18 @@ async function _importAll (userId, data) {
       });
     }
   }
+  if (data.accountFields) {
+    for (const af of data.accountFields) {
+      await setAccountField(userId, af.field, af.value, af.createdBy, af.time);
+    }
+  }
 }
 
 async function _clearAll (userId) {
   await clearHistory(userId);
   await _clearStoreData(userId);
+  const db = await getUserDB(userId);
+  db.prepare('DELETE FROM account_fields').run();
 }
 
 // DB HELPERS
@@ -245,6 +309,8 @@ async function openUserDB (userId) {
   db.prepare('CREATE INDEX IF NOT EXISTS passwords_hash ON passwords(hash);').run();
   db.prepare('CREATE TABLE IF NOT EXISTS storeKeyValueData (storeId TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (storeId, key));').run();
   db.prepare('CREATE INDEX IF NOT EXISTS storeKeyValueData_storeId ON storeKeyValueData(storeId);').run();
+  db.prepare('CREATE TABLE IF NOT EXISTS account_fields (field TEXT NOT NULL, value TEXT, time REAL NOT NULL, createdBy TEXT NOT NULL, PRIMARY KEY (field, time));').run();
+  db.prepare('CREATE INDEX IF NOT EXISTS account_fields_field ON account_fields(field);').run();
   dbCache.set(userId, db);
   return db;
 }

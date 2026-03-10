@@ -7,6 +7,45 @@
 
 const ds = require('@pryv/datastore');
 
+// Only keep standard stream properties (strip config-only fields like
+// isEditable, isIndexed, isShown, isUnique, type, default, etc.)
+const STREAM_PROPERTIES = new Set([
+  'id', 'name', 'parentId', 'clientData', 'children',
+  'trashed', 'created', 'createdBy', 'modified', 'modifiedBy'
+]);
+
+/**
+ * Strip non-stream properties from a stream tree (mutates in place).
+ */
+function cleanStreamTree (streams) {
+  for (const s of streams) {
+    for (const key of Object.keys(s)) {
+      if (!STREAM_PROPERTIES.has(key)) delete s[key];
+    }
+    // Root streams from config have parentId: "*" — normalize to null
+    if (s.parentId === '*') s.parentId = null;
+    if (s.children && s.children.length > 0) cleanStreamTree(s.children);
+  }
+}
+
+/**
+ * Filter a stream tree to only include shown streams.
+ * Non-shown streams and their subtrees are removed.
+ * Must be called BEFORE cleanStreamTree (which strips isShown).
+ */
+function filterShown (streams) {
+  const result = [];
+  for (const s of streams) {
+    if (s.isShown === false) continue;
+    const clone = Object.assign({}, s);
+    if (clone.children && clone.children.length > 0) {
+      clone.children = filterShown(clone.children);
+    }
+    result.push(clone);
+  }
+  return result;
+}
+
 /**
  * Account store UserStreams adapter.
  * Returns the system stream tree from config; rejects all CRUD
@@ -16,7 +55,18 @@ const ds = require('@pryv/datastore');
  * @returns {UserStreams}
  */
 function create (streamTree) {
-  // Build a flat index of streamId → stream for fast lookups
+  // Build a readable-only tree for get() responses (before stripping config props)
+  const readableTree = filterShown(streamTree);
+  cleanStreamTree(readableTree);
+  ds.defaults.applyOnStreams(readableTree);
+
+  // Strip config-only properties from full tree
+  cleanStreamTree(streamTree);
+  // Ensure default properties (created, modified, etc.) are set on all streams
+  ds.defaults.applyOnStreams(streamTree);
+
+  // Build a flat index from the full tree (for getOne lookups —
+  // includes non-shown streams like :_system:unique)
   const streamIndex = new Map();
   indexTree(streamTree);
 
@@ -32,7 +82,7 @@ function create (streamTree) {
   return ds.createUserStreams({
     async get (userId, query) {
       if (query.parentId === '*' || query.parentId == null) {
-        return applyQuery(streamTree, query);
+        return applyQuery(readableTree, query);
       }
       const parent = streamIndex.get(query.parentId);
       if (!parent || !parent.children) return [];

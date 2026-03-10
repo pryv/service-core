@@ -28,6 +28,7 @@ const mockStreamTree = [
         id: ':system:email',
         name: 'Email',
         type: 'email/string',
+        isUnique: true,
         parentId: ':_system:account',
         children: []
       },
@@ -239,6 +240,104 @@ describe('[ACDS] Account DataStore adapter', () => {
         items.push(item);
       }
       assert.strictEqual(items.length, 0);
+    });
+  });
+
+  describe('[DS03] Marker streams and query filtering', () => {
+    it('[DS3A] events include :_system:active in streamIds', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      const event = await accountStore.events.getOne(userId, 'language');
+      assert.ok(event.streamIds.includes(':_system:active'),
+        'event should include :_system:active marker');
+      assert.strictEqual(event.streamIds[0], ':_system:language');
+      assert.strictEqual(event.streamIds[1], ':_system:active');
+    });
+
+    it('[DS3B] unique fields include :_system:unique in streamIds', async () => {
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+      const event = await accountStore.events.getOne(userId, 'email');
+      assert.ok(event.streamIds.includes(':_system:unique'),
+        'unique field should include :_system:unique marker');
+      assert.deepStrictEqual(event.streamIds, [':system:email', ':_system:active', ':_system:unique']);
+    });
+
+    it('[DS3C] non-unique fields do NOT include :_system:unique', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      const event = await accountStore.events.getOne(userId, 'language');
+      assert.ok(!event.streamIds.includes(':_system:unique'),
+        'non-unique field should not include :_system:unique');
+    });
+
+    it('[DS3D] create extracts field name from streamIds skipping markers', async () => {
+      const event = await accountStore.events.create(userId, {
+        streamIds: [':_system:language', ':_system:active'],
+        type: 'language/iso-639-1',
+        content: 'it',
+        createdBy: 'test'
+      });
+      assert.strictEqual(event.id, 'language');
+      assert.strictEqual(event.content, 'it');
+    });
+
+    it('[DS3E] get filters by normalized stream query (any)', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'phone', '123', 'test', 1000);
+
+      const events = await accountStore.events.get(userId, {
+        streams: [[{ any: [':_system:language'] }]]
+      }, {});
+      assert.strictEqual(events.length, 1);
+      assert.strictEqual(events[0].id, 'language');
+    });
+
+    it('[DS3F] get filters by :_system:active (matches all)', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+
+      const events = await accountStore.events.get(userId, {
+        streams: [[{ any: [':_system:active'] }]]
+      }, {});
+      assert.strictEqual(events.length, 2);
+    });
+
+    it('[DS3G] get filters with not condition', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+
+      const events = await accountStore.events.get(userId, {
+        streams: [[{ any: [':_system:active'] }, { not: [':_system:unique'] }]]
+      }, {});
+      assert.strictEqual(events.length, 1);
+      assert.strictEqual(events[0].id, 'language');
+    });
+
+    it('[DS3H] get applies skip and limit options', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'phone', '123', 'test', 1000);
+
+      const events = await accountStore.events.get(userId, {}, { skip: 1, limit: 1 });
+      assert.strictEqual(events.length, 1);
+    });
+
+    it('[DS3I] get filters by type', async () => {
+      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+
+      const events = await accountStore.events.get(userId, {
+        types: ['email/string']
+      }, {});
+      assert.strictEqual(events.length, 1);
+      assert.strictEqual(events[0].id, 'email');
+    });
+
+    it('[DS3J] getHistory includes marker streams', async () => {
+      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
+      const history = await accountStore.events.getHistory(userId, 'email');
+      assert.strictEqual(history.length, 1);
+      assert.ok(history[0].streamIds.includes(':_system:active'));
+      assert.ok(history[0].streamIds.includes(':_system:unique'));
     });
   });
 });

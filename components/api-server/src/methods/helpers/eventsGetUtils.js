@@ -224,6 +224,7 @@ async function streamQueryCheckPermissionsAndReplaceStars (context, params, resu
       unAuthorizedStreamIds.push(cleanStreamId);
     }
   }
+  const additionalStoreQueries = [];
   for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
     // ------------ "*" case
     if (streamQuery.any && streamQuery.any.includes('*')) {
@@ -236,6 +237,26 @@ async function streamQueryCheckPermissionsAndReplaceStars (context, params, resu
         }
       }
       streamQuery.any = canReadStreamIds;
+      // For limited accesses on local store, also create queries for the account
+      // store (account events are stored locally but routed via account permissions,
+      // e.g. :system:email). Only applies to local store star queries — explicit
+      // queries to other stores (like :_audit:) should not leak into unrelated stores.
+      if (streamQuery.storeId !== storeDataUtils.LocalStoreId) continue;
+      for (const [otherStoreId, perms] of Object.entries(context.access._streamByStorePermissionsMap || {})) {
+        if (otherStoreId === streamQuery.storeId) continue;
+        if (params.arrayOfStreamQueriesWithStoreId.some(q => q.storeId === otherStoreId)) continue;
+        // Skip audit store — audit events should only appear via explicit :_audit: queries
+        if (otherStoreId === '_audit') continue;
+        const otherStreamIds = [];
+        for (const perm of Object.values(perms)) {
+          if (await context.access.canGetEventsOnStream(perm.streamId, otherStoreId)) {
+            otherStreamIds.push(perm.streamId);
+          }
+        }
+        if (otherStreamIds.length > 0) {
+          additionalStoreQueries.push({ any: otherStreamIds, storeId: otherStoreId });
+        }
+      }
     } else {
       // ------------ All other cases
       /**
@@ -248,6 +269,10 @@ async function streamQueryCheckPermissionsAndReplaceStars (context, params, resu
         await streamExistsAndCanGetEventsOnStream(streamId, streamQuery.storeId, unAuthorizedStreamIds, unAccessibleStreamIds);
       }
     }
+  }
+  // Append queries for other stores discovered during '*' expansion (limited accesses)
+  if (additionalStoreQueries.length > 0) {
+    params.arrayOfStreamQueriesWithStoreId.push(...additionalStoreQueries);
   }
   if (unAuthorizedStreamIds.length > 0) {
     context.tracing.finishSpan('streamQueries');
@@ -286,6 +311,17 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
       // TODO check for duplicates
       streamQuery.not.push(...forbiddenStreamIds);
     }
+    // For local store queries, also exclude forbidden account streams.
+    // Account events are merged into local results by Mall, so account
+    // permission restrictions must propagate to the local query's `not`
+    // list to prevent unauthorized account events from appearing.
+    if (streamQuery.storeId === storeDataUtils.LocalStoreId) {
+      const accountForbidden = context.access.getForbiddenGetEventsStreamIds(storeDataUtils.AccountStoreId);
+      if (accountForbidden?.length > 0) {
+        if (streamQuery.not == null) { streamQuery.not = []; }
+        streamQuery.not.push(...accountForbidden);
+      }
+    }
   }
   next();
 }
@@ -314,12 +350,19 @@ async function streamQueryExpandStreams (context, params, result, next) {
     if (hasDoNotExpandMarker(streamId)) {
       return [stripDoNotExpandMarker(streamId)];
     }
+    // Exclude helper streams (:_system:helpers and children like :_system:active)
+    // from event query expansion. All account events carry :_system:active as a
+    // secondary streamId, so including it would cause every account event to
+    // match * queries, leaking past permission filters.
+    const expandExcludedIds = excludedIds.includes(':_system:helpers')
+      ? excludedIds
+      : [...excludedIds, ':_system:helpers'];
     const query = {
       id: streamId,
       storeId,
       includeTrashed: params.state === 'all' || params.state === 'trashed',
       childrenDepth: -1,
-      excludedIds,
+      excludedIds: expandExcludedIds,
       hideStoreRoots: true
     };
     const tree = await mall.streams.get(context.user.id, query);
@@ -355,7 +398,7 @@ async function streamQueryAddHiddenStreams (context, params, result, next) {
   // forbidden stream
   const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
   for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
-    if (streamQuery.storeId !== 'local') { continue; }
+    if (streamQuery.storeId !== 'local' && streamQuery.storeId !== storeDataUtils.AccountStoreId) { continue; }
     if (streamQuery.and == null) { streamQuery.and = []; }
     streamQuery.and.push({ not: forbiddenStreamIds });
   }

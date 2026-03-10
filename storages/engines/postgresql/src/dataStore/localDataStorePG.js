@@ -30,7 +30,7 @@ module.exports = ds.createDataStore({
 
     // Init streams — reuses StorageLayer's StreamsPG via the same pattern as MongoDB
     const userStreamsStorage = _internals.storageLayer.streams;
-    userStreams.init(userStreamsStorage, params.systemStreams);
+    userStreams.init(userStreamsStorage);
 
     return this;
   },

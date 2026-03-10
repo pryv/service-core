@@ -49,9 +49,8 @@ function parseStoreIdAndStoreItemId (fullItemId) {
   const endMarkerIndex = fullItemId.indexOf(STORE_ID_MARKER, 1);
   const storeId = fullItemId.substring(1, endMarkerIndex);
 
-  // System streams currently route to local store (Phase 4 will switch to ACCOUNT_STORE_ID
-  // once data migration is done — account store uses prefixed IDs: :_system:email, :system:phone)
-  if (storeId === 'system' || storeId === '_system') return [LOCAL_STORE_ID, fullItemId];
+  // System streams route to the account store (passthrough — prefixed IDs preserved)
+  if (storeId === 'system' || storeId === '_system') return [ACCOUNT_STORE_ID, fullItemId];
 
   let storeItemId;
   if (endMarkerIndex === (fullItemId.length - 1)) { // ':storeId:', i.e. pseudo-stream representing store root

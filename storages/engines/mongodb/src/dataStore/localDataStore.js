@@ -41,7 +41,7 @@ module.exports = ds.createDataStore({
       await streamsCollection.createIndex(item.index, item.options);
     }
     const userStreamsStorage = _internals.storageLayer.streams;
-    userStreams.init(streamsCollection, userStreamsStorage, params.systemStreams);
+    userStreams.init(streamsCollection, userStreamsStorage);
 
     return this;
   },

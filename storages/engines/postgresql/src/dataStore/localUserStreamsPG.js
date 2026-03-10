@@ -17,8 +17,6 @@ const STREAM_PROPERTIES = [
   'trashed', 'created', 'createdBy', 'modified', 'modifiedBy'
 ];
 
-let visibleStreamsTree = [];
-
 /**
  * PostgreSQL data store: streams implementation.
  * Implements the @pryv/datastore UserStreams interface.
@@ -29,9 +27,8 @@ let visibleStreamsTree = [];
 module.exports = ds.createUserStreams({
   userStreamsStorage: null,
 
-  init (userStreamsStorage, systemStreams) {
+  init (userStreamsStorage) {
     this.userStreamsStorage = userStreamsStorage;
-    loadVisibleStreamsTree(systemStreams);
   },
 
   async get (userId, query) {
@@ -72,8 +69,6 @@ module.exports = ds.createUserStreams({
     // Get from DB via StorageLayer's StreamsPG (callback-based)
     allStreamsForAccount = await bluebird.fromCallback((cb) =>
       this.userStreamsStorage.find({ id: userId }, {}, null, cb));
-    // Add system streams
-    allStreamsForAccount = allStreamsForAccount.concat(visibleStreamsTree);
     _internals.cache.setStreams(userId, 'local', allStreamsForAccount);
     return allStreamsForAccount;
   },
@@ -158,12 +153,5 @@ function cloneStream (stream, childrenDepth) {
       copy.children = stream.children.map((s) => cloneStream(s, childrenDepth - 1));
     }
     return copy;
-  }
-}
-
-function loadVisibleStreamsTree (systemStreams) {
-  if (systemStreams?.readableTree) {
-    visibleStreamsTree = systemStreams.readableTree;
-    ds.defaults.applyOnStreams(visibleStreamsTree);
   }
 }

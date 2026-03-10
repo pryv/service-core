@@ -97,14 +97,17 @@ describe('[MSTE] Stores Streams & Events', function () {
           .query({});
         const streams = res.body.streams;
         assert.ok(streams);
-        // we also get helpers here, because with the current implementation, it is returned.
-        assert.strictEqual(streams.length, !isAuditActive ? 4 : 5);
+        // Account store streams (:_system:account, :_system:helpers) are now included
+        // in local store root queries (account is passthrough)
+        assert.strictEqual(streams.length, !isAuditActive ? 5 : 6);
         assert.strictEqual(streams[0].id, ':dummy:');
         assert.strictEqual(streams[1].id, ':faulty:');
         if (isAuditActive) {
           assert.strictEqual(streams[2].id, ':_audit:');
           assert.strictEqual(streams[3].id, streamId);
           assert.strictEqual(streams[3].children.length, 1);
+          assert.strictEqual(streams[4].id, ':_system:account');
+          assert.strictEqual(streams[5].id, ':_system:helpers');
         }
       });
 

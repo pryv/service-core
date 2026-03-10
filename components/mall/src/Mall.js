@@ -81,6 +81,7 @@ class Mall {
     // Build account store stream tree from system streams config (includes type info)
     const { treeUtils } = require('utils');
     const accountRoot = treeUtils.findById(SystemStreamsSerializer.getAll(), ':_system:account');
+    const helpersRoot = treeUtils.findById(SystemStreamsSerializer.getAll(), ':_system:helpers');
 
     for (const [storeId, store] of this.storesById) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);
@@ -94,9 +95,12 @@ class Mall {
         params.systemStreams = systemStreams;
       }
       if (storeId === 'account' && accountRoot) {
-        params.settings = Object.assign({}, params.settings, {
-          streamTree: [structuredClone(accountRoot)]
-        });
+        const streamTree = [structuredClone(accountRoot)];
+        // Include helper streams (:_system:helpers, :_system:active, :_system:unique)
+        // so stream existence lookups succeed — but these are filtered out of
+        // * expansion in MallUserStreams.get to prevent event leakage.
+        if (helpersRoot) streamTree.push(structuredClone(helpersRoot));
+        params.settings = Object.assign({}, params.settings, { streamTree });
       }
       await store.init(params);
     }

@@ -153,6 +153,13 @@ function removeStoreIds (storeId, eventData) {
       if (storeId == null) {
         storeId = testStoreId;
       } else if (testStoreId !== storeId) {
+        // Account stream IDs (e.g. :_system:language) are passthrough and valid
+        // in local store events — they keep their full prefix in MongoDB.
+        if (storeId === storeDataUtils.LocalStoreId &&
+            testStoreId === storeDataUtils.AccountStoreId) {
+          eventData.streamIds[i] = storeStreamId;
+          continue;
+        }
         throw errorFactory.invalidRequestStructure('Cannot create or update an event with id and streamIds belonging to different stores', original);
       }
       eventData.streamIds[i] = storeStreamId;
@@ -185,7 +192,11 @@ function removeEmptyAttachments (eventData) {
  */
 function convertEventToStore (storeId, eventData) {
   const event = structuredClone(eventData);
-  removeStoreIds(storeId, event);
+  // Account store events keep their :_system: IDs as-is (no prefix stripping).
+  // Local store still needs removeStoreIds for the cross-store validation.
+  if (storeId !== storeDataUtils.AccountStoreId) {
+    removeStoreIds(storeId, event);
+  }
   durationToStoreEndTime(event);
   stateToStore(event);
   deletionToStore(event);
@@ -201,7 +212,10 @@ function convertEventFromStore (storeId, eventData) {
   stateFromStore(event);
   deletionFromStore(event);
   removeEmptyAttachments(event);
-  addStoreId(storeId, event);
+  // Account store events keep their :_system: IDs as-is.
+  if (storeId !== storeDataUtils.AccountStoreId) {
+    addStoreId(storeId, event);
+  }
   nullifyFromStore(event);
   return event;
 }

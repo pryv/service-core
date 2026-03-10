@@ -117,6 +117,16 @@ class MallUserStreams {
     } else { // root query
       const streams = await streamsStore.get(userId, storeQuery);
       res.push(...streams);
+
+      // For root queries on local store, also include account store streams
+      // (account is passthrough — its stream IDs are already correct)
+      if (storeId === storeDataUtils.LocalStoreId) {
+        const accountStore = this.streamsStores.get(storeDataUtils.AccountStoreId);
+        if (accountStore) {
+          const accountStreams = await accountStore.get(userId, storeQuery);
+          res.push(...accountStreams);
+        }
+      }
     }
 
     // if store does not support excludeIds, perform it here

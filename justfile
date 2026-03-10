@@ -163,6 +163,13 @@ trace:
 test-data command version:
     NODE_ENV=development node components/test-helpers/scripts/{{command}}-test-data {{version}}
 
+# Reset test state: SQLite DBs, user dirs, and MongoDB user collections (keeps MongoDB running)
+clean-test-data:
+    rm -f ./var-pryv/users/user-index.db ./var-pryv/users/user-index.db-wal ./var-pryv/users/user-index.db-shm
+    rm -f ./var-pryv/users/platform-wide.db ./var-pryv/users/platform-wide.db-wal ./var-pryv/users/platform-wide.db-shm
+    find ./var-pryv/users -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + 2>/dev/null || true
+    @echo "Test data cleaned (SQLite DBs + user dirs)"
+
 # Cleanup users data and MongoDB data in `var-pryv/`
 clean-data:
     rm -rf ./var-pryv/users/*
