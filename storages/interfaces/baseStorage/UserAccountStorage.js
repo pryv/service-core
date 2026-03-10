@@ -53,12 +53,57 @@ const UserAccountStorage = module.exports.UserAccountStorage = {
    */
   getKeyValueDataForStore (storeId) { throw new Error('Not implemented'); },
 
+  // --- Account fields --- //
+
+  /**
+   * Get all current account field values for a user.
+   * Returns only the latest (active) value per field.
+   * @param {string} userId
+   * @returns {Promise<Object>} field → value map (e.g. { email: 'a@b.com', language: 'en' })
+   */
+  async getAccountFields (userId) { throw new Error('Not implemented'); },
+
+  /**
+   * Get the current value of a single account field.
+   * @param {string} userId
+   * @param {string} field - field name (e.g. 'email', 'language')
+   * @returns {Promise<*>} the field value or null if not set
+   */
+  async getAccountField (userId, field) { throw new Error('Not implemented'); },
+
+  /**
+   * Set an account field value (appends to history, becomes the current value).
+   * @param {string} userId
+   * @param {string} field
+   * @param {*} value
+   * @param {string} createdBy - access ID that performed the change
+   * @param {number} [time] - unix timestamp (defaults to now)
+   * @returns {Promise<{field: string, value: *, time: number, createdBy: string}>}
+   */
+  async setAccountField (userId, field, value, createdBy, time) { throw new Error('Not implemented'); },
+
+  /**
+   * Get the history of a single account field (most recent first).
+   * @param {string} userId
+   * @param {string} field
+   * @param {number} [limit] - max entries to return (default: all)
+   * @returns {Promise<Array<{value: *, time: number, createdBy: string}>>}
+   */
+  async getAccountFieldHistory (userId, field, limit) { throw new Error('Not implemented'); },
+
+  /**
+   * Delete an account field (removes all history).
+   * @param {string} userId
+   * @param {string} field
+   */
+  async deleteAccountField (userId, field) { throw new Error('Not implemented'); },
+
   // --- Migration methods --- //
 
   /**
-   * Export all data for a user (passwords + key-value store data).
+   * Export all data for a user (passwords + key-value store data + account fields).
    * @param {string} userId
-   * @returns {Promise<{passwords: Array, storeKeyValues: Array}>}
+   * @returns {Promise<{passwords: Array, storeKeyValues: Array, accountFields: Array}>}
    */
   async _exportAll (userId) { throw new Error('Not implemented'); },
 

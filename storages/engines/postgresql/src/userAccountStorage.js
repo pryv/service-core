@@ -63,6 +63,59 @@ module.exports = _internals.createUserAccountStorage({
     return new StoreKeyValueData(storeId);
   },
 
+  // -- Account fields --
+
+  async getAccountFields (userId) {
+    const res = await db.query(
+      'SELECT DISTINCT ON (field) field, value FROM account_fields WHERE user_id = $1 ORDER BY field, time DESC',
+      [userId]
+    );
+    const fields = {};
+    for (const row of res.rows) {
+      fields[row.field] = row.value;
+    }
+    return fields;
+  },
+
+  async getAccountField (userId, field) {
+    const res = await db.query(
+      'SELECT value FROM account_fields WHERE user_id = $1 AND field = $2 ORDER BY time DESC LIMIT 1',
+      [userId, field]
+    );
+    return res.rows.length > 0 ? res.rows[0].value : null;
+  },
+
+  async setAccountField (userId, field, value, createdBy, time) {
+    const t = time || timestamp.now();
+    await db.query(
+      'INSERT INTO account_fields (user_id, field, value, time, created_by) VALUES ($1, $2, $3, $4, $5)',
+      [userId, field, JSON.stringify(value), t, createdBy]
+    );
+    return { field, value, time: t, createdBy };
+  },
+
+  async getAccountFieldHistory (userId, field, limit) {
+    let sql = 'SELECT value, time, created_by FROM account_fields WHERE user_id = $1 AND field = $2 ORDER BY time DESC';
+    const params = [userId, field];
+    if (limit != null) {
+      sql += ' LIMIT $3';
+      params.push(limit);
+    }
+    const res = await db.query(sql, params);
+    return res.rows.map((r) => ({
+      value: r.value,
+      time: r.time,
+      createdBy: r.created_by
+    }));
+  },
+
+  async deleteAccountField (userId, field) {
+    await db.query(
+      'DELETE FROM account_fields WHERE user_id = $1 AND field = $2',
+      [userId, field]
+    );
+  },
+
   // -- Migration methods --
 
   async _exportAll (userId) {
@@ -72,6 +125,10 @@ module.exports = _internals.createUserAccountStorage({
     );
     const storeData = await db.query(
       'SELECT store_id, key, value FROM store_key_values WHERE user_id = $1',
+      [userId]
+    );
+    const accountFieldsData = await db.query(
+      'SELECT field, value, time, created_by FROM account_fields WHERE user_id = $1 ORDER BY field, time',
       [userId]
     );
     return {
@@ -84,6 +141,12 @@ module.exports = _internals.createUserAccountStorage({
         storeId: r.store_id,
         key: r.key,
         value: r.value
+      })),
+      accountFields: accountFieldsData.rows.map((r) => ({
+        field: r.field,
+        value: r.value,
+        time: r.time,
+        createdBy: r.created_by
       }))
     };
   },
@@ -105,11 +168,20 @@ module.exports = _internals.createUserAccountStorage({
         );
       }
     }
+    if (data.accountFields) {
+      for (const af of data.accountFields) {
+        await db.query(
+          'INSERT INTO account_fields (user_id, field, value, time, created_by) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+          [userId, af.field, JSON.stringify(af.value), af.time, af.createdBy || af.created_by]
+        );
+      }
+    }
   },
 
   async _clearAll (userId) {
     await db.query('DELETE FROM passwords WHERE user_id = $1', [userId]);
     await db.query('DELETE FROM store_key_values WHERE user_id = $1', [userId]);
+    await db.query('DELETE FROM account_fields WHERE user_id = $1', [userId]);
   }
 });
 

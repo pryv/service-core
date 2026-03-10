@@ -9,6 +9,7 @@
  * MongoDB storage for per-user account data such as:
  * - Password and password history
  * - Per-store key-value data
+ * - Account fields with history (email, language, phone, etc.)
  */
 
 const timestamp = require('unix-timestamp');
@@ -17,6 +18,7 @@ const encryption = require('../../../shared/encryption');
 
 let passwordsCollection = null;
 let storesKeyValueCollection = null;
+let accountFieldsCollection = null;
 
 const InitStates = {
   NOT_INITIALIZED: -1,
@@ -33,6 +35,11 @@ module.exports = _internals.createUserAccountStorage({
   passwordExistsInHistory,
   clearHistory,
   getKeyValueDataForStore,
+  getAccountFields,
+  getAccountField,
+  setAccountField,
+  getAccountFieldHistory,
+  deleteAccountField,
   _addKeyValueData,
   _exportAll,
   _importAll,
@@ -67,6 +74,19 @@ async function init () {
       {
         index: { storeId: 1, userId: 1, key: 1 },
         options: { unique: true }
+      }
+    ]
+  });
+  accountFieldsCollection = await db.getCollection({
+    name: 'account-fields',
+    indexes: [
+      {
+        index: { userId: 1, field: 1, time: -1 },
+        options: { unique: true }
+      },
+      {
+        index: { userId: 1, field: 1 },
+        options: { }
       }
     ]
   });
@@ -156,6 +176,61 @@ StoreKeyValueData.prototype.set = async function (userId, key, value) {
   }
 };
 
+// ACCOUNT FIELDS
+
+async function getAccountFields (userId) {
+  // Aggregate to get only the latest entry per field
+  const pipeline = [
+    { $match: { userId } },
+    { $sort: { time: -1 } },
+    { $group: { _id: '$field', value: { $first: '$value' }, time: { $first: '$time' } } }
+  ];
+  const results = await accountFieldsCollection.aggregate(pipeline);
+  const fields = {};
+  for await (const doc of results) {
+    fields[doc._id] = doc.value;
+  }
+  return fields;
+}
+
+async function getAccountField (userId, field) {
+  const doc = await accountFieldsCollection.findOne(
+    { userId, field },
+    { sort: { time: -1 } }
+  );
+  return doc ? doc.value : null;
+}
+
+async function setAccountField (userId, field, value, createdBy, time = timestamp.now()) {
+  const item = { userId, field, value, time, createdBy };
+  try {
+    await accountFieldsCollection.insertOne(item);
+  } catch (e) {
+    if (e.message && e.message.includes('E11000 duplicate key error')) {
+      throw new Error('UNIQUE constraint failed: account-fields.time');
+    }
+    throw e;
+  }
+  return { field, value, time, createdBy };
+}
+
+async function getAccountFieldHistory (userId, field, limit) {
+  const options = { sort: { time: -1 } };
+  if (limit != null) {
+    options.limit = limit;
+  }
+  const cursor = await accountFieldsCollection.find({ userId, field }, options);
+  const history = [];
+  for await (const doc of cursor) {
+    history.push({ value: doc.value, time: doc.time, createdBy: doc.createdBy });
+  }
+  return history;
+}
+
+async function deleteAccountField (userId, field) {
+  await accountFieldsCollection.deleteMany({ userId, field });
+}
+
 // COMMON FUNCTIONS
 
 /**
@@ -180,7 +255,13 @@ async function _exportAll (userId) {
     storeKeyValues.push({ storeId: entry.storeId, key: entry.key, value: entry.value });
   }
 
-  return { passwords, storeKeyValues };
+  const accountFieldsCursor = await accountFieldsCollection.find({ userId }, { sort: { field: 1, time: 1 } });
+  const accountFields = [];
+  for await (const entry of accountFieldsCursor) {
+    accountFields.push({ field: entry.field, value: entry.value, time: entry.time, createdBy: entry.createdBy });
+  }
+
+  return { passwords, storeKeyValues, accountFields };
 }
 
 async function _importAll (userId, data) {
@@ -194,9 +275,15 @@ async function _importAll (userId, data) {
       await _addKeyValueData(kv.storeId, userId, kv.key, kv.value);
     }
   }
+  if (data.accountFields) {
+    for (const af of data.accountFields) {
+      await setAccountField(userId, af.field, af.value, af.createdBy, af.time);
+    }
+  }
 }
 
 async function _clearAll (userId) {
   await passwordsCollection.deleteMany({ userId });
   await storesKeyValueCollection.deleteMany({ userId });
+  await accountFieldsCollection.deleteMany({ userId });
 }

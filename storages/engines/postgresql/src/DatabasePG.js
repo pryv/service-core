@@ -343,6 +343,15 @@ CREATE TABLE IF NOT EXISTS store_key_values (
   PRIMARY KEY (user_id, store_id, key)
 );
 
+CREATE TABLE IF NOT EXISTS account_fields (
+  user_id TEXT NOT NULL,
+  field TEXT NOT NULL,
+  value JSONB,
+  time DOUBLE PRECISION NOT NULL,
+  created_by TEXT,
+  PRIMARY KEY (user_id, field, time)
+);
+
 -- Users index
 
 CREATE TABLE IF NOT EXISTS users_index (
