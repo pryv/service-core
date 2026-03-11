@@ -40,8 +40,6 @@ class SystemStreamsSerializer {
   /** @static */
   static allMap;
   /** @static */
-  static allStreamIds;
-  /** @static */
   static readableAccountMap;
   /** @static */
   static readableAccountMapForTests;
@@ -49,8 +47,6 @@ class SystemStreamsSerializer {
   static readableAccountStreamIds;
   /** @static */
   static editableAccountMap;
-  /** @static */
-  static editableAccountStreamIds;
   /** @static */
   static accountMap;
   /** @static */
@@ -114,12 +110,10 @@ class SystemStreamsSerializer {
     singleton.systemStreamsSettings = config.get('systemStreams');
     this.allAsTree = null;
     this.allMap = null;
-    this.allStreamIds = null;
     this.readableAccountStreamIds = null;
     this.readableAccountMap = null;
     this.readableAccountMapForTests = null;
     this.editableAccountMap = null;
-    this.editableAccountStreamIds = null;
     this.accountMap = null;
     this.accountMapWithOptions = null;
     this.accountLeavesMap = null;
@@ -209,17 +203,6 @@ class SystemStreamsSerializer {
     if (SystemStreamsSerializer.editableAccountMap != null) { return SystemStreamsSerializer.editableAccountMap; }
     SystemStreamsSerializer.editableAccountMap = filterMapStreams(SystemStreamsSerializer.getAccountChildren(), IS_EDITABLE);
     return SystemStreamsSerializer.editableAccountMap;
-  }
-
-  /**
-   * Get only those streams that user is allowed to edit
-   * @static
-   * @returns {string[]}
-   */
-  static getEditableAccountStreamIds () {
-    if (SystemStreamsSerializer.editableAccountStreamIds != null) { return SystemStreamsSerializer.editableAccountStreamIds; }
-    SystemStreamsSerializer.editableAccountStreamIds = Object.keys(SystemStreamsSerializer.getEditableAccountMap());
-    return SystemStreamsSerializer.editableAccountStreamIds;
   }
 
   /**
@@ -468,15 +451,6 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Get all ids of all system streams
-   * @static
-   * @returns {string[]}
-   */
-  static getAllSystemStreamsIds () {
-    return this.allStreamIds;
-  }
-
-  /**
    * Builds allAsTree
    * Returns a streams tree of all system streams
    * @static
@@ -536,8 +510,6 @@ function initializeSerializer (serializer) {
   const allAsArray = treeUtils.flattenTree(SystemStreamsSerializer.allAsTree);
   const allStreamIds = allAsArray.map((s) => s.id);
   initializeTranslationMaps(allStreamIds);
-  SystemStreamsSerializer.allAsArray = allAsArray;
-  SystemStreamsSerializer.allStreamIds = allStreamIds;
   const options = {
     STREAM_ID_ACTIVE: 'active',
     STREAM_ID_UNIQUE: 'unique',
