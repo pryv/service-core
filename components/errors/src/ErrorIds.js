@@ -65,7 +65,6 @@ const ErrorIds = {
   PasswordRequired: 'password-required',
   ForbiddenAccountEventModification: 'forbidden-none-editable-account-streams',
   ForbiddenToChangeAccountStreamId: 'forbidden-change-account-streams-id',
-  ForbiddenAccountStreamsModification: 'forbidden-account-streams-actions',
   ForbiddenToEditNoneditableAccountFields: 'forbidden-to-edit-noneditable-account-fields',
   MissingRequiredField: 'missing-required-field',
   NewPasswordFieldIsRequired: 'newPassword-required'

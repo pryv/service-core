@@ -35,7 +35,6 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenMultipleAccountStreams]: 'Event cannot be part of multiple account streams.',
   [ErrorIds.ForbiddenAccountEventModification]: 'Forbidden event modification. You are trying to edit or delete a non-editable or active system stream event.',
   [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to modify streamIds of system events.',
-  [ErrorIds.ForbiddenAccountStreamsModification]: 'It is forbidden to modify system streams.',
   [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
   [ErrorIds.UnexpectedError]: 'Unexpected error',
   [ErrorIds.NewPasswordFieldIsRequired]: 'newPassword field is required.',
