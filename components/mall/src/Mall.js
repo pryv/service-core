@@ -74,8 +74,7 @@ class Mall {
     const SystemStreamsSerializer = require('business/src/system-streams/serializer');
     await SystemStreamsSerializer.init();
     const systemStreams = {
-      accountStreamIds: SystemStreamsSerializer.getAccountStreamIds(),
-      readableTree: SystemStreamsSerializer.getReadable()
+      accountStreamIds: SystemStreamsSerializer.getAccountStreamIds()
     };
 
     // Build account store stream tree from system streams config (includes type info)

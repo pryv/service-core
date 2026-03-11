@@ -6,7 +6,6 @@
  */
 
 const _ = require('lodash');
-const { StreamProperties } = require('business/src/streams');
 const treeUtils = require('utils').treeUtils;
 const { getConfig } = require('@pryv/boiler');
 const { features } = require('api-server/config/components/systemStreams');
@@ -42,8 +41,6 @@ class SystemStreamsSerializer {
   static allMap;
   /** @static */
   static allStreamIds;
-  /** @static */
-  static readable;
   /** @static */
   static readableAccountMap;
   /** @static */
@@ -118,7 +115,6 @@ class SystemStreamsSerializer {
     this.allAsTree = null;
     this.allMap = null;
     this.allStreamIds = null;
-    this.readable = null;
     this.readableAccountStreamIds = null;
     this.readableAccountMap = null;
     this.readableAccountMapForTests = null;
@@ -402,20 +398,6 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Modification that is done for each systemStreamId
-   * @param string streamIdWithDot
-   * @static
-   * @param {string} streamIdWithDot
-   * @returns {string}
-   */
-  static removeDotFromStreamId (streamIdWithDot) {
-    if (streamIdWithDot.startsWith('.')) {
-      streamIdWithDot = streamIdWithDot.substr(1, streamIdWithDot.length);
-    }
-    return streamIdWithDot;
-  }
-
-  /**
    * Removes the system stream prefix, if any
    * @param string streamIdWithPrefix
    * @static
@@ -456,16 +438,6 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * @static
-   * @param {string} streamId
-   * @returns {boolean}
-   */
-  static isPrivateSystemStreamId (streamId) {
-    return (SystemStreamsSerializer.privateStreamIdWithoutPrefixToWith[streamId] !=
-            null);
-  }
-
-  /**
    * Adds customer systeam stream prefix to stream id, if available
    * @param string streamId
    * @static
@@ -479,16 +451,6 @@ class SystemStreamsSerializer {
                 streamId);
     }
     return streamIdWithPrefix;
-  }
-
-  /**
-   * @static
-   * @param {string} streamId
-   * @returns {boolean}
-   */
-  static isCustomerSystemStreamId (streamId) {
-    return (SystemStreamsSerializer.customerStreamIdWithoutPrefixToWith[streamId] !=
-            null);
   }
 
   /**
@@ -534,18 +496,6 @@ class SystemStreamsSerializer {
     if (SystemStreamsSerializer.allMap != null) { return SystemStreamsSerializer.allMap; }
     SystemStreamsSerializer.allMap = filterMapStreams(this.getAll(), ALL);
     return SystemStreamsSerializer.allMap;
-  }
-
-  /**
-   * Return all readable system streams
-   * @static
-   * @returns {any[]}
-   */
-  static getReadable () {
-    if (SystemStreamsSerializer.readable) { return SystemStreamsSerializer.readable; }
-    SystemStreamsSerializer.readable = treeUtils.filterTree(this.allAsTree, false, (s) => s[IS_SHOWN]);
-    SystemStreamsSerializer.readable = treeUtils.cloneAndApply(this.readable, (s) => _.pick(s, StreamProperties));
-    return SystemStreamsSerializer.readable;
   }
 }
 
