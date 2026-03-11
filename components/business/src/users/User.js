@@ -101,22 +101,6 @@ class User {
   getUniqueFields () {
     return _.pick(this, this.uniqueAccountFields);
   }
-
-  get dbDocuments () {
-    console.log('XXXXX > dbDocuments', new Error());
-  }
-
-  set dbDocuments (x) {
-    console.log('XXXXX set dbDocuments', new Error());
-  }
-
-  get attachedFiles () {
-    console.log('XXXXX get attachedFiles', new Error());
-  }
-
-  set attachedFiles (x) {
-    console.log('XXXXX set attachedFiles', new Error());
-  }
 }
 /**
  * @param {User} user
@@ -136,7 +120,7 @@ function buildAccountFields (user) {
 function loadAccountData (user, params) {
   user.accountFields.forEach((field) => {
     if (field === 'dbDocuments' || field === 'attachedFiles') {
-      // console.log('XXXXXX loadAccountData > Ignoring', field);
+      // These are computed by Size.js, not stored as account fields
     } else {
       if (params[field] != null) { user[field] = params[field]; }
     }

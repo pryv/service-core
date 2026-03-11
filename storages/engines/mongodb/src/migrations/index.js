@@ -11,10 +11,6 @@
  * - Interruption-resistant: if interrupted, is able to proceed when run again
  */
 module.exports = {
-  '1.7.0': require('./1.7.0'),
-  '1.7.1': require('./1.7.1.js'),
-  '1.7.5': require('./1.7.5'),
-  '1.8.0': require('./1.8.0'),
   '1.9.0': require('./1.9.0'),
   '1.9.2': require('./1.9.2'),
   '1.9.3': require('./1.9.3'),
