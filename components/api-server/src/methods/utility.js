@@ -8,7 +8,6 @@ const commonFns = require('./helpers/commonFunctions');
 const errorHandling = require('errors').errorHandling;
 const methodsSchema = require('../schema/generalMethods');
 const bluebird = require('bluebird');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getPasswordRules } = require('business/src/users');
 const updateAccessUsageStats = require('./helpers/updateAccessUsageStats');
@@ -51,7 +50,6 @@ module.exports = async function (api) {
       const accessProp = context.access[prop];
       if (accessProp != null) { result[prop] = accessProp; }
     }
-    if (result.permissions != null) { result.permissions = filterNonePermissionsOnSystemStreams(result.permissions); }
     result.user = {};
     for (const prop of userProps) {
       const userProp = context.user[prop];
@@ -62,17 +60,6 @@ module.exports = async function (api) {
       Object.assign(result.user, expirationAndChangeTimes);
     }
     next();
-    /**
-     * Remove permissions with level="none" of system streams from given array
-     */
-    function filterNonePermissionsOnSystemStreams (permissions) {
-      const filteredPermissions = [];
-      for (const perm of permissions) {
-        if (!(perm.level === 'none' &&
-                    SystemStreamsSerializer.isSystemStreamId(perm.streamId))) { filteredPermissions.push(perm); }
-      }
-      return filteredPermissions;
-    }
   }
   api.register('callBatch', commonFns.getParamsValidation(methodsSchema.callBatch.params), callBatchApiFn, updateAccessUsage);
   async function callBatchApiFn (context, calls, result, next) {

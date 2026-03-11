@@ -302,6 +302,11 @@ describe('[ROOT] root', function () {
         .get('/' + username + '/access-info')
         .set('Authorization', sharedAccessToken);
 
+      // Server adds default 'none' permission for system streams on non-personal accesses
+      sharedAccess.permissions.unshift({
+        streamId: ':_system:account',
+        level: 'none'
+      });
       // extend sharedAccess with audit rights
       if (isAuditActive) {
         sharedAccess.permissions.push({

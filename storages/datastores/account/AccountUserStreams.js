@@ -98,19 +98,19 @@ function create (streamTree) {
     },
 
     async create (userId, streamData) {
-      throw ds.errors.unsupportedOperation('Account streams are read-only (defined by configuration)');
+      throw ds.errors.invalidOperation('It is forbidden to modify system streams.');
     },
 
     async createDeleted (userId, streamData) {
-      throw ds.errors.unsupportedOperation('Account streams are read-only (defined by configuration)');
+      throw ds.errors.invalidOperation('It is forbidden to modify system streams.');
     },
 
     async update (userId, updateData) {
-      throw ds.errors.unsupportedOperation('Account streams are read-only (defined by configuration)');
+      throw ds.errors.invalidOperation('It is forbidden to modify system streams.');
     },
 
     async delete (userId, streamId) {
-      throw ds.errors.unsupportedOperation('Account streams are read-only (defined by configuration)');
+      throw ds.errors.invalidOperation('It is forbidden to modify system streams.');
     }
   });
 }

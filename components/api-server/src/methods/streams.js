@@ -13,9 +13,6 @@ const string = require('./helpers/string');
 const utils = require('utils');
 const treeUtils = utils.treeUtils;
 const _ = require('lodash');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const ErrorMessages = require('errors/src/ErrorMessages');
-const ErrorIds = require('errors/src/ErrorIds');
 const APIError = require('errors/src/APIError');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
@@ -142,7 +139,6 @@ module.exports = async function (api) {
   // CREATION
   api.register(
     'streams.create',
-    forbidSystemStreamsActions,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
@@ -202,28 +198,7 @@ module.exports = async function (api) {
     }
   }
   // UPDATE
-  api.register('streams.update', forbidSystemStreamsActions, commonFns.getParamsValidation(methodsSchema.update.params), commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger), applyPrerequisitesForUpdate, updateStream);
-  /**
-   * Forbid to create or modify system streams, or add children to them
-   *
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
-   */
-  function forbidSystemStreamsActions (context, params, result, next) {
-    if (params.id != null) {
-      if (SystemStreamsSerializer.isSystemStreamId(params.id)) {
-        return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification]));
-      }
-    }
-    if (params.parentId != null) {
-      if (SystemStreamsSerializer.isSystemStreamId(params.parentId)) {
-        return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenAccountStreamsModification]));
-      }
-    }
-    next();
-  }
+  api.register('streams.update', commonFns.getParamsValidation(methodsSchema.update.params), commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger), applyPrerequisitesForUpdate, updateStream);
   async function applyPrerequisitesForUpdate (context, params, result, next) {
     if (params?.update?.parentId === params.id) {
       return next(errors.invalidOperation('The provided "parentId" is the same as the stream\'s "id".', params.update));
@@ -285,7 +260,7 @@ module.exports = async function (api) {
     }
   }
   // DELETION
-  api.register('streams.delete', forbidSystemStreamsActions, commonFns.getParamsValidation(methodsSchema.del.params), verifyStreamExistenceAndPermissions, deleteStream);
+  api.register('streams.delete', commonFns.getParamsValidation(methodsSchema.del.params), verifyStreamExistenceAndPermissions, deleteStream);
   async function verifyStreamExistenceAndPermissions (context, params, result, next) {
     params.mergeEventsWithParent ??= null;
     context.stream = await context.streamForStreamId(params.id);
@@ -316,6 +291,9 @@ module.exports = async function (api) {
       pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_STREAMS_CHANGED);
       return next();
     } catch (err) {
+      if (err instanceof APIError) {
+        return next(err);
+      }
       return next(errors.unexpectedError(err));
     }
   }
