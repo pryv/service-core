@@ -29,7 +29,6 @@ describe('[SDHF] Storing data in a HF series', function () {
   before(async function () {
     database = await produceStorageConnection();
     mall = await getMall();
-    await require('business/src/system-streams/serializer').init();
     pryv = databaseFixture(database);
     seriesConn = await produceSeriesConnection();
   });

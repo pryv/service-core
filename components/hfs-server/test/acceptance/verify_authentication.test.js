@@ -57,7 +57,6 @@ describe('[METC] Metadata Cache', function () {
   let config;
   before(async function () {
     config = await getConfig();
-    await require('business/src/system-streams/serializer').init();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0;
