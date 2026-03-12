@@ -50,8 +50,6 @@ class SystemStreamsSerializer {
   /** @static */
   static accountMap;
   /** @static */
-  static accountMapWithOptions;
-  /** @static */
   static accountLeavesMap;
   /** @static */
   static accountStreamIds;
@@ -61,8 +59,6 @@ class SystemStreamsSerializer {
   static uniqueAccountStreamsIdsWithoutPrefix;
   /** @static */
   static accountStreamsIdsForbiddenForReading;
-  /** @static */
-  static allRootStreamIdsThatRequireReadRightsForEventsGet;
   /** @static */
   static accountChildren;
   // Maps used for quick translation from without prefix to with
@@ -115,7 +111,6 @@ class SystemStreamsSerializer {
     this.readableAccountMapForTests = null;
     this.editableAccountMap = null;
     this.accountMap = null;
-    this.accountMapWithOptions = null;
     this.accountLeavesMap = null;
     this.accountStreamIds = null;
     this.indexedAccountStreamsIdsWithoutPrefix = null;
@@ -126,25 +121,7 @@ class SystemStreamsSerializer {
     this.privateStreamIdWithoutPrefixToWith = null;
     this.accountStreamIdWithoutPrefixToWith = null;
     this.options = null;
-    this.allRootStreamIdsThatRequireReadRightsForEventsGet = null;
     initializeSerializer(singleton);
-  }
-
-  /**
-   * Get all root streamIds that need explicit rights to be readable (all stream starting by PRYV_PRFIX)
-   * @static
-   * @returns {string[]}
-   */
-  static getAllRootStreamIdsThatRequireReadRightsForEventsGet () {
-    if (SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet) { return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet; }
-    SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet =
-            [];
-    for (const rootStream of SystemStreamsSerializer.getAll()) {
-      if (rootStream.id.indexOf(PRYV_PREFIX) === 0 &&
-                rootStream.id !== ':_system:helpers') { SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet.push(rootStream.id); }
-    }
-    // ---- TODO FIND A NICE WAY TO ACHIEVE THIS
-    return SystemStreamsSerializer.allRootStreamIdsThatRequireReadRightsForEventsGet;
   }
 
   /**
@@ -261,32 +238,6 @@ class SystemStreamsSerializer {
     });
     SystemStreamsSerializer.allAccountStreamIdsForUser = returnObject;
     return SystemStreamsSerializer.allAccountStreamIdsForUser;
-  }
-
-  /**
-   * Return not only account stream but also helper streams
-   * @returns {Map<string, boolean>} of StreamIds
-   * @static
-   */
-  static getAccountMapWithOptions () {
-    if (SystemStreamsSerializer.accountMapWithOptions != null) { return SystemStreamsSerializer.accountMapWithOptions; }
-    const accountMapWithOptions = structuredClone(SystemStreamsSerializer.getAccountMap());
-    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_ACCOUNT] = true;
-    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_ACTIVE] = true;
-    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_UNIQUE] = true;
-    accountMapWithOptions[SystemStreamsSerializer.options.STREAM_ID_HELPERS] = true;
-    SystemStreamsSerializer.accountMapWithOptions = accountMapWithOptions;
-    return SystemStreamsSerializer.accountMapWithOptions;
-  }
-
-  /**
-   * Returns true if the provided streamId is an account system stream
-   * @static
-   * @param {string} streamId
-   * @returns {boolean}
-   */
-  static isAccountStreamId (streamId) {
-    return SystemStreamsSerializer.getAccountMapWithOptions()[streamId] != null;
   }
 
   /**

@@ -311,16 +311,13 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
       // TODO check for duplicates
       streamQuery.not.push(...forbiddenStreamIds);
     }
-    // For local store queries, also exclude forbidden account streams.
-    // Account events are merged into local results by Mall, so account
-    // permission restrictions must propagate to the local query's `not`
-    // list to prevent unauthorized account events from appearing.
-    if (streamQuery.storeId === storeDataUtils.LocalStoreId) {
-      const accountForbidden = context.access.getForbiddenGetEventsStreamIds(storeDataUtils.AccountStoreId);
-      if (accountForbidden?.length > 0) {
-        if (streamQuery.not == null) { streamQuery.not = []; }
-        streamQuery.not.push(...accountForbidden);
-      }
+    // For non-personal local store queries, exclude account streams root.
+    // Account events physically live in local MongoDB but are gated by
+    // account store permissions. The root exclusion propagates through
+    // stream expansion to exclude all children.
+    if (streamQuery.storeId === storeDataUtils.LocalStoreId && !context.access.isPersonal()) {
+      if (streamQuery.not == null) { streamQuery.not = []; }
+      streamQuery.not.push(SystemStreamsSerializer.options.STREAM_ID_ACCOUNT);
     }
   }
   next();

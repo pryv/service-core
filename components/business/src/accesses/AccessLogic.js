@@ -51,11 +51,9 @@ class AccessLogic {
 
     if (!this.permissions) this.permissions = [];
 
-    // by default lock all permisssions on system streams by adding them in order at start of permissions
-    // in case they are allowed, they will be overwritten by permissions
-    for (const forbiddenStream of SystemStreamsSerializer.getAllRootStreamIdsThatRequireReadRightsForEventsGet()) {
-      this.permissions.unshift({ streamId: forbiddenStream, level: 'none' });
-    }
+    // Lock account streams by default — explicit permissions can override.
+    // This also makes the 'none' level visible in access-info API responses.
+    this.permissions.unshift({ streamId: SystemStreamsSerializer.options.STREAM_ID_ACCOUNT, level: 'none' });
 
     // add audit permissions
     if (!addAuditStreams()) return;
@@ -147,16 +145,6 @@ class AccessLogic {
     const storeStreamPermissionMap = this._streamByStorePermissionsMap[storeId];
     if (storeStreamPermissionMap == null) return null;
     return storeStreamPermissionMap[streamId];
-  }
-
-  /**
-   * returns the account streams with Authorizations
-   * @returns {Array<permission>}
-   */
-  getAccountStreamPermissions () {
-    const localPerms = this._streamByStorePermissionsMap.local;
-    if (localPerms == null) return [];
-    return Object.values(localPerms).filter(perm => SystemStreamsSerializer.isAccountStreamId(perm.streamId));
   }
 
   /**
@@ -421,11 +409,9 @@ class AccessLogic {
     }
 
     // Here -- Stream Has not been found in permissions.. look for a '*' permission
-
-    // do not allow star permissions for account streams
-    if (SystemStreamsSerializer.isAccountStreamId(storeStreamId)) return null;
-
-    const permissions = this.getStreamPermission(storeId, '*'); // found nothing finaly.. look for global access level if any
+    // Account streams are safe: account store is not in includedInStarPermissions,
+    // so star permissions never expand to it.
+    const permissions = this.getStreamPermission(storeId, '*');
     return permissions;
   }
 
