@@ -62,39 +62,6 @@ describe('[FG5R] Events of system streams', () => {
     return user;
   }
 
-  /**
-   * Create additional event
-   * @param string streamId
-   */
-  async function createAdditionalEvent (streamId) {
-    const eventDataForadditionalEvent = {
-      streamIds: [streamId],
-      content: charlatan.Lorem.characters(7),
-      type: 'string/pryv'
-    };
-    return await request.post(basePath)
-      .send(eventDataForadditionalEvent)
-      .set('authorization', access.token);
-  }
-
-  async function createAdditionalEventAndupdateMainOne (streamId) {
-    eventData = {
-      streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
-      content: charlatan.Lorem.characters(7),
-      type: 'string/pryv'
-    };
-
-    const initialEvent = await getOneEvent(user.attrs.id, streamId);
-
-    // create an additional event
-    await createAdditionalEvent(streamId);
-
-    const response = await request.put(path.join(basePath, initialEvent.id))
-      .send(eventData)
-      .set('authorization', access.token);
-    return response;
-  }
-
   before(async function () {
     config = await getConfig();
     config.injectTestConfig({ testsSkipForwardToRegister: false });
@@ -318,20 +285,15 @@ describe('[FG5R] Events of system streams', () => {
           it('[9C2D] should return the created event', () => {
             assert.strictEqual(res.body.event.content, eventData.content);
             assert.strictEqual(res.body.event.type, eventData.type);
-            assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
           });
-          it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-            assert.strictEqual(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
-
+          it('[A9DC] should update the field value (single event per field)', async () => {
             const allEvents = await mall.events.get(user.attrs.id,
               { streams: [{ any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')] }] });
 
-            assert.strictEqual(allEvents.length, 2);
-            // check the order
-            assert.deepStrictEqual(allEvents[0].id, res.body.event.id);
-            // verify streamIds
-            assert.deepStrictEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-            assert.deepStrictEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
+            assert.strictEqual(allEvents.length, 1);
+            assert.strictEqual(allEvents[0].content, eventData.content);
+            assert.deepStrictEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
           });
         });
         describe('[ED17] which is indexed', function () {
@@ -362,17 +324,17 @@ describe('[FG5R] Events of system streams', () => {
             });
             it('[67F7] should return the created event', () => {
               assert.strictEqual(res.body.event.content, eventData.content);
-              assert.strictEqual(res.body.event.type, eventData.type);
-              assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+              // Account store enforces the configured type for the stream
+              assert.strictEqual(res.body.event.type, 'language/iso-639-1');
+              assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
             });
-            it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
+            it('[467D] should update the field value (single event per field)', async () => {
               const allEvents = await mall.events.get(user.attrs.id,
                 { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')] }] });
 
-              assert.strictEqual(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
-              assert.strictEqual(allEvents[0].streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')), true);
-              assert.strictEqual(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
-              assert.strictEqual(allEvents[1].streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')), true);
+              assert.strictEqual(allEvents.length, 1);
+              assert.strictEqual(allEvents[0].content, eventData.content);
+              assert.deepStrictEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
             });
             it('[199D] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
@@ -416,8 +378,6 @@ describe('[FG5R] Events of system streams', () => {
           describe('[WCIU] whose content is unique', () => {
             let allEventsInDb;
             let streamId;
-            let newEventFromDB;
-            let oldEventFromDB;
             before(async function () {
               streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
               await createUser();
@@ -439,22 +399,19 @@ describe('[FG5R] Events of system streams', () => {
                 .send(eventData)
                 .set('authorization', access.token);
               allEventsInDb = await mall.events.get(user.attrs.id, { streams: [{ any: [streamId] }], state: 'all' });
-              newEventFromDB = allEventsInDb.find(event => event.id === res.body.event.id);
-              oldEventFromDB = allEventsInDb.find(event => event.id !== res.body.event.id);
             });
             it('[SQZ2] should return 201', () => {
               assert.strictEqual(res.status, 201);
             });
             it('[YS79] should return the created event', () => {
               assert.strictEqual(res.body.event.content, eventData.content);
-              assert.strictEqual(res.body.event.type, eventData.type);
+              // Account store enforces the configured type for the stream
+              assert.strictEqual(res.body.event.type, 'email/string');
             });
-            it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
-              assert.deepStrictEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              assert.deepStrictEqual(oldEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              // check that second event is our new event and that it contains active streamId
-              assert.deepStrictEqual(newEventFromDB.id, res.body.event.id);
-              assert.deepStrictEqual(newEventFromDB.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+            it('[DA23] should update the field value (single event per field)', async () => {
+              assert.strictEqual(allEventsInDb.length, 1);
+              assert.deepStrictEqual(allEventsInDb[0].streamIds, [streamId]);
+              assert.strictEqual(allEventsInDb[0].content, eventData.content);
             });
             it('[D316] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
@@ -611,7 +568,7 @@ describe('[FG5R] Events of system streams', () => {
       });
       it('[764A] should return the created event', () => {
         assert.strictEqual(res.body.event.createdBy, sharedAccess.attrs.id);
-        assert.deepStrictEqual(res.body.event.streamIds, [systemStreamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+        assert.deepStrictEqual(res.body.event.streamIds, [systemStreamId]);
       });
       it('[765A] should notify register with the new data', function () {
         if (isDnsLess) this.skip();
@@ -673,7 +630,7 @@ describe('[FG5R] Events of system streams', () => {
         let serviceRegisterRequest;
         async function editEvent (streamId, isFaulty = false) {
           eventData = {
-            streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
+            streamIds: [streamId],
             content: isFaulty ? { someProp: 123 } : charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
@@ -705,36 +662,9 @@ describe('[FG5R] Events of system streams', () => {
             assert.strictEqual(res.body.event.content, eventData.content);
             assert.strictEqual(res.body.event.type, eventData.type);
             assert.deepStrictEqual(res.body.event.streamIds, [
-              SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
-              SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+              SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
           });
 
-          describe('[ED28] by adding the "active" streamId', () => {
-            let streamId;
-            before(async function () {
-              streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber');
-              await createUser();
-              res = await createAdditionalEventAndupdateMainOne(streamId);
-            });
-            it('[562A] should return 200', () => {
-              assert.strictEqual(res.status, 200);
-            });
-            it('[5622] should return the updated event', () => {
-              assert.strictEqual(res.body.event.content, eventData.content);
-              assert.strictEqual(res.body.event.type, eventData.type);
-              assert.deepStrictEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-            });
-            it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
-              const allEvents = await mall.events.get(user.attrs.id, { streams: [{ any: [streamId] }] });
-
-              assert.strictEqual(allEvents.length, 2);
-              // check the order
-              assert.deepStrictEqual(allEvents[1].id, res.body.event.id);
-              // verify streamIds
-              assert.deepStrictEqual(allEvents[0].streamIds, [streamId]);
-              assert.deepStrictEqual(allEvents[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-            });
-          });
           describe('[ED29] by changing its steamIds', () => {
             describe('[ED30] when editing with 2 streamIds at the time', () => {
               let streamIds;
@@ -827,35 +757,6 @@ describe('[FG5R] Events of system streams', () => {
                   fieldsToDelete: {}
                 });
               });
-              describe('[ED35] by adding the "active" streamId', () => {
-                before(async function () {
-                  await createUser();
-                  const streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
-                  nock.cleanAll();
-                  scope = nock(config.get('services:register:url'));
-                  scope.put('/users',
-                    (body) => {
-                      serviceRegisterRequest = body;
-                      return true;
-                    }).times(2).reply(200, { errors: [] });
-                  res = await createAdditionalEventAndupdateMainOne(streamId);
-                });
-                it('[0D18] should notify register with the updated data', () => {
-                  assert.strictEqual(scope.isDone(), true);
-                  assert.deepStrictEqual(serviceRegisterRequest, {
-                    username: user.attrs.username,
-                    user: {
-                      language: [{
-                        value: eventData.content,
-                        isUnique: false,
-                        isActive: true,
-                        creation: false
-                      }]
-                    },
-                    fieldsToDelete: {}
-                  });
-                });
-              });
             });
             describe('[ED36] when the new value is invalid', () => {
               const streamId = 'language';
@@ -941,40 +842,6 @@ describe('[FG5R] Events of system streams', () => {
                   }]
                 },
                 fieldsToDelete: {}
-              });
-            });
-            describe('[ED40] by adding the "active" streamId', () => {
-              before(async () => {
-                await createUser();
-                const streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
-                nock.cleanAll();
-                scope = nock(config.get('services:register:url'));
-                scope.put('/users',
-                  (body) => {
-                    serviceRegisterRequest = body;
-                    return true;
-                  }).times(2).reply(200, { errors: [] });
-                res = await createAdditionalEventAndupdateMainOne(streamId);
-              });
-
-              it('[HJWE] should return 200', () => {
-                assert.strictEqual(res.status, 200);
-              });
-              it('[6AAT] should notify register with the updated data', function () {
-                if (isDnsLess) this.skip();
-                assert.strictEqual(scope.isDone(), true);
-                assert.deepStrictEqual(serviceRegisterRequest, {
-                  username: user.attrs.username,
-                  user: {
-                    email: [{
-                      value: eventData.content,
-                      isUnique: true,
-                      isActive: true,
-                      creation: false
-                    }]
-                  },
-                  fieldsToDelete: {}
-                });
               });
             });
           });
@@ -1121,8 +988,7 @@ describe('[FG5R] Events of system streams', () => {
         it('[TFOI] should return the updated event', () => {
           assert.strictEqual(res.body.event.content, eventData.content);
           assert.deepStrictEqual(res.body.event.streamIds, [
-            SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
-            SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
         });
       });
     });
@@ -1160,75 +1026,26 @@ describe('[FG5R] Events of system streams', () => {
 
   describe('[ED09] DELETE /events/<id>', () => {
     describe('[ED49] When using a personal access', () => {
-      describe('[ED50] to delete an editable streams event', () => {
-        describe("[ED51] that has no 'active' streamId", () => {
-          describe('[ED52] which is unique', () => {
-            const streamId = 'email';
-            let systemStreamId;
-            let initialEvent;
-            before(async function () {
-              systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-              nock.cleanAll();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).times(2).reply(200, { errors: [] });
-              await createUser();
-              initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
-              await createAdditionalEvent(systemStreamId);
-
-              res = await request.delete(path.join(basePath, initialEvent.id))
-                .set('authorization', access.token);
-            });
-            it('[43B1] should return 200', () => {
-              assert.strictEqual(res.status, 200);
-            });
-            it('[3E12] should return the trashed event', () => {
-              assert.strictEqual(res.body.event.id, initialEvent.id);
-              assert.strictEqual(res.body.event.trashed, true);
-            });
-            it('[F328] should notify register with the deleted data', function () {
-              if (isDnsLess) this.skip();
-              assert.strictEqual(scope.isDone(), true);
-              assert.deepStrictEqual(serviceRegisterRequest, {
-                username: user.attrs.username,
-                user: {},
-                fieldsToDelete: { [streamId]: initialEvent.content }
-              });
-            });
+      describe('[ED50] to delete an account event', () => {
+        describe('[ED52] which is unique', () => {
+          const streamId = 'email';
+          let systemStreamId;
+          let initialEvent;
+          before(async function () {
+            systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+            await createUser();
+            initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
+            res = await request.delete(path.join(basePath, initialEvent.id))
+              .set('authorization', access.token);
           });
-          describe('[ED53] which is indexed', () => {
-            let streamId;
-            let initialEvent;
-            before(async function () {
-              streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
-              nock.cleanAll();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).times(1).reply(200, { errors: [] });
-              await createUser();
-              initialEvent = await getOneEvent(user.attrs.id, streamId);
-
-              await createAdditionalEvent(streamId);
-
-              res = await request.delete(path.join(basePath, initialEvent.id))
-                .set('authorization', access.token);
-            });
-            it('[1B70] should return 200', () => {
-              assert.strictEqual(res.status, 200);
-            });
-            it('[CBB9] should return the trashed event', () => {
-              assert.strictEqual(res.body.event.id, initialEvent.id);
-              assert.strictEqual(res.body.event.trashed, true);
-            });
+          it('[43B1] should return 400', () => {
+            assert.strictEqual(res.status, 400);
+          });
+          it('[3E12] should return the correct error', () => {
+            assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
           });
         });
-        describe("[ED54] that has the 'active' streamId", () => {
+        describe('[ED53] which is indexed', () => {
           let streamId;
           let initialEvent;
           before(async function () {
@@ -1238,12 +1055,11 @@ describe('[FG5R] Events of system streams', () => {
             res = await request.delete(path.join(basePath, initialEvent.id))
               .set('authorization', access.token);
           });
-          it('[10EC] should return 400', () => {
+          it('[1B70] should return 400', () => {
             assert.strictEqual(res.status, 400);
           });
-          it('[D4CA] should return the correct error', () => {
+          it('[CBB9] should return the correct error', () => {
             assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
-            assert.strictEqual(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
           });
         });
       });
@@ -1252,18 +1068,8 @@ describe('[FG5R] Events of system streams', () => {
         let initialEvent;
         before(async function () {
           streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments');
-          nock.cleanAll();
-          scope = nock(config.get('services:register:url'));
-          scope.put('/users',
-            (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).times(2).reply(200, { errors: [] });
           await createUser();
           initialEvent = await getOneEvent(user.attrs.id, streamId);
-
-          await createAdditionalEvent(streamId);
-
           res = await request.delete(path.join(basePath, initialEvent.id))
             .set('authorization', access.token);
         });
@@ -1272,7 +1078,6 @@ describe('[FG5R] Events of system streams', () => {
         });
         it('[A727] should return the correct error', () => {
           assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
-          assert.strictEqual(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
         });
       });
     });
@@ -1282,26 +1087,16 @@ describe('[FG5R] Events of system streams', () => {
       let initialEvent;
       before(async function () {
         streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
-        nock.cleanAll();
-        scope = nock(config.get('services:register:url'));
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).times(1).reply(200, { errors: [] });
         await createUser();
         initialEvent = await getOneEvent(user.attrs.id, streamId);
-
-        await createAdditionalEvent(streamId);
         res = await request.delete(path.join(basePath, initialEvent.id))
           .set('authorization', access.token);
       });
-      it('[I1I1] should return 200', () => {
-        assert.strictEqual(res.status, 200);
+      it('[I1I1] should return 400', () => {
+        assert.strictEqual(res.status, 400);
       });
-      it('[UFLT] should return the updated event', () => {
-        assert.strictEqual(res.body.event.id, initialEvent.id);
-        assert.strictEqual(res.body.event.trashed, true);
+      it('[UFLT] should return the correct error', () => {
+        assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
       });
     });
 
@@ -1311,17 +1106,9 @@ describe('[FG5R] Events of system streams', () => {
       let initialEvent;
       before(async function () {
         systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-        nock.cleanAll();
-        scope = nock(config.get('services:register:url'));
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).times(2).reply(200, { errors: [] });
         await createUser();
         initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
 
-        await createAdditionalEvent(systemStreamId);
         const sharedAccess = await user.access({
           token: cuid(),
           type: 'shared',

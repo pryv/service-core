@@ -124,7 +124,6 @@ class MallUserEvents {
    * @returns {Promise<any[]>}
    */
   async getWithParamsByStore (userId, paramsByStore) {
-    paramsByStore = remapAccountToLocal(paramsByStore);
     const res = [];
     for (const storeId of Object.keys(paramsByStore)) {
       const eventsStore = this.eventsStores.get(storeId);
@@ -155,7 +154,6 @@ class MallUserEvents {
    * @returns {Promise<any>}
    */
   async getStreamedWithParamsByStore (userId, paramsByStore) {
-    paramsByStore = remapAccountToLocal(paramsByStore);
     if (Object.keys(paramsByStore).length !== 1) {
       return new Error('getStreamed only supported for one store at a time');
     }
@@ -179,7 +177,6 @@ class MallUserEvents {
    * @returns {Promise<void>}
    */
   async generateStreamsWithParamsByStore (userId, paramsByStore, addEventsStreamCallback) {
-    paramsByStore = remapAccountToLocal(paramsByStore);
     for (const storeId of Object.keys(paramsByStore)) {
       const settings = this.storeSettings.get(storeId);
       const params = paramsByStore[storeId];
@@ -199,8 +196,6 @@ class MallUserEvents {
    * @returns {Promise<Readable>}
    */
   async getDeletionsStreamed (storeId, userId, query, options) {
-    // Account events live in local store
-    if (storeId === storeDataUtils.AccountStoreId) storeId = storeDataUtils.LocalStoreId;
     const eventsStore = this.eventsStores.get(storeId);
     if (!eventsStore) {
       throw errorFactory.unknownResource(`Unknown store "${storeId}"`, storeId);
@@ -462,13 +457,18 @@ class MallUserEvents {
     let storeId = null;
     // add eventual missing id and get storeId from first streamId then
     if (eventData.id == null) {
-      // Account events (with :_system: streamIds) are stored in the local MongoDB
-      // store — use the event's store, not the stream's store, for ID generation.
       const [streamStoreId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.streamIds[0]);
-      storeId = storeDataUtils.isPassthroughStore(streamStoreId)
-        ? storeDataUtils.LocalStoreId
-        : streamStoreId;
-      eventData.id = storeDataUtils.getFullItemId(storeId, cuid());
+      if (streamStoreId === storeDataUtils.AccountStoreId) {
+        // Account events route to the account store; use stream ID as event ID
+        // (account store extracts field name from the prefixed stream ID)
+        storeId = storeDataUtils.AccountStoreId;
+        eventData.id = eventData.streamIds[0];
+      } else {
+        storeId = storeDataUtils.isPassthroughStore(streamStoreId)
+          ? storeDataUtils.LocalStoreId
+          : streamStoreId;
+        eventData.id = storeDataUtils.getFullItemId(storeId, cuid());
+      }
     } else {
       // get storeId from event id
       [storeId] = storeDataUtils.parseStoreIdAndStoreItemId(eventData.id);
@@ -498,24 +498,4 @@ class MallUserEvents {
  * Account events live in the local MongoDB store (account store only provides
  * stream definitions). Remap any account-store params into local-store params.
  */
-function remapAccountToLocal (paramsByStore) {
-  const accountId = storeDataUtils.AccountStoreId;
-  const localId = storeDataUtils.LocalStoreId;
-  if (paramsByStore[accountId] == null) return paramsByStore;
-  const result = Object.assign({}, paramsByStore);
-  const accountParams = result[accountId];
-  if (result[localId] != null) {
-    // Merge account streams into existing local params
-    if (accountParams.streams) {
-      result[localId] = structuredClone(result[localId]);
-      result[localId].streams ??= [];
-      result[localId].streams.push(...accountParams.streams);
-    }
-  } else {
-    result[localId] = accountParams;
-  }
-  delete result[accountId];
-  return result;
-}
-
 module.exports = MallUserEvents;

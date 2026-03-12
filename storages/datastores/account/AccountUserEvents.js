@@ -9,21 +9,18 @@ const ds = require('@pryv/datastore');
 const { Readable } = require('stream');
 const timestamp = require('unix-timestamp');
 
-// Marker stream IDs used by the current system stream event model.
-// Events always include :_system:active; unique fields also include :_system:unique.
-const ACTIVE_STREAM_ID = ':_system:active';
-const UNIQUE_STREAM_ID = ':_system:unique';
-const MARKER_STREAM_IDS = new Set([ACTIVE_STREAM_ID, UNIQUE_STREAM_ID]);
-
 /**
  * Account store UserEvents adapter.
  * Translates event get/create/update to baseStorage field operations.
  *
  * Each account field maps to one "event":
  *   - event.id = field name (e.g. 'email', 'language')
- *   - event.streamIds = [streamId, ':_system:active'] + optional ':_system:unique'
+ *   - event.streamIds = [streamId] (just the field's stream ID)
  *   - event.content = field value
  *   - event.type = stream's configured type
+ *
+ * Platform coordination for indexed/unique fields is handled by callers
+ * (account.js updateDataOnPlatform, repository.insertOne, etc.).
  *
  * @param {Map<string, object>} fieldStreamMap - fieldName → stream config
  *   (only leaf streams that represent actual fields, not parent containers)
@@ -35,11 +32,12 @@ function create (fieldStreamMap, getStorage) {
 
     async getOne (userId, eventId) {
       const storage = await getStorage();
-      const streamConfig = fieldStreamMap.get(eventId);
+      const fieldName = toFieldName(eventId);
+      const streamConfig = fieldStreamMap.get(fieldName);
       if (!streamConfig) return null;
-      const value = await storage.getAccountField(userId, eventId);
+      const value = await storage.getAccountField(userId, fieldName);
       if (value == null) return null;
-      return fieldToEvent(eventId, value, streamConfig);
+      return fieldToEvent(fieldName, value, streamConfig);
     },
 
     async get (userId, query, options) {
@@ -67,13 +65,16 @@ function create (fieldStreamMap, getStorage) {
 
     async getHistory (userId, eventId) {
       const storage = await getStorage();
-      const streamConfig = fieldStreamMap.get(eventId);
+      const fieldName = toFieldName(eventId);
+      const streamConfig = fieldStreamMap.get(fieldName);
       if (!streamConfig) return [];
-      const history = await storage.getAccountFieldHistory(userId, eventId);
-      return history.map((entry) => ({
-        id: eventId,
-        headId: eventId,
-        streamIds: buildStreamIds(streamConfig),
+      const history = await storage.getAccountFieldHistory(userId, fieldName);
+      // Skip the first entry (current value) — history should only contain previous versions
+      const previousVersions = history.slice(1);
+      return previousVersions.map((entry) => ({
+        id: fieldName,
+        headId: fieldName,
+        streamIds: [streamConfig.id],
         type: streamConfig.type,
         content: entry.value,
         time: entry.time,
@@ -93,6 +94,8 @@ function create (fieldStreamMap, getStorage) {
       if (!streamConfig) {
         throw ds.errors.invalidRequestStructure(`Unknown account field: ${fieldName}`);
       }
+      // Editability is validated at the API layer.
+      // Platform coordination is handled by callers (repository.insertOne, etc.).
       const storage = await getStorage();
       const time = eventData.time || timestamp.now();
       const createdBy = eventData.createdBy || 'system';
@@ -101,9 +104,12 @@ function create (fieldStreamMap, getStorage) {
     },
 
     async update (userId, eventData) {
-      const fieldName = eventData.id;
+      const fieldName = toFieldName(eventData.id);
       const streamConfig = fieldStreamMap.get(fieldName);
       if (!streamConfig) return false;
+      // Editability is validated at the API layer (account.js, events.js).
+      // Platform coordination is handled by callers (account.js updateDataOnPlatform,
+      // repository.insertOne, etc.).
       const storage = await getStorage();
       const time = eventData.modified || timestamp.now();
       const modifiedBy = eventData.modifiedBy || 'system';
@@ -112,28 +118,23 @@ function create (fieldStreamMap, getStorage) {
     },
 
     async delete (userId, eventId) {
-      const streamConfig = fieldStreamMap.get(eventId);
-      if (!streamConfig) {
-        throw ds.errors.invalidRequestStructure(`Unknown account field: ${eventId}`);
-      }
-      const storage = await getStorage();
-      await storage.deleteAccountField(userId, eventId);
-      return { id: eventId, deleted: timestamp.now() };
+      // Account events represent current field values — deletion is blocked.
+      // To clear a field, use update with content = null.
+      throw ds.errors.unsupportedOperation(
+        'Account events cannot be deleted. Use update to change the value.',
+        { eventId }
+      );
     }
   });
 }
 
 /**
- * Build the full streamIds array for an event, including marker streams.
- * @param {object} streamConfig
- * @returns {string[]}
+ * Extract the unprefixed field name from an event ID.
+ * Handles both prefixed (':_system:language') and plain ('language') IDs.
  */
-function buildStreamIds (streamConfig) {
-  const ids = [streamConfig.id, ACTIVE_STREAM_ID];
-  if (streamConfig.isUnique) {
-    ids.push(UNIQUE_STREAM_ID);
-  }
-  return ids;
+function toFieldName (eventId) {
+  const lastColon = eventId.lastIndexOf(':');
+  return lastColon >= 0 ? eventId.substring(lastColon + 1) : eventId;
 }
 
 /**
@@ -143,7 +144,7 @@ function fieldToEvent (fieldName, value, streamConfig, time, createdBy) {
   const now = time || timestamp.now();
   return {
     id: fieldName,
-    streamIds: buildStreamIds(streamConfig),
+    streamIds: [streamConfig.id],
     type: streamConfig.type,
     content: value,
     time: now,
@@ -156,8 +157,7 @@ function fieldToEvent (fieldName, value, streamConfig, time, createdBy) {
 
 /**
  * Extract the field name from an event's streamIds.
- * Skips marker streams (:_system:active, :_system:unique) and matches
- * against the fieldStreamMap to find the corresponding field.
+ * Matches against the fieldStreamMap to find the corresponding field.
  * @param {string[]} streamIds
  * @param {Map<string, object>} fieldMap
  * @returns {string|null}
@@ -165,7 +165,6 @@ function fieldToEvent (fieldName, value, streamConfig, time, createdBy) {
 function eventIdFromStreamIds (streamIds, fieldMap) {
   if (!streamIds || streamIds.length === 0) return null;
   for (const sid of streamIds) {
-    if (MARKER_STREAM_IDS.has(sid)) continue;
     const lastColon = sid.lastIndexOf(':');
     const fieldName = lastColon >= 0 ? sid.substring(lastColon + 1) : sid;
     if (fieldMap.has(fieldName)) return fieldName;

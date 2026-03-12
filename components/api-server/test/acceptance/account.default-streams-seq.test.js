@@ -62,18 +62,9 @@ describe('[ACCO] Account with system streams', function () {
     return user;
   }
 
-  async function getActiveEvent (streamId, isPrivate = true) {
+  async function getAccountEvent (streamId, isPrivate = true) {
     const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    const streamQuery = [{ any: [streamIdWithPrefix], and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }];
-    const res = await mall.events.get(user.attrs.id, { streams: streamQuery });
-    if (res.length === 0) return null;
-    return res[0];
-  }
-
-  async function getNotActiveEvent (streamId, isPrivate = true) {
-    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
-    const streamQuery = [{ any: [streamIdWithPrefix], and: [{ not: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }];
-    const res = await mall.events.get(user.attrs.id, { streams: streamQuery });
+    const res = await mall.events.get(user.attrs.id, { streams: [{ any: [streamIdWithPrefix] }] });
     if (res.length === 0) return null;
     return res[0];
   }
@@ -145,10 +136,7 @@ describe('[ACCO] Account with system streams', function () {
 
         allVisibleAccountEvents = await mall.events.get(user.attrs.id,
           {
-            streams: [
-              { any: visibleStreamsIds },
-              { and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }] }
-            ]
+            streams: [{ any: visibleStreamsIds }]
           });
 
         // get account info
@@ -276,18 +264,13 @@ describe('[ACCO] Account with system streams', function () {
       });
     });
 
-    describe('[DA10] when updating email and language and non-active fields exists', () => {
+    describe('[DA10] when updating email and language', () => {
       const newEmail = charlatan.Internet.email();
       const newLanguage = charlatan.Lorem.characters(2);
-      let activeEmailBefore;
-      let notActiveEmailBefore;
-      let activeLanguageBefore;
-      let notActiveLanguageBefore;
-
-      let activeEmailAfter;
-      let notActiveEmailAfter;
-      let activeLanguageAfter;
-      let notActiveLanguageAfter;
+      let emailBefore;
+      let languageBefore;
+      let emailAfter;
+      let languageAfter;
 
       let scope;
       before(async function () {
@@ -295,22 +278,14 @@ describe('[ACCO] Account with system streams', function () {
         const settings = structuredClone(helpers.dependencies.settings);
         nock.cleanAll();
         scope = nock(settings.services.register.url);
-        scope.put('/users')
-          .reply(200, {});
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
             return true;
           }).times(3).reply(200, {});
 
-        // create additional events
-        await createAdditionalEvent(SystemStreamsSerializer.addCustomerPrefixToStreamId('email'), charlatan.Internet.email());
-        await createAdditionalEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('language'));
-
-        activeEmailBefore = await getActiveEvent('email', false);
-        notActiveEmailBefore = await getNotActiveEvent('email', false);
-        activeLanguageBefore = await getActiveEvent('language');
-        notActiveLanguageBefore = await getNotActiveEvent('language');
+        emailBefore = await getAccountEvent('email', false);
+        languageBefore = await getAccountEvent('language');
 
         // modify account info
         res = await request.put(basePath)
@@ -320,10 +295,8 @@ describe('[ACCO] Account with system streams', function () {
           })
           .set('authorization', access.token);
 
-        activeEmailAfter = await getActiveEvent('email', false);
-        notActiveEmailAfter = await getNotActiveEvent('email', false);
-        activeLanguageAfter = await getActiveEvent('language');
-        notActiveLanguageAfter = await getNotActiveEvent('language');
+        emailAfter = await getAccountEvent('email', false);
+        languageAfter = await getAccountEvent('language');
       });
       it('[JJ81] should return 200', async () => {
         assert.strictEqual(res.status, 200);
@@ -336,13 +309,11 @@ describe('[ACCO] Account with system streams', function () {
           storageUsed: { dbDocuments: 0, attachedFiles: 0 }
         });
       });
-      it('[JQHX] should update only active events in the database', async () => {
-        assert.deepStrictEqual(notActiveEmailBefore, notActiveEmailAfter);
-        assert.deepStrictEqual(notActiveLanguageBefore, notActiveLanguageAfter);
-        assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
-        assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
-        assert.strictEqual(activeEmailAfter.content, newEmail);
-        assert.strictEqual(activeLanguageAfter.content, newLanguage);
+      it('[JQHX] should update the field values in the database', async () => {
+        assert.notEqual(emailBefore.content, emailAfter.content);
+        assert.notEqual(languageBefore.content, languageAfter.content);
+        assert.strictEqual(emailAfter.content, newEmail);
+        assert.strictEqual(languageAfter.content, newLanguage);
       });
       it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
         if (isDnsLess) this.skip();

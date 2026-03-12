@@ -87,10 +87,10 @@ describe('[ACDS] Account DataStore adapter', () => {
       storeKeyValueData: { get: async () => null, set: async () => {}, getAll: async () => ({}) },
       logger: { debug () {}, info () {}, warn () {}, error () {} }
     });
-    // Inject mock storage via the events module
+    // Inject mock storage via the events module (use cloned tree since init mutates)
     const AccountUserEvents = require('../AccountUserEvents');
     accountStore.events = AccountUserEvents.create(
-      buildFieldStreamMap(mockStreamTree),
+      buildFieldStreamMap(structuredClone(mockStreamTree)),
       async () => mockStorage
     );
   });
@@ -207,12 +207,18 @@ describe('[ACDS] Account DataStore adapter', () => {
       assert.strictEqual(value, 'de');
     });
 
-    it('[DS2G] deletes an event', async () => {
+    it('[DS2G] delete is blocked (account events cannot be deleted)', async () => {
       await mockStorage.setAccountField(userId, 'email', 'x@y.com', 'test', 1000);
-      const result = await accountStore.events.delete(userId, 'email');
-      assert.ok(result.deleted);
+      await assert.rejects(
+        () => accountStore.events.delete(userId, 'email'),
+        (err) => {
+          assert.strictEqual(err.id, 'unsupported-operation');
+          return true;
+        }
+      );
+      // Value should still exist
       const value = await mockStorage.getAccountField(userId, 'email');
-      assert.strictEqual(value, null);
+      assert.strictEqual(value, 'x@y.com');
     });
 
     it('[DS2H] getStreamed returns a readable stream', async () => {
@@ -243,34 +249,22 @@ describe('[ACDS] Account DataStore adapter', () => {
     });
   });
 
-  describe('[DS03] Marker streams and query filtering', () => {
-    it('[DS3A] events include :_system:active in streamIds', async () => {
+  describe('[DS03] StreamIds and query filtering', () => {
+    it('[DS3A] events have only the field stream ID', async () => {
       await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
       const event = await accountStore.events.getOne(userId, 'language');
-      assert.ok(event.streamIds.includes(':_system:active'),
-        'event should include :_system:active marker');
-      assert.strictEqual(event.streamIds[0], ':_system:language');
-      assert.strictEqual(event.streamIds[1], ':_system:active');
+      assert.deepStrictEqual(event.streamIds, [':_system:language']);
     });
 
-    it('[DS3B] unique fields include :_system:unique in streamIds', async () => {
+    it('[DS3B] unique fields have only the field stream ID (no markers)', async () => {
       await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
       const event = await accountStore.events.getOne(userId, 'email');
-      assert.ok(event.streamIds.includes(':_system:unique'),
-        'unique field should include :_system:unique marker');
-      assert.deepStrictEqual(event.streamIds, [':system:email', ':_system:active', ':_system:unique']);
+      assert.deepStrictEqual(event.streamIds, [':system:email']);
     });
 
-    it('[DS3C] non-unique fields do NOT include :_system:unique', async () => {
-      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
-      const event = await accountStore.events.getOne(userId, 'language');
-      assert.ok(!event.streamIds.includes(':_system:unique'),
-        'non-unique field should not include :_system:unique');
-    });
-
-    it('[DS3D] create extracts field name from streamIds skipping markers', async () => {
+    it('[DS3D] create extracts field name from streamIds', async () => {
       const event = await accountStore.events.create(userId, {
-        streamIds: [':_system:language', ':_system:active'],
+        streamIds: [':_system:language'],
         type: 'language/iso-639-1',
         content: 'it',
         createdBy: 'test'
@@ -291,22 +285,12 @@ describe('[ACDS] Account DataStore adapter', () => {
       assert.strictEqual(events[0].id, 'language');
     });
 
-    it('[DS3F] get filters by :_system:active (matches all)', async () => {
-      await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
-      await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
-
-      const events = await accountStore.events.get(userId, {
-        streams: [[{ any: [':_system:active'] }]]
-      }, {});
-      assert.strictEqual(events.length, 2);
-    });
-
     it('[DS3G] get filters with not condition', async () => {
       await mockStorage.setAccountField(userId, 'language', 'en', 'test', 1000);
       await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
 
       const events = await accountStore.events.get(userId, {
-        streams: [[{ any: [':_system:active'] }, { not: [':_system:unique'] }]]
+        streams: [[{ any: [':_system:language', ':system:email'] }, { not: [':system:email'] }]]
       }, {});
       assert.strictEqual(events.length, 1);
       assert.strictEqual(events[0].id, 'language');
@@ -332,12 +316,11 @@ describe('[ACDS] Account DataStore adapter', () => {
       assert.strictEqual(events[0].id, 'email');
     });
 
-    it('[DS3J] getHistory includes marker streams', async () => {
+    it('[DS3J] getHistory has only field stream ID', async () => {
       await mockStorage.setAccountField(userId, 'email', 'a@b.com', 'test', 1000);
       const history = await accountStore.events.getHistory(userId, 'email');
       assert.strictEqual(history.length, 1);
-      assert.ok(history[0].streamIds.includes(':_system:active'));
-      assert.ok(history[0].streamIds.includes(':_system:unique'));
+      assert.deepStrictEqual(history[0].streamIds, [':system:email']);
     });
   });
 });

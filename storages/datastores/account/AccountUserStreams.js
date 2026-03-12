@@ -65,8 +65,7 @@ function create (streamTree) {
   // Ensure default properties (created, modified, etc.) are set on all streams
   ds.defaults.applyOnStreams(streamTree);
 
-  // Build a flat index from the full tree (for getOne lookups —
-  // includes non-shown streams like :_system:unique)
+  // Build a flat index from the full tree (for getOne lookups)
   const streamIndex = new Map();
   indexTree(streamTree);
 
@@ -81,16 +80,21 @@ function create (streamTree) {
 
   return ds.createUserStreams({
     async get (userId, query) {
+      let streams;
       if (query.parentId === '*' || query.parentId == null) {
-        return applyQuery(readableTree, query);
+        streams = readableTree;
+      } else {
+        const parent = streamIndex.get(query.parentId);
+        if (!parent || !parent.children) return [];
+        streams = parent.children;
       }
-      const parent = streamIndex.get(query.parentId);
-      if (!parent || !parent.children) return [];
-      return applyQuery(parent.children, query);
+      // Always return deep clones to prevent callers from mutating the static tree
+      return applyQuery(structuredClone(streams), query);
     },
 
     async getOne (userId, streamId, query) {
-      return streamIndex.get(streamId) || null;
+      const stream = streamIndex.get(streamId);
+      return stream ? structuredClone(stream) : null;
     },
 
     async getDeletions (userId, deletionsSince) {

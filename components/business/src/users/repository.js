@@ -109,8 +109,7 @@ class UsersRepository {
       state: 'all',
       streams: [
         {
-          any: userAccountStreamsIds,
-          and: [{ any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }]
+          any: userAccountStreamsIds
         }
       ]
     };
@@ -280,10 +279,21 @@ class UsersRepository {
         user.token = access.token;
       }
       user.accessId = accessId;
-      const events = await user.getEvents();
       // add the user to local index
       await this.usersIndex.addUser(user.username, user.id);
-      for (const event of events) await this.mall.events.create(user.id, event, mallTransaction);
+      // Store account fields directly in userAccountStorage (Platform already called above)
+      const accountData = user.getFullAccount();
+      const accountLeavesMap = SystemStreamsSerializer.getAccountLeavesMap();
+      const now = timestamp.now();
+      for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
+        const fieldName = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+        const value = accountData[fieldName] != null
+          ? accountData[fieldName]
+          : stream.default;
+        if (value != null) {
+          await this.userAccountStorage.setAccountField(user.id, fieldName, value, accessId, now);
+        }
+      }
       // set user password
       if (user.passwordHash) {
         // if passwordHash was provided directly (via system.createUser)
@@ -315,15 +325,11 @@ class UsersRepository {
     await localTransaction.exec(async () => {
       // update all account streams and don't allow additional properties
       for (const [streamIdWithoutPrefix, content] of Object.entries(update)) {
-        // for (let i = 0; i < eventsForUpdate.length; i++) {
         const query = {
           streams: [
             {
               any: [
                 SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix)
-              ],
-              and: [
-                { any: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }
               ]
             }
           ]

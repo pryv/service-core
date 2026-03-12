@@ -119,20 +119,6 @@ describe('[SYSS] System streams', function () {
                 children: []
               }
             ]
-          },
-          {
-            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-            name: 'Helpers',
-            parentId: null,
-            children: [
-              {
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('active'),
-                name: 'Active',
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('helpers'),
-                children: []
-              }
-
-            ]
           }
         ];
 

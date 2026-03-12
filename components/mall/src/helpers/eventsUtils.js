@@ -192,9 +192,12 @@ function removeEmptyAttachments (eventData) {
  */
 function convertEventToStore (storeId, eventData) {
   const event = structuredClone(eventData);
-  // Account store events keep their :_system: IDs as-is (no prefix stripping).
-  // Local store still needs removeStoreIds for the cross-store validation.
-  if (storeId !== storeDataUtils.AccountStoreId) {
+  if (storeId === storeDataUtils.AccountStoreId) {
+    // Account events: extract field name from stream-ID-based event ID
+    // ':system:email' → 'email', ':_system:language' → 'language'
+    const lastColon = event.id.lastIndexOf(':');
+    if (lastColon >= 0) event.id = event.id.substring(lastColon + 1);
+  } else {
     removeStoreIds(storeId, event);
   }
   durationToStoreEndTime(event);
@@ -212,8 +215,13 @@ function convertEventFromStore (storeId, eventData) {
   stateFromStore(event);
   deletionFromStore(event);
   removeEmptyAttachments(event);
-  // Account store events keep their :_system: IDs as-is.
-  if (storeId !== storeDataUtils.AccountStoreId) {
+  if (storeId === storeDataUtils.AccountStoreId) {
+    // Account events: use first stream ID as event ID for correct Mall routing
+    // 'email' → ':system:email' (so parseStoreIdAndStoreItemId routes to account store)
+    if (event.streamIds && event.streamIds.length > 0) {
+      event.id = event.streamIds[0];
+    }
+  } else {
     addStoreId(storeId, event);
   }
   nullifyFromStore(event);

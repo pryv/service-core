@@ -487,10 +487,6 @@ exports.validateAccountEvents = function (actualAccountEvents) {
     actualAccountEvents.forEach(event => {
       if (event.streamIds.includes(streamId)) {
         foundEvent = true;
-        // validate that event is indexed/unique if needed
-        if (expectedAccountStreams[streamId].isUnique) {
-          assert.strictEqual(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), true, `":_system:unique" streamId not found in ${event} for ${streamId}`);
-        }
         // validate type
         assert.strictEqual(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
       }

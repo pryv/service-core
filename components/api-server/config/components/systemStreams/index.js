@@ -127,29 +127,6 @@ function load (config) {
   defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
   defaultAccountStreams = ensurePrefixForStreamIds(defaultAccountStreams);
 
-  let helpers = [
-    {
-      id: 'helpers',
-      name: 'Helpers',
-      type: 'none/none',
-      children: [
-        {
-          id: 'active',
-          name: 'Active',
-          type: 'identifier/string'
-        },
-        {
-          id: 'unique',
-          name: 'Unique',
-          type: 'identifier/string',
-          [IS_SHOWN]: false
-        }
-      ]
-    }
-  ];
-  helpers = extendSystemStreamsWithDefaultValues(helpers);
-  helpers = ensurePrefixForStreamIds(helpers);
-
   let customAccountStreams = config.get('custom:systemStreams:account');
   if (customAccountStreams == null) { customAccountStreams = []; }
   customAccountStreams =
@@ -171,8 +148,7 @@ function load (config) {
   });
 
   let systemStreams = fullAccountStreams
-    .concat(otherCustomStreams)
-    .concat(helpers);
+    .concat(otherCustomStreams);
   systemStreams = addParentIdAndChildren(systemStreams);
 
   let seen = new Map();

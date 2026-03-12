@@ -12,8 +12,11 @@ const timestamp = require('unix-timestamp');
 const errors = require('errors').factory;
 const { getMall, storeDataUtils } = require('mall');
 const { treeUtils } = require('utils');
+const utils = require('utils');
+const { Readable } = require('stream');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const integrity = require('business/src/integrity');
 let mall;
 
 module.exports = {
@@ -228,7 +231,13 @@ async function streamQueryCheckPermissionsAndReplaceStars (context, params, resu
   for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
     // ------------ "*" case
     if (streamQuery.any && streamQuery.any.includes('*')) {
-      if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) { continue; } // We can keep star
+      if (await context.access.canGetEventsOnStream('*', streamQuery.storeId)) {
+        // Personal access with '*' on local store: also query account store
+        if (streamQuery.storeId === storeDataUtils.LocalStoreId) {
+          additionalStoreQueries.push({ any: ['*'], storeId: storeDataUtils.AccountStoreId });
+        }
+        continue;
+      } // We can keep star
       // replace any by allowed streams for reading
       const canReadStreamIds = [];
       for (const streamPermission of context.access.getStoresPermissions(streamQuery.storeId)) {
@@ -347,19 +356,12 @@ async function streamQueryExpandStreams (context, params, result, next) {
     if (hasDoNotExpandMarker(streamId)) {
       return [stripDoNotExpandMarker(streamId)];
     }
-    // Exclude helper streams (:_system:helpers and children like :_system:active)
-    // from event query expansion. All account events carry :_system:active as a
-    // secondary streamId, so including it would cause every account event to
-    // match * queries, leaking past permission filters.
-    const expandExcludedIds = excludedIds.includes(':_system:helpers')
-      ? excludedIds
-      : [...excludedIds, ':_system:helpers'];
     const query = {
       id: streamId,
       storeId,
       includeTrashed: params.state === 'all' || params.state === 'trashed',
       childrenDepth: -1,
-      excludedIds: expandExcludedIds,
+      excludedIds,
       hideStoreRoots: true
     };
     const tree = await mall.streams.get(context.user.id, query);
@@ -467,7 +469,67 @@ async function findEventsFromStore (filesReadTokenSecret, context, params, resul
     }
     result.addToConcatArrayStream('events', stream);
   }
-  await mall.events.generateStreamsWithParamsByStore(context.user.id, paramsByStoreId, addEventsStreamFromStore);
+  // When account store is included (from * queries), fetch its events non-streaming
+  // and merge with local store results to respect global skip/limit.
+  const accountStoreId = storeDataUtils.AccountStoreId;
+  if (paramsByStoreId[accountStoreId]) {
+    // Fetch account events non-streaming (always a small set: < 10 account fields).
+    // Remove skip/limit — account events are few and we apply global skip/limit after merge.
+    const accountParams = paramsByStoreId[accountStoreId];
+    delete accountParams.skip;
+    delete accountParams.limit;
+    const accountEvents = await mall.events.getWithParamsByStore(
+      context.user.id, { [accountStoreId]: accountParams }
+    );
+    if (integrity.events.isActive) {
+      for (const event of accountEvents) {
+        integrity.events.set(event);
+      }
+    }
+    delete paramsByStoreId[accountStoreId];
+
+    // Fetch local store events non-streaming. Adjust limit to fetch enough for
+    // merged sort/skip (skip + limit pool), then apply global skip/limit after merge.
+    const localStoreId = storeDataUtils.LocalStoreId;
+    if (paramsByStoreId[localStoreId]) {
+      const localParams = paramsByStoreId[localStoreId];
+      const origSkip = localParams.skip || 0;
+      const origLimit = localParams.limit;
+      // Fetch skip+limit events with no skip (we apply skip globally after merge)
+      localParams.skip = 0;
+      if (origLimit != null) {
+        localParams.limit = origSkip + origLimit;
+      }
+      const localEvents = await mall.events.getWithParamsByStore(
+        context.user.id, { [localStoreId]: localParams }
+      );
+      // Apply file read tokens to local events with attachments
+      for (const event of localEvents) {
+        if (event.attachments) {
+          for (const att of event.attachments) {
+            att.readToken = utils.encryption.fileReadToken(
+              att.id, context.access.id, context.access.token, filesReadTokenSecret
+            );
+          }
+        }
+      }
+      // Merge, sort, apply global skip/limit
+      let merged = accountEvents.concat(localEvents);
+      const sortDir = params.sortAscending ? 1 : -1;
+      merged.sort((a, b) => sortDir * (a.time - b.time));
+      if (origSkip) merged = merged.slice(origSkip);
+      if (origLimit != null) merged = merged.slice(0, origLimit);
+      result.addToConcatArrayStream('events', Readable.from(merged));
+      delete paramsByStoreId[localStoreId];
+    } else {
+      // Only account store, no local store
+      result.addToConcatArrayStream('events', Readable.from(accountEvents));
+    }
+  }
+  // Stream remaining stores (audit, etc.) as before
+  if (Object.keys(paramsByStoreId).length > 0) {
+    await mall.events.generateStreamsWithParamsByStore(context.user.id, paramsByStoreId, addEventsStreamFromStore);
+  }
   result.closeConcatArrayStream('events');
   return next();
 }

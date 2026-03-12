@@ -71,9 +71,12 @@ function getParamsByStore (params) {
     paramsByStore[singleStoreId].id = singleStoreEventId;
   }
 
-  if (Object.keys(paramsByStore).length === 0) { // default is local
+  if (Object.keys(paramsByStore).length === 0) { // default is local + account
     paramsByStore.local = structuredClone(params);
     delete paramsByStore.local.streams;
+    // Also query account store — account events live in a separate store
+    paramsByStore[storeDataUtils.AccountStoreId] = structuredClone(params);
+    delete paramsByStore[storeDataUtils.AccountStoreId].streams;
   }
 
   return paramsByStore;

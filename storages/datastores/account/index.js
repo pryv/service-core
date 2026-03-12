@@ -35,8 +35,11 @@ module.exports = ds.createDataStore({
       throw new Error('accountStore requires settings.streamTree (system streams config)');
     }
 
-    // Build the field → stream config map from the stream tree
-    fieldStreamMap = buildFieldStreamMap(settings.streamTree);
+    // Clone the stream tree — AccountUserStreams.cleanStreamTree() mutates in place
+    const streamTree = structuredClone(settings.streamTree);
+
+    // Build the field → stream config map from the original (pre-clean) tree
+    fieldStreamMap = buildFieldStreamMap(streamTree);
 
     // Lazy accessor for userAccountStorage (avoids circular deps)
     const getStorage = async () => {
@@ -47,7 +50,8 @@ module.exports = ds.createDataStore({
       return userAccountStorage;
     };
 
-    this.streams = AccountUserStreams.create(settings.streamTree);
+    // AccountUserStreams gets its own copy (it mutates via cleanStreamTree)
+    this.streams = AccountUserStreams.create(structuredClone(streamTree));
     this.events = AccountUserEvents.create(fieldStreamMap, getStorage);
 
     return this;
@@ -57,8 +61,9 @@ module.exports = ds.createDataStore({
   events: null,
 
   async deleteUser (userId) {
-    // Account fields are cleared via userAccountStorage._clearAll()
-    // which is already called by the storage layer during user deletion.
+    if (userAccountStorage) {
+      await userAccountStorage._clearAll(userId);
+    }
   },
 
   async getUserStorageInfos (userId) {

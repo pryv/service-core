@@ -164,9 +164,9 @@ async function buildEventsFromAccount (user) {
  * @returns {any}
  */
 function createEvent (streamId, type, isUnique, content, accessId) {
-  const event = {
+  return {
     id: cuid(),
-    streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
+    streamIds: [streamId],
     type,
     content,
     created: timestamp.now(),
@@ -177,10 +177,6 @@ function createEvent (streamId, type, isUnique, content, accessId) {
     attachments: [],
     tags: []
   };
-  if (isUnique) {
-    event.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
-  }
-  return event;
 }
 /**
  * Assign events data to user account fields
