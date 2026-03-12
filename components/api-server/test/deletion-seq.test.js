@@ -19,7 +19,7 @@ const { getConfig } = require('@pryv/boiler');
 const { getUsersRepository } = require('business/src/users');
 const { databaseFixture } = require('test-helpers');
 const { produceStorageConnection, produceSeriesConnection } = require('api-server/test/test-helpers');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { removeSystemStreams } = require('test-helpers/src/systemStreamFilters');
 const { pubsub } = require('messages');
 const { promisify } = require('util');
 const { getMall } = require('mall');
@@ -247,7 +247,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             includeTrashed: true,
             hideStoreRoots: true
           });
-          streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
+          streams = removeSystemStreams(streams);
           assert.ok(streams.length === 0);
           const sessions = await promisify((q, cb) => app.storageLayer.sessions.getMatching(q, cb))({ username: username1 });
           assert(sessions == null || sessions.length === 0);
@@ -297,7 +297,7 @@ describe('[PGTD] DELETE /users/:username', () => {
             includeTrashed: true,
             hideStoreRoots: true
           });
-          streams = streams.filter((s) => !SystemStreamsSerializer.isSystemStreamId(s.id));
+          streams = removeSystemStreams(streams);
           assert.ok(streams.length > 0);
           const sessions = await promisify((q, cb) => app.storageLayer.sessions.getMatching(q, cb))({ username: username2 });
           assert(sessions !== null || sessions !== []);

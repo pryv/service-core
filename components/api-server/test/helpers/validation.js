@@ -17,6 +17,7 @@ const assert = require('node:assert');
 const util = require('util');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { removeSystemEvents, removeSystemStreams, separateSystemEvents } = require('test-helpers/src/systemStreamFilters');
 const { integrity } = require('business');
 
 /**
@@ -405,32 +406,16 @@ exports.removeDeletionsAndHistory = function (items) {
 };
 
 exports.removeAccountStreamsEvents = function (items) {
-  // get streams ids from the config that should be retrieved
-  const expectedAccountStreams = SystemStreamsSerializer.getAccountMap();
-  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
+  return removeSystemEvents(items);
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = SystemStreamsSerializer.getAccountStreamIds();
-  const normalEvents = items.filter(function (e) {
-    return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
-  });
-  const accountStreamsEvents = items.filter(function (e) {
-    return (e.streamIds) && (e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
-  });
-  return { events: normalEvents, accountStreamsEvents };
+  const { events, systemEvents } = separateSystemEvents(items);
+  return { events, accountStreamsEvents: systemEvents };
 };
 
 exports.removeAccountStreams = function (streams) {
-  let i = streams.length;
-  while (i--) {
-    if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_ACCOUNT) {
-      streams.splice(i, 1);
-    } else if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_HELPERS) {
-      streams.splice(i, 1);
-    }
-  }
-  return streams;
+  return removeSystemStreams(streams);
 };
 
 // TODO: cleanup this mess, we shouldn't have data creation logic in "validation", nor these `require()` mid-file

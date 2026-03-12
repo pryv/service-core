@@ -23,7 +23,6 @@ const WebhooksApp = require('../../src/application');
 const { Webhook, Repository } = require('business').webhooks;
 let repository;
 const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
 
@@ -36,7 +35,6 @@ describe('[WH01] webhooks', function () {
 
   let fixtures;
   before(async function () {
-    await SystemStreamsSerializer.init();
     fixtures = databaseFixture(await produceStorageConnection());
     const webhooksStorage = await getWebhooksStorage();
     repository = new Repository(webhooksStorage);

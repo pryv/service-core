@@ -14,7 +14,8 @@ exports = module.exports = {
   syncPrimitives: require('./condition_variable'),
   databaseFixture: require('./databaseFixture'),
   portAllocator: require('./portAllocator'),
-  parallelTestHelper: require('./parallelTestHelper')
+  parallelTestHelper: require('./parallelTestHelper'),
+  systemStreamFilters: require('./systemStreamFilters')
 };
 // NOTE: Pattern C helpers (helpers-c.js) is NOT exported here due to circular dependency.
 // Load it directly via: require('test-helpers/src/helpers-c')

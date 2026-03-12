@@ -13,7 +13,6 @@
 /* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
 const { getConfig } = require('@pryv/boiler');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('[AUDI] Audit logs events (Pattern C)', () => {
   let config;
@@ -32,7 +31,6 @@ describe('[AUDI] Audit logs events (Pattern C)', () => {
       return;
     }
 
-    await SystemStreamsSerializer.init();
     await initCore();
 
     const fixtures = getNewFixture();
