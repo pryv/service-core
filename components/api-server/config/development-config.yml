@@ -26,8 +26,6 @@ reporting:
   templateVersion: 1.0.0
 testNotifications:
   enabled: false
-openSource:
-  isActive: false
 dnsLess:
   isActive: true
   publicUrl: http://127.0.0.1:3000/

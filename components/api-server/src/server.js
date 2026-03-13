@@ -25,7 +25,6 @@ let app;
  *    server.start();
  */
 class Server {
-  isOpenSource;
   logger;
   config;
 
@@ -40,7 +39,6 @@ class Server {
     await app.initiate();
     const config = await getConfig();
     this.config = config;
-    this.isOpenSource = config.get('openSource:isActive');
     this.isAuditActive = config.get('audit:active');
     const defaultParam = this.findDefaultParam();
     if (defaultParam != null) {
@@ -108,9 +106,7 @@ class Server {
     await require('./methods/auth/delete')(app.api);
     await require('./methods/accesses')(app.api);
     require('./methods/service')(app.api);
-    if (!this.isOpenSource) {
-      await require('./methods/webhooks')(app.api);
-    }
+    await require('./methods/webhooks')(app.api);
     await require('./methods/trackingFunctions')(app.api);
     await require('./methods/account')(app.api);
     await require('./methods/profile')(app.api);

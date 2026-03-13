@@ -11,7 +11,6 @@ const timestamp = require('unix-timestamp');
 const helpers = require('../../../../test/helpers');
 const { getVersions } = require('./util');
 const { softwareVersion } = helpers;
-const isOpenSource = process.env.OPEN_SOURCE === 'true';
 
 describe('[MGNI] Migrations - new install', function () {
   const versions = getVersions();
@@ -24,11 +23,7 @@ describe('[MGNI] Migrations - new install', function () {
     await versions.migrateIfNeeded();
     const v = await versions.getCurrent();
     assert.ok(v != null);
-    if (isOpenSource) {
-      assert.strictEqual(softwareVersion.startsWith(v._id), true, softwareVersion + ' should starts with' + v._id);
-    } else {
-      assert.strictEqual(v._id, softwareVersion);
-    }
+    assert.strictEqual(v._id, softwareVersion);
     assert.ok(Math.abs(v.initialInstall - timestamp.now()) <= 1000);
   });
 });

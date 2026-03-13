@@ -10,7 +10,6 @@
  */
 const { getStorageLayer } = require('storage');
 const { integrity } = require('business');
-const { getConfig } = require('@pryv/boiler');
 
 let storageLayer;
 async function getStorage () {
@@ -97,14 +96,7 @@ async function accesses () {
   }
 }
 
-let isOpenSource = null;
-
 async function all () {
-  if (isOpenSource === null) {
-    const config = await getConfig();
-    isOpenSource = config.get('openSource:isActive');
-  }
-  // if (isOpenSource) return;
   await events();
   await accesses();
 }

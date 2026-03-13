@@ -6,10 +6,9 @@
  */
 
 const EventEmitter = require('events');
-const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('messages:pubsub');
 const CONSTANTS = require('./constants');
-const isOpenSource = getConfigUnsafe(true).get('openSource:isActive');
 
 // Generic implementation of pub / sub messaging
 
@@ -95,7 +94,7 @@ class PubSub extends EventEmitter {
 
 let transport = null;
 function initTransport () {
-  if (transport != null || isOpenSource) return;
+  if (transport != null) return;
   transport = require('./tcp_pubsub');
   logger.debug('initTransport');
 }

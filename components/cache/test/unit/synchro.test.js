@@ -20,8 +20,6 @@ describe('[SYNC] Synchro', function () {
 
   before(async function () {
     const config = await getConfig();
-    if (config.get('openSource:isActive')) this.skip();
-
     port = config.get('tcpBroker:port');
     tcpClient = await connectRawTcp(port);
   });

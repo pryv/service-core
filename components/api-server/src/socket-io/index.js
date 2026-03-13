@@ -18,7 +18,7 @@ const socketIO = require('socket.io')({
 const MethodContext = require('business').MethodContext;
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
-const { getConfig, getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 const { getStorageLayer } = require('storage');
 // Initializes the SocketIO subsystem.
 //
@@ -29,15 +29,13 @@ const { getStorageLayer } = require('storage');
  * @returns {Promise<void>}
  */
 async function setupSocketIO (server, api, customAuthStepFn) {
-  const config = await getConfig();
   const logger = getLogger('socketIO');
   const storageLayer = await getStorageLayer();
-  const isOpenSource = config.get('openSource:isActive');
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
     // Manages socket.io connections and delivers method calls to the api.
-  const manager = new Manager(logger, io, api, storageLayer, customAuthStepFn, isOpenSource);
+  const manager = new Manager(logger, io, api, storageLayer, customAuthStepFn);
   // dynamicNamspaces allow to "auto" create namespaces
   // when connected pass the socket to Manager
   const dynamicNamespace = io.of(/^\/.+$/).on('connect', async (socket) => {

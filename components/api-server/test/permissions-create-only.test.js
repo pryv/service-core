@@ -8,8 +8,6 @@
 /* global initTests, initCore, coreRequest, getNewFixture, assert, cuid, charlatan */
 
 const path = require('path');
-const helpers = require('./helpers');
-const settings = structuredClone(helpers.dependencies.settings);
 
 // Test attachment for upload tests
 const attachmentPath = path.resolve(__dirname, '../../test-helpers/src/data/attachments/document.pdf');
@@ -600,7 +598,6 @@ describe('[PCRO] permissions create-only level', () => {
   describe('[PC06] Webhooks', function () {
     let basePath;
     before(function () {
-      if (settings.openSource.isActive) this.skip();
       basePath = `/${username}/webhooks`;
     });
 

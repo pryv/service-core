@@ -272,7 +272,7 @@ const cache = {
 function loadConfiguration () {
   // could be true/false or 1/0 if launched from command line
   isActive = !!config.get('caching:isActive');
-  isSynchroActive = !config.get('openSource:isActive');
+  isSynchroActive = true;
   if (isSynchroActive) {
     synchro = require('./synchro');
     synchro.setCache(cache);

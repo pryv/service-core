@@ -31,16 +31,13 @@ class Manager {
 
   customAuthStepFn;
 
-  isOpenSource;
-
   apiVersion;
 
   hostname;
-  constructor (logger, io, api, storageLayer, customAuthStepFn, isOpenSource) {
+  constructor (logger, io, api, storageLayer, customAuthStepFn) {
     this.logger = logger;
     this.io = io;
     this.api = api;
-    this.isOpenSource = isOpenSource;
     this.contexts = new Map();
     this.storageLayer = storageLayer;
     this.customAuthStepFn = customAuthStepFn;
@@ -103,7 +100,7 @@ class Manager {
     let context = this.contexts.get(username);
     // Value is not missing, return it.
     if (typeof context === 'undefined') {
-      context = new NamespaceContext(username, this.io.of(namespaceName), this.api, this.logger, this.isOpenSource, this.apiVersion, this.hostname);
+      context = new NamespaceContext(username, this.io.of(namespaceName), this.api, this.logger, this.apiVersion, this.hostname);
       this.contexts.set(username, context);
     }
     await context.open();
@@ -135,12 +132,11 @@ class NamespaceContext {
   connections;
 
   pubsubRemover;
-  constructor (username, socketNs, api, logger, isOpenSource, apiVersion, hostname) {
+  constructor (username, socketNs, api, logger, apiVersion, hostname) {
     this.username = username;
     this.socketNs = socketNs;
     this.api = api;
     this.logger = logger;
-    this.isOpenSource = isOpenSource;
     this.connections = new Map();
     this.pubsubRemover = null;
     this.apiVersion = apiVersion;

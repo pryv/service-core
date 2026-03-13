@@ -22,11 +22,8 @@ let pwdResetReqsStorage;
 const testData = helpers.dynData({ prefix: 'acct' });
 const { getUsersRepository } = require('business/src/users');
 const { getUserAccountStorage } = require('storage');
-const { getConfig } = require('@pryv/boiler');
 const { getMall } = require('mall');
 const encryption = require('utils').encryption;
-
-let isOpenSource = false;
 
 describe('[ACCO] account', function () {
   const user = structuredClone(testData.users[0]);
@@ -35,8 +32,6 @@ describe('[ACCO] account', function () {
   let mall = null;
 
   before(async () => {
-    const config = await getConfig();
-    isOpenSource = config.get('openSource:isActive');
     usersRepository = await getUsersRepository();
     userAccountStorage = await getUserAccountStorage();
     mall = await getMall();
@@ -134,9 +129,7 @@ describe('[ACCO] account', function () {
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              if (!isOpenSource) { // no notification in openSource
-                assert.ok(regServerCalled);
-              }
+              assert.ok(regServerCalled);
               const expected = Object.assign({}, user, updatedData);
               delete expected.id;
               delete expected.password;

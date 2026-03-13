@@ -106,12 +106,10 @@ class Application {
 
   expressApp;
 
-  isOpenSource;
   isAuditActive;
 
   constructor () {
     this.initalized = false;
-    this.isOpenSource = false;
     this.isAuditActive = false;
     this.initializing = false;
   }
@@ -131,7 +129,6 @@ class Application {
     this.produceLogSubsystem();
     logger.debug('Init started');
     this.config = await getConfig();
-    this.isOpenSource = this.config.get('openSource:isActive');
     this.isAuditActive = this.config.get('audit:active');
     await userLocalDirectory.init();
     await require('storages').init(this.config);
@@ -213,10 +210,6 @@ class Application {
     // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
-    if (this.isOpenSource) {
-      require('www')(this.expressApp, this);
-      await require('register')(this.expressApp, this);
-    }
 
     require('./routes/system')(this.expressApp, this);
     require('./routes/root')(this.expressApp, this);
@@ -229,9 +222,7 @@ class Application {
     require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);
 
-    if (!this.isOpenSource) {
-      require('./routes/webhooks')(this.expressApp, this);
-    }
+    require('./routes/webhooks')(this.expressApp, this);
     if (this.isAuditActive) {
       require('audit/src/routes/audit.route')(this.expressApp, this);
     }

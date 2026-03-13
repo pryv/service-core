@@ -56,9 +56,6 @@ describe('[WH01] webhooks', function () {
     apiServer = await context.spawn({
       webhooks: {
         minIntervalMs: 10
-      },
-      openSource: {
-        isActive: false
       }
     });
   });

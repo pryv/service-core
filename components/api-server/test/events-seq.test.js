@@ -1327,13 +1327,7 @@ describe('[EVNT] events', function () {
     const hfEvent = { streamIds: [streamId], type: 'series:activity/plain' };
     let normalEventId;
     let hfEventId;
-    const isOpenSource = helpers.dependencies.settings.openSource.isActive;
-
     before(function (done) {
-      if (isOpenSource) {
-        this.skip();
-        return done();
-      }
       async.parallel([
         function createNormalEvent (stepDone) {
           request.post(basePath).send(normalEvent).end(function (res) {

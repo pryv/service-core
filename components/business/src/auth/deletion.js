@@ -125,7 +125,6 @@ class Deletion {
    * @returns {Promise<any>}
    */
   async deleteHFData (context, params, result, next) {
-    if (this.config.get('openSource:isActive')) { return next(); }
     const conn = require('storages').seriesConnection;
     if (conn) {
       await conn.dropDatabase(`user.${params.username}`);

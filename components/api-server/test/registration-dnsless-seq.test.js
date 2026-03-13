@@ -32,7 +32,6 @@ describe('[BMM2] registration: DNS-less', () => {
     config = await getConfig();
     config.injectTestConfig({
       dnsLess: { isActive: true },
-      openSource: { isActive: false },
       custom: { systemStreams: null }
     });
   });

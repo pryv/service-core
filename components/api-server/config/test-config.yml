@@ -35,8 +35,6 @@ database:
   name: pryv-node-test
   authUser: ''
   authPassword: ''
-openSource:
-  isActive: false
 dnsLess:
   isActive: false
   publicUrl: http://127.0.0.1:3000/

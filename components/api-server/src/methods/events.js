@@ -51,7 +51,6 @@ module.exports = async function (api) {
   const authSettings = config.get('auth');
   const eventTypesUrl = config.get('service:eventTypes');
   const updatesSettings = config.get('updates');
-  const openSourceSettings = config.get('openSource');
   const usersRepository = await getUsersRepository();
   const mall = await getMall();
   const platform = await getPlatform();
@@ -353,9 +352,6 @@ module.exports = async function (api) {
 
   function handleSeries (context, params, result, next) {
     if (isSeriesType(context.newEvent.type)) {
-      if (openSourceSettings.isActive) {
-        return next(errors.unavailableMethod());
-      }
       try {
         context.newEvent.content = createSeriesEventContent(context);
       } catch (err) {
@@ -421,7 +417,6 @@ module.exports = async function (api) {
         integrity: result.event.integrity
       };
       if (process.env.NODE_ENV === 'test' &&
-                !openSourceSettings.isActive &&
                 integrity.events.isActive) {
         // double check integrity when running tests only
         if (result.event.integrity !== integrity.events.hash(result.event)) {
@@ -556,8 +551,7 @@ module.exports = async function (api) {
     pubsub.notifications.emit(context.user.username, pubsub.USERNAME_BASED_EVENTS_CHANGED);
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
-    if (isSeriesEvent(context.event || result.event) &&
-            !openSourceSettings.isActive) {
+    if (isSeriesEvent(context.event || result.event)) {
       const isDelete = !!result.eventDeletion;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete

@@ -17,18 +17,15 @@ const { setMinimalMethodContext, setMethodId } = require('middleware');
 module.exports = function (expressApp, app) {
   const api = app.api;
   const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
-  const isOpenSource = getConfigUnsafe().get('openSource:isActive');
   // POST /users: create a new user
   expressApp.post('/users', setMinimalMethodContext, setMethodId('auth.register'), function (req, res, next) {
     req.context.host = req.headers.host;
     api.call(req.context, req.body, methodCallback(res, next, 201));
   });
   if (isDnsLess) {
-    if (!isOpenSource) {
-      expressApp.get(path.join(regPath, '/:email/check_email'), setMinimalMethodContext, setMethodId('auth.emailCheck'), (req, res, next) => {
-        api.call(req.context, req.params, methodCallback(res, next, 200));
-      });
-    }
+    expressApp.get(path.join(regPath, '/:email/check_email'), setMinimalMethodContext, setMethodId('auth.emailCheck'), (req, res, next) => {
+      api.call(req.context, req.params, methodCallback(res, next, 200));
+    });
     expressApp.post(path.join(regPath, '/user'), setMinimalMethodContext, setMethodId('auth.register'), function (req, res, next) {
       req.context.host = req.headers.host;
       if (req.body) { req.body.appId = req.body.appid; }

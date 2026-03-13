@@ -40,7 +40,6 @@ let usersRepository;
 let seriesConn;
 let seriesRepository;
 let config;
-let isOpenSource = false;
 let isAuditActive = false;
 let regUrl;
 let mall;
@@ -48,7 +47,6 @@ describe('[PGTD] DELETE /users/:username', () => {
   before(async function () {
     config = await getConfig();
     regUrl = config.get('services:register:url');
-    isOpenSource = config.get('openSource:isActive');
     isAuditActive = config.get('audit:active');
     app = getApplication();
     await app.initiate();
@@ -129,11 +127,10 @@ describe('[PGTD] DELETE /users/:username', () => {
     });
   });
   // ---------------- loop loop -------------- //
-  // [isDnsLess, isOpenSource]
+  // [isDnsLess]
   const settingsToTest = [
-    [true, false],
-    [false, false],
-    [true, true]
+    [true],
+    [false]
   ];
   const testIDs = [
     [
@@ -161,30 +158,15 @@ describe('[PGTD] DELETE /users/:username', () => {
       '7WMG',
       'UWYY',
       'U004'
-    ],
-    [
-      'TPP2',
-      '581Z',
-      'Z2FH',
-      '4IH8',
-      '33T6',
-      'SQ8P',
-      '1F2Y',
-      '7D0J',
-      'YD0B',
-      'L2Q1',
-      'CQ50'
     ]
   ];
-  [0, 1, 2].forEach(function (i) {
-    describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function () {
+  [0, 1].forEach(function (i) {
+    describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}`, function () {
       before(async function () {
         config.injectTestConfig({
           dnsLess: { isActive: settingsToTest[i][0] },
-          isOpenSource: { isActive: settingsToTest[i][1] },
           testsSkipForwardToRegister: settingsToTest[i][0]
         });
-        if (isOpenSource && settingsToTest[i][1]) { this.skip(); }
       });
       after(async function () {
         config.injectTestConfig({});
@@ -257,7 +239,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           assert.strictEqual(infos.local.files.sizeKb, 0);
         });
         it(`[${testIDs[i][8]}] should delete HF data`, async function () {
-          if (isOpenSource) { this.skip(); }
           const databases = await seriesConn.getDatabases();
           const isFound = databases.indexOf(`user.${userToDelete.attrs.username}`) >= 0;
           assert.strictEqual(isFound, false);
@@ -281,8 +262,7 @@ describe('[PGTD] DELETE /users/:username', () => {
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function () {
           const user = await usersRepository.getUserById(username2);
           assert.ok(user != null);
-          const dbCollections = [app.storageLayer.accesses];
-          if (!isOpenSource) { dbCollections.push(app.storageLayer.webhooks); }
+          const dbCollections = [app.storageLayer.accesses, app.storageLayer.webhooks];
           const collectionsEmptyChecks = dbCollections.map(async function (coll) {
             const collectionEntriesForUser = await promisify((id, o1, o2, cb) => coll.find(id, o1, o2, cb))({ id: username2 }, {}, {});
             assert.ok(collectionEntriesForUser.length > 0);
@@ -431,7 +411,7 @@ async function initiateUserWithData (userId) {
     permissions: [{ streamId: stream.attrs.id, level: 'read' }]
   });
   await user.session(cuid());
-  if (!isOpenSource) { user.webhook({ id: cuid() }, cuid()); }
+  user.webhook({ id: cuid() }, cuid());
   const tempDir = join(tmpdir(), 'service-core-tests');
   fs.mkdirSync(tempDir, { recursive: true });
   const filePath = join(tempDir, `test-file-${userId}`);
@@ -444,15 +424,13 @@ async function initiateUserWithData (userId) {
   };
   await mall.events.addAttachment(userId, eventId, attachmentItem);
   await fs.promises.unlink(filePath);
-  if (!isOpenSource) {
-    const usersSeries = await seriesRepository.get(`user.${userId}`, `event.${cuid()}`);
-    const data = new DataMatrix(['deltaTime', 'value'], [
-      [0, 10],
-      [1, 20]
-    ]);
-    await usersSeries.append(data);
-    // generate audit trace
-    await request.get(`/${userId}/events`).set('Authorization', token);
-  }
+  const usersSeries = await seriesRepository.get(`user.${userId}`, `event.${cuid()}`);
+  const data = new DataMatrix(['deltaTime', 'value'], [
+    [0, 10],
+    [1, 20]
+  ]);
+  await usersSeries.append(data);
+  // generate audit trace
+  await request.get(`/${userId}/events`).set('Authorization', token);
   return user;
 }

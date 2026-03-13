@@ -9,14 +9,8 @@
 require('test-helpers/src/api-server-tests-config');
 const assert = require('node:assert');
 const { TypeRepository } = require('../../src/types');
-const { getConfig } = require('@pryv/boiler');
-
-let isOpenSource = false;
 
 describe('[TYPR] business.types.TypeRepository', function () {
-  before(async () => {
-    isOpenSource = (await getConfig()).get('openSource:isActive');
-  });
   let repository;
   beforeEach(() => {
     repository = new TypeRepository();
@@ -146,10 +140,6 @@ describe('[TYPR] business.types.TypeRepository', function () {
     });
   });
   describe('[TY07] series types like series:mass/kg', function () {
-    before(function (done) {
-      if (isOpenSource) { this.skip(); }
-      done();
-    });
     it('[SQNQ] should be known', function () {
       assert.strictEqual(repository.isKnown('series:position/wgs84'), true);
       assert.strictEqual(repository.isKnown('series:mass/kg'), true);
