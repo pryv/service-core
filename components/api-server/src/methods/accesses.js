@@ -20,7 +20,7 @@ const { ApiEndpoint } = require('utils');
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
 const string = require('./helpers/string');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 
 const cache = require('cache');
 
@@ -117,8 +117,8 @@ module.exports = async function produceAccessesApiMethods (api) {
 
   // CREATION
 
-  const notVisibleAccountStreamsIds = SystemStreamsSerializer.forbiddenStreamIds;
-  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.accountMap).filter(id => SystemStreamsSerializer.accountMap[id].isShown);
+  const notVisibleAccountStreamsIds = accountStreams.hiddenStreamIds;
+  const visibleAccountStreamsIds = Object.keys(accountStreams.accountMap).filter(id => accountStreams.accountMap[id].isShown);
 
   api.register(
     'accesses.create',
@@ -207,7 +207,7 @@ module.exports = async function produceAccessesApiMethods (api) {
 
     function isUnknownSystemStream (streamId) {
       return ((streamId.startsWith(':_system:') || streamId.startsWith(':system:')) &&
-                SystemStreamsSerializer.removePrefixFromStreamId(streamId) === streamId);
+                accountStreams.toFieldName(streamId) === streamId);
     }
     return next();
   }

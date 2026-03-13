@@ -241,11 +241,11 @@ function createDynData (options = {}) {
   async function resetUsers () {
     await ensureDependencies();
     const { getUsersRepository, User } = require('business/src/users');
-    const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+    const accountStreams = require('business/src/system-streams');
     const { getConfig, getConfigUnsafe } = require('@pryv/boiler');
 
     await getConfig();
-    await SystemStreamsSerializer.init();
+    await accountStreams.init();
 
     const usersRepository = await getUsersRepository();
 
@@ -259,12 +259,12 @@ function createDynData (options = {}) {
     }
 
     // Build custom account properties
-    const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
+    const customStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
     const customProperties = {};
-    if (accountStreams) {
+    if (customStreams) {
       const charlatan = require('charlatan');
-      accountStreams.forEach((stream) => {
-        customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
+      customStreams.forEach((stream) => {
+        customProperties[accountStreams.toFieldName(stream.id)] = charlatan.Number.number(3);
       });
     }
 

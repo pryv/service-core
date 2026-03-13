@@ -32,7 +32,7 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
 const Context = require('./context');
 const Server = require('./server');
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 /**
@@ -101,7 +101,7 @@ class Application {
   async init () {
     this.logger = getLogger('application');
     this.config = await getConfig();
-    await SystemStreamsSerializer.init();
+    await accountStreams.init();
     await setCommonMeta.loadSettings();
     this.context = await createContext(this.config);
     this.server = new Server(this.config, this.context);

@@ -8,7 +8,7 @@
 const assert = require('node:assert');
 const nconf = require('nconf');
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const treeUtils = require('utils/src/treeUtils');
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
@@ -19,18 +19,18 @@ describe('[SSDC] SystemStreams config', () => {
   let store;
   const customRootStreamId = 'myNewStream';
   const DEFAULT_VALUES_FOR_FIELDS = {
-    [systemStreamsConfig.features.IS_INDEXED]: false,
-    [systemStreamsConfig.features.IS_UNIQUE]: false,
-    [systemStreamsConfig.features.IS_SHOWN]: true,
-    [systemStreamsConfig.features.IS_EDITABLE]: true,
-    [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: false,
+    isIndexed: false,
+    isUnique: false,
+    isShown: true,
+    isEditable: true,
+    isRequiredInValidation: false,
     created: dataStoreDefaults.UnknownDate,
     modified: dataStoreDefaults.UnknownDate,
     createdBy: dataStoreDefaults.SystemAccessId,
     modifiedBy: dataStoreDefaults.SystemAccessId
   };
   after(async () => {
-    await SystemStreamsSerializer.reloadSerializer();
+    await accountStreams.reloadForTests();
   });
   describe('[SD01] when valid custom systemStreams are provided', () => {
     let customStreams, customStreamIds;
@@ -81,7 +81,7 @@ describe('[SSDC] SystemStreams config', () => {
       store.set('custom:systemStreams', customStreams);
       store.set('NODE_ENV', 'test');
       systemStreamsConfig.load(store);
-      await SystemStreamsSerializer.reloadSerializer(store);
+      await accountStreams.reloadForTests(store);
       customStreamIds = treeUtils
         .flattenTree(customStreams.account)
         .concat(treeUtils.flattenTree(customStreams.other))
@@ -90,8 +90,8 @@ describe('[SSDC] SystemStreams config', () => {
     it('[GB8G] must set default values and other fields', () => {
       const systemStreams = store.get('systemStreams');
       for (const streamId of customStreamIds) {
-        const configStream = treeUtils.findById(customStreams.account, SystemStreamsSerializer.removePrefixFromStreamId(streamId)) ||
-                    treeUtils.findById(customStreams.other, SystemStreamsSerializer.removePrefixFromStreamId(streamId));
+        const configStream = treeUtils.findById(customStreams.account, accountStreams.toFieldName(streamId)) ||
+                    treeUtils.findById(customStreams.other, accountStreams.toFieldName(streamId));
         const systemStream = treeUtils.findById(systemStreams, streamId);
         for (const [key, value] of Object.entries(systemStream)) {
           if (configStream[key] == null && !isIgnoredKey(key)) {
@@ -177,8 +177,8 @@ describe('[SSDC] SystemStreams config', () => {
         {
           id: 'faulty-params',
           type: 'string/pryv',
-          [systemStreamsConfig.features.IS_INDEXED]: false,
-          [systemStreamsConfig.features.IS_UNIQUE]: true
+          isIndexed: false,
+          isUnique: true
         }
       ]);
       try {
@@ -215,7 +215,7 @@ describe('[SSDC] SystemStreams config', () => {
         {
           id: 'faulty-params',
           type: 'string/pryv',
-          [systemStreamsConfig.features.IS_UNIQUE]: true
+          isUnique: true
         }
       ]);
       try {
@@ -234,7 +234,7 @@ describe('[SSDC] SystemStreams config', () => {
         {
           id: 'faulty-params',
           type: 'string/pryv',
-          [systemStreamsConfig.features.IS_INDEXED]: true
+          isIndexed: true
         }
       ]);
       try {
@@ -253,7 +253,7 @@ describe('[SSDC] SystemStreams config', () => {
         {
           id: 'faulty-params',
           type: 'string/pryv',
-          [systemStreamsConfig.features.IS_EDITABLE]: false
+          isEditable: false
         }
       ]);
       try {
@@ -272,7 +272,7 @@ describe('[SSDC] SystemStreams config', () => {
         {
           id: 'faulty-params',
           type: 'string/pryv',
-          [systemStreamsConfig.features.IS_REQUIRED_IN_VALIDATION]: true
+          isRequiredInValidation: true
         }
       ]);
       try {

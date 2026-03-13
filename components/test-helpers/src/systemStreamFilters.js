@@ -7,7 +7,7 @@
 
 /**
  * Static helpers to filter system streams/events from API responses.
- * No dependency on SystemStreamsSerializer — uses prefix-based detection only.
+ * No dependency on accountStreams — uses prefix-based detection only.
  */
 
 const PRYV_PREFIX = ':_system:';

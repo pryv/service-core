@@ -11,7 +11,7 @@ const logger = getLogger('platform');
 const errors = require('errors').factory;
 
 const { getServiceRegisterConn } = require('platform/src/service_register');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 
 const getPlatformDB = require('./getPlatformDB');
 
@@ -191,13 +191,13 @@ class Platform {
     // unique fields
     const operations = [];
     if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
-      for (const field of SystemStreamsSerializer.uniqueFieldsWithoutPrefix) {
+      for (const field of accountStreams.uniqueFieldNames) {
         operations.push({ action: 'delete', key: field, value: user[field], isUnique: true });
       }
     }
 
     // indexed fields
-    for (const field of SystemStreamsSerializer.indexedFieldsWithoutPrefix) {
+    for (const field of accountStreams.indexedFieldNames) {
       operations.push({ action: 'delete', key: field, isUnique: false });
     }
 

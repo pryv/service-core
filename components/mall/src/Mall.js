@@ -71,15 +71,15 @@ class Mall {
     const { integrity } = require('business');
 
     // Pre-compute system streams data so engines don't need the serializer
-    const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-    await SystemStreamsSerializer.init();
+    const accountStreams = require('business/src/system-streams');
+    await accountStreams.init();
     const systemStreams = {
-      accountStreamIds: Object.keys(SystemStreamsSerializer.accountMap)
+      accountStreamIds: Object.keys(accountStreams.accountMap)
     };
 
     // Build account store stream tree from system streams config (includes type info)
     const { treeUtils } = require('utils');
-    const accountRoot = treeUtils.findById(SystemStreamsSerializer.allAsTree, ':_system:account');
+    const accountRoot = treeUtils.findById(accountStreams.allAsTree, ':_system:account');
 
     for (const [storeId, store] of this.storesById) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);

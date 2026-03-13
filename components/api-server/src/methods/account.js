@@ -22,7 +22,7 @@ const { setAuditAccessId, AuditAccessIds } = require('audit/src/MethodContextUti
 const ErrorMessages = require('errors/src/ErrorMessages');
 const ErrorIds = require('errors').ErrorIds;
 const { getUsersRepository, UserRepositoryOptions, getPasswordRules } = require('business/src/users');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 
 /**
  * @param api
@@ -80,9 +80,9 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
-    const accountMap = SystemStreamsSerializer.accountMap;
+    const accountMap = accountStreams.accountMap;
     Object.keys(params.update).forEach((streamId) => {
-      const streamIdWithPrefix = SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamId);
+      const streamIdWithPrefix = accountStreams.toStreamId(streamId);
       if (!accountMap[streamIdWithPrefix]?.isEditable) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenToEditNoneditableAccountFields], { field: streamId }));
@@ -227,7 +227,7 @@ module.exports = async function (api) {
 
   async function updateDataOnPlatform (context, params, result, next) {
     try {
-      const accountMap = SystemStreamsSerializer.accountMap;
+      const accountMap = accountStreams.accountMap;
       const operations = [];
       for (const [key, value] of Object.entries(params.update)) {
         // get previous value of the field;
@@ -237,7 +237,7 @@ module.exports = async function (api) {
           key,
           value,
           previousValue,
-          isUnique: accountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+          isUnique: accountMap[accountStreams.toStreamId(key)].isUnique,
           isActive: true
         });
       }

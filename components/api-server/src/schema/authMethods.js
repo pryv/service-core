@@ -9,8 +9,7 @@
  */
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
-const features = require('business/src/system-streams/features');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const helpers = require('./helpers');
 const object = helpers.object;
 const string = helpers.string;
@@ -206,11 +205,11 @@ module.exports = {
 function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
-  const accountStreamsSettings = SystemStreamsSerializer.accountMap;
+  const accountStreamsSettings = accountStreams.accountMap;
   for (const [streamIdWithPrefix, systemStream] of Object.entries(accountStreamsSettings)) {
     // if streamIdWithPrefix is set as required - add required validation
-    const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
-    if (systemStream[features.IS_REQUIRED_IN_VALIDATION] &&
+    const streamId = accountStreams.toFieldName(streamIdWithPrefix);
+    if (systemStream.isRequiredInValidation &&
             !validationSchema.required.includes(streamIdWithPrefix)) {
       validationSchema.required.push(streamId);
       // the error message of required property by z-schema is still obscure
@@ -218,7 +217,7 @@ function loadCustomValidationSettings (validationSchema) {
     // if accountStream hasfield has type validation - add regex type rule
     // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
     if (validationSchema.properties[streamId] == null) {
-      if (systemStream[features.REGEX_VALIDATION] != null) {
+      if (systemStream.regexValidation != null) {
         validationSchema.properties[streamId] = string({
           pattern: systemStream.regexValidation
         });

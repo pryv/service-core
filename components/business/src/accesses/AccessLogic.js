@@ -9,7 +9,7 @@
  */
 
 const _ = require('lodash');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
 const { storeDataUtils, getMall } = require('mall');
@@ -53,7 +53,7 @@ class AccessLogic {
 
     // Lock account streams by default — explicit permissions can override.
     // This also makes the 'none' level visible in access-info API responses.
-    this.permissions.unshift({ streamId: SystemStreamsSerializer.STREAM_ID_ACCOUNT, level: 'none' });
+    this.permissions.unshift({ streamId: accountStreams.STREAM_ID_ACCOUNT, level: 'none' });
 
     // add audit permissions
     if (!addAuditStreams()) return;
@@ -173,7 +173,7 @@ class AccessLogic {
    * @returns {Array<cleanStreamIds>}
    */
   getCannotListStreamsStreamIds (storeId) {
-    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.forbiddenStreamIds) : [];
+    const res = (storeId === 'local') ? [].concat(accountStreams.hiddenStreamIds) : [];
 
     if (this._streamByStorePermissionsMap == null) return res;
     const perms = this._streamByStorePermissionsMap[storeId];

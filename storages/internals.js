@@ -14,7 +14,7 @@
  *
  * Available internals:
  * - userLocalDirectory: resolves per-user local filesystem paths
- * - SystemStreamsSerializer: system streams metadata serializer
+ * - accountStreams: account streams config cache (was SystemStreamsSerializer)
  * - storeKeyValueData: key-value store for plugin metadata
  */
 

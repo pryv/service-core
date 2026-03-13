@@ -11,7 +11,7 @@ const { setTimeout } = require('timers/promises');
 
 const User = require('./User');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const encryption = require('utils').encryption;
 const errors = require('errors').factory;
 const { getMall } = require('mall');
@@ -104,7 +104,7 @@ class UsersRepository {
    * @returns {Promise<{ id: string, username: string, events: any[] }>}
    */
   async getUserById (userId) {
-    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.accountMap);
+    const userAccountStreamsIds = Object.keys(accountStreams.accountMap);
     const query = {
       state: 'all',
       streams: [
@@ -181,7 +181,7 @@ class UsersRepository {
       streams: [
         {
           any: [
-            SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(propertyKey)
+            accountStreams.toStreamId(propertyKey)
           ]
         }
       ]
@@ -241,17 +241,17 @@ class UsersRepository {
   async insertOne (user, withSession = false, skipFowardToRegister = false) {
     // Create the User at a Platfrom Level..
     const operations = [];
-    for (const key of SystemStreamsSerializer.indexedFieldsWithoutPrefix) {
+    for (const key of accountStreams.indexedFieldNames) {
       // use default value is null;
       const value = user[key] != null
         ? user[key]
-        : SystemStreamsSerializer.accountMap[':_system:' + key]?.default;
+        : accountStreams.accountMap[':_system:' + key]?.default;
       if (value != null) {
         operations.push({
           action: 'create',
           key,
           value,
-          isUnique: SystemStreamsSerializer.uniqueFieldsWithoutPrefix.includes(key),
+          isUnique: accountStreams.uniqueFieldNames.includes(key),
           isActive: true
         });
       }
@@ -283,10 +283,10 @@ class UsersRepository {
       await this.usersIndex.addUser(user.username, user.id);
       // Store account fields directly in userAccountStorage (Platform already called above)
       const accountData = user.getFullAccount();
-      const accountLeavesMap = SystemStreamsSerializer.accountLeavesMap;
+      const accountLeavesMap = accountStreams.accountLeavesMap;
       const now = timestamp.now();
       for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
-        const fieldName = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+        const fieldName = accountStreams.toFieldName(streamId);
         const value = accountData[fieldName] != null
           ? accountData[fieldName]
           : stream.default;
@@ -329,7 +329,7 @@ class UsersRepository {
           streams: [
             {
               any: [
-                SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamIdWithoutPrefix)
+                accountStreams.toStreamId(streamIdWithoutPrefix)
               ]
             }
           ]
@@ -415,7 +415,7 @@ async function getUsersRepository () {
     await setTimeout(100);
   }
   if (!usersRepository) {
-    await SystemStreamsSerializer.init();
+    await accountStreams.init();
     usersRepositoryInitializing = true;
     usersRepository = new UsersRepository();
     await usersRepository.init();

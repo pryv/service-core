@@ -18,7 +18,7 @@ const storage = dependencies.storage;
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { getUsersRepository, User } = require('business/src/users');
 const { userLocalDirectory } = require('storage');
 const charlatan = require('charlatan');
@@ -35,7 +35,7 @@ const defaultUser = users[0];
 exports.resetUsers = async () => {
   logger.debug('resetUsers');
   await getConfig(); // lock up to the time config is ready
-  await SystemStreamsSerializer.init();
+  await accountStreams.init();
   const customAccountProperties = buildCustomAccountProperties();
   const usersRepository = await getUsersRepository();
   await usersRepository.deleteAll();
@@ -353,11 +353,11 @@ function getDumpFilesArchive (dumpFolder) {
  * @returns {{}}
  */
 function buildCustomAccountProperties () {
-  const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
-  if (accountStreams == null) { return {}; }
+  const customStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
+  if (customStreams == null) { return {}; }
   const customProperties = {};
-  accountStreams.forEach((stream) => {
-    customProperties[SystemStreamsSerializer.removePrefixFromStreamId(stream.id)] = charlatan.Number.number(3);
+  customStreams.forEach((stream) => {
+    customProperties[accountStreams.toFieldName(stream.id)] = charlatan.Number.number(3);
   });
   return customProperties;
 }

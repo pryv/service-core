@@ -18,7 +18,7 @@ const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { addPrivatePrefixToStreamId, addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const { databaseFixture } = require('test-helpers');
 const { produceStorageConnection } = require('api-server/test/test-helpers');
@@ -102,11 +102,11 @@ describe('[FG5R] Events of system streams', () => {
       });
       it('[KS6K] should return visible system events only', () => {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-        const readableMap = Object.fromEntries(Object.entries(SystemStreamsSerializer.accountMap).filter(([, s]) => s.isShown));
+        const readableMap = Object.fromEntries(Object.entries(accountStreams.accountMap).filter(([, s]) => s.isShown));
         delete readableMap[':_system:storageUsed'];
-        const accountStreams = Object.keys(readableMap);
-        assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);
-        accountStreams.forEach(accountStreamId => {
+        const accountStreamIds = Object.keys(readableMap);
+        assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreamIds.length);
+        accountStreamIds.forEach(accountStreamId => {
           let found = false;
           separatedEvents.accountStreamsEvents.forEach(event => {
             if (event.streamIds.includes(accountStreamId)) found = true;
@@ -133,11 +133,11 @@ describe('[FG5R] Events of system streams', () => {
       });
 
       it('[DRFH] should return visible system events only', () => {
-        const readableMap = Object.fromEntries(Object.entries(SystemStreamsSerializer.accountMap).filter(([, s]) => s.isShown));
+        const readableMap = Object.fromEntries(Object.entries(accountStreams.accountMap).filter(([, s]) => s.isShown));
         delete readableMap[':_system:storageUsed'];
-        const accountStreams = Object.keys(readableMap);
-        assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);
-        accountStreams.forEach(accountStreamId => {
+        const accountStreamIds = Object.keys(readableMap);
+        assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreamIds.length);
+        accountStreamIds.forEach(accountStreamId => {
           let found = false;
           separatedEvents.accountStreamsEvents.forEach(event => {
             if (event.streamIds.includes(accountStreamId)) found = true;

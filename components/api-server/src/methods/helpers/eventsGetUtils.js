@@ -15,7 +15,7 @@ const { treeUtils } = require('utils');
 const utils = require('utils');
 const { Readable } = require('stream');
 const SetFileReadTokenStream = require('../streams/SetFileReadTokenStream');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const integrity = require('business/src/integrity');
 let mall;
 
@@ -326,7 +326,7 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
     // stream expansion to exclude all children.
     if (streamQuery.storeId === storeDataUtils.LocalStoreId && !context.access.isPersonal()) {
       if (streamQuery.not == null) { streamQuery.not = []; }
-      streamQuery.not.push(SystemStreamsSerializer.STREAM_ID_ACCOUNT);
+      streamQuery.not.push(accountStreams.STREAM_ID_ACCOUNT);
     }
   }
   next();
@@ -395,7 +395,7 @@ function stripDoNotExpandMarker (streamIdWithDoNotExpandMarker) {
  */
 async function streamQueryAddHiddenStreams (context, params, result, next) {
   // forbidden stream
-  const forbiddenStreamIds = SystemStreamsSerializer.forbiddenStreamIds;
+  const forbiddenStreamIds = accountStreams.hiddenStreamIds;
   for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local' && streamQuery.storeId !== storeDataUtils.AccountStoreId) { continue; }
     if (streamQuery.and == null) { streamQuery.and = []; }

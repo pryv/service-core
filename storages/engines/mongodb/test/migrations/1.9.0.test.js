@@ -14,7 +14,7 @@ const helpers = require('../../../../test/helpers');
 const testData = helpers.data;
 const { remove } = require('fs-extra');
 const path = require('path');
-const { getMall, SystemStreamsSerializer, userLocalDirectory, integrityFinalCheck, config } = helpers;
+const { getMall, accountStreams, userLocalDirectory, integrityFinalCheck, config } = helpers;
 const mongoFolder = config.mongoFolder;
 
 const { getVersions } = require('./util');
@@ -32,7 +32,7 @@ describe('[MG90] Migration - 1.9.0', function () {
     await remove(newAttachmentDirPath);
 
     const newVersion = getVersions('1.9.0');
-    await SystemStreamsSerializer.init();
+    await accountStreams.init();
     await util.promisify(testData.restoreFromDump)('1.8.0', mongoFolder);
 
     // perform migration

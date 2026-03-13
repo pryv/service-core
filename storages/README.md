@@ -99,7 +99,7 @@ Legacy config keys (`storageEngine`, `database:engine`, etc.) are supported via 
 Plugins can request host capabilities via `requiredInternals` in their manifest:
 
 - `userLocalDirectory` — resolves per-user local filesystem paths
-- `SystemStreamsSerializer` — system streams metadata serializer
+- `accountStreams` — account streams config cache (was SystemStreamsSerializer)
 - `storeKeyValueData` — key-value store for plugin metadata
 
 

@@ -73,7 +73,7 @@ module.exports.getInternals = function getInternals (manifest) {
 // --- Modules needed by migration tests ---
 // Exposed here so engine tests don't require directly from components/.
 
-module.exports.SystemStreamsSerializer = require('business/src/system-streams/serializer');
+module.exports.accountStreams = require('business/src/system-streams');
 module.exports.getMall = require('mall').getMall;
 module.exports.platform = require('platform').platform;
 module.exports.integrityFinalCheck = require('test-helpers/src/integrity-final-check');

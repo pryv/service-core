@@ -16,7 +16,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
 const { getMall, storeDataUtils } = require('mall');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { getUsersRepository } = require('business/src/users');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
@@ -120,7 +120,7 @@ module.exports = async function (api) {
     if (!context.event) { return next(); }
     const event = context.event;
     delete context.event;
-    const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.forbiddenStreamIds;
+    const systemStreamIdsForbiddenForReading = accountStreams.hiddenStreamIds;
     let canReadEvent = false;
     // special case no streamIds on event && deleted
     if (event.streamIds == null) { // event might be deleted - limit result to deleted property
@@ -210,7 +210,7 @@ module.exports = async function (api) {
    * used by subsequent account middleware (shared by create and update).
    */
   function detectAccountStream (context, params, result, next) {
-    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.accountMap);
+    const allAccountStreamIds = Object.keys(accountStreams.accountMap);
     const streamIds = context.newEvent.streamIds || [];
     const oldStreamIds = context.oldEvent ? context.oldEvent.streamIds : [];
     context.accountStreamIds = _.intersection(allAccountStreamIds, streamIds);
@@ -234,7 +234,7 @@ module.exports = async function (api) {
       ));
     }
     context.accountStreamId = context.accountStreamIds[0];
-    const streamConfig = SystemStreamsSerializer.accountMap[context.accountStreamId];
+    const streamConfig = accountStreams.accountMap[context.accountStreamId];
     if (!streamConfig?.isEditable) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
@@ -243,7 +243,7 @@ module.exports = async function (api) {
     }
     context.systemStream = streamConfig;
     context.accountStreamIdWithoutPrefix =
-      SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+      accountStreams.toFieldName(context.accountStreamId);
     next();
   }
 
@@ -273,7 +273,7 @@ module.exports = async function (api) {
       }
     }
     context.accountStreamId = activeStreamIds[0];
-    const streamConfig = SystemStreamsSerializer.accountMap[context.accountStreamId];
+    const streamConfig = accountStreams.accountMap[context.accountStreamId];
     if (!streamConfig?.isEditable) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
@@ -282,7 +282,7 @@ module.exports = async function (api) {
     }
     context.systemStream = streamConfig;
     context.accountStreamIdWithoutPrefix =
-      SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
+      accountStreams.toFieldName(context.accountStreamId);
     next();
   }
 

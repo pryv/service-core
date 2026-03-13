@@ -47,8 +47,8 @@ require('@pryv/boiler').init({
         load: async () => {
           // this is not a plugin, but a way to ensure some component are initialized after config
           // @sgoumaz - should we promote this pattern for all singletons that need to be initialized ?
-          const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-          await SystemStreamsSerializer.init();
+          const accountStreams = require('business/src/system-streams');
+          await accountStreams.init();
         }
       }
     }

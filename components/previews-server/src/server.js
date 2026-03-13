@@ -34,7 +34,7 @@ const middleware = require('middleware');
 const storage = require('storage');
 const utils = require('utils');
 const { testMessaging } = require('messages');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const ExtensionLoader = utils.extension.ExtensionLoader;
 /**
  * @returns {any}
@@ -56,7 +56,7 @@ async function start () {
    */
   // load config settings
   const config = await getConfig();
-  await SystemStreamsSerializer.init();
+  await accountStreams.init();
   const customAuthStepExt = loadCustomAuthStepFn(config.get('customExtensions'));
   const logger = getLogger('server');
   const storageLayer = await storage.getStorageLayer();

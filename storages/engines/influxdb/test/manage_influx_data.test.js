@@ -15,13 +15,13 @@ const series = require('business').series;
 const Repository = series.Repository;
 const DataMatrix = series.DataMatrix;
 const userStorage = helpers.dependencies.storage.user.events;
-const SystemStreamsSerializer = helpers.SystemStreamsSerializer;
+const accountStreams = helpers.accountStreams;
 describe('[MXDB] Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: '127.0.0.1'
   });
   before(async () => {
-    SystemStreamsSerializer.init();
+    accountStreams.init();
   });
   // TODO beforeEach delete the measurement
   it('[8GFH] should allow writing to a series', function () {

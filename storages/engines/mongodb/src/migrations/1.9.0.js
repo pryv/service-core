@@ -4,7 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { integrity } = require('business');
 const { move } = require('fs-extra');
@@ -18,7 +18,7 @@ const path = require('path');
 module.exports = async function (context, callback) {
   const logger = getLogger('migration-1.9.0');
   logger.info('V1.8.0 => v1.9.0 Migration started');
-  await SystemStreamsSerializer.init();
+  await accountStreams.init();
   try {
     await moveAttachments();
     await migratePasswords(context);

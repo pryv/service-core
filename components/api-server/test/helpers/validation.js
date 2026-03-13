@@ -16,7 +16,7 @@ const validator = new Validator();
 const assert = require('node:assert');
 const util = require('util');
 const _ = require('lodash');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { removeSystemEvents, removeSystemStreams, separateSystemEvents } = require('test-helpers/src/systemStreamFilters');
 const { integrity } = require('business');
 
@@ -478,7 +478,7 @@ exports.removeTrackingProperties = function (items) {
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
 
-  const expectedAccountStreams = Object.fromEntries(Object.entries(SystemStreamsSerializer.accountMap).filter(([, s]) => s.isShown));
+  const expectedAccountStreams = Object.fromEntries(Object.entries(accountStreams.accountMap).filter(([, s]) => s.isShown));
   delete expectedAccountStreams[':_system:storageUsed'];
   // iterate through expected account events and check that they exists in actual
   // account events

@@ -9,7 +9,7 @@ const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
 const { getPlatform } = require('platform');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { getUsersRepository, User } = require('business/src/users');
 const { getLogger } = require('@pryv/boiler');
 const { ApiEndpoint } = require('utils');
@@ -21,8 +21,8 @@ class Registration {
   logger;
 
   storageLayer;
-  /** @default SystemStreamsSerializer.accountMap */
-  accountStreamsSettings = SystemStreamsSerializer.accountMap;
+  /** @default accountStreams.accountMap */
+  accountStreamsSettings = accountStreams.accountMap;
 
   servicesSettings; // settigns to get the email to send user welcome email
 
@@ -76,7 +76,7 @@ class Registration {
       for (const [streamIdWithPrefix, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
-          const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
+          const streamIdWithoutPrefix = accountStreams.toFieldName(streamIdWithPrefix);
           uniqueFields[streamIdWithoutPrefix] =
                         context.newUser[streamIdWithoutPrefix];
         }
@@ -149,7 +149,7 @@ class Registration {
   async createUserStep2_CreateUserOnPlatform (context, params, result, next) {
     try {
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = SystemStreamsSerializer.indexedFieldsWithoutPrefix;
+      const userStreamsIds = accountStreams.indexedFieldNames;
       // build data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
       const userData = {
@@ -160,7 +160,7 @@ class Registration {
         host: { name: context.host },
         unique: [
           'username',
-          ...SystemStreamsSerializer.uniqueFieldsWithoutPrefix
+          ...accountStreams.uniqueFieldNames
         ]
       };
       userStreamsIds.forEach((streamId) => {

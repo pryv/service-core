@@ -4,7 +4,7 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const { getLogger } = require('@pryv/boiler');
 
 /**
@@ -23,7 +23,7 @@ module.exports = async function (context, callback) {
   logger.info('v1.9.3 => v1.9.4 Migration started');
 
   try {
-    await SystemStreamsSerializer.init();
+    await accountStreams.init();
     await migrateAccountEvents(context, logger);
   } catch (e) {
     return callback(e);
@@ -35,7 +35,7 @@ module.exports = async function (context, callback) {
 
 async function migrateAccountEvents (context, logger) {
   // Build set of account stream IDs (both :_system: and :system: prefixes)
-  const accountMap = SystemStreamsSerializer.accountMap;
+  const accountMap = accountStreams.accountMap;
   const accountStreamIds = Object.keys(accountMap);
 
   if (accountStreamIds.length === 0) {

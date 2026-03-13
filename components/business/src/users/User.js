@@ -7,7 +7,7 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const accountStreams = require('business/src/system-streams');
 const UserRepositoryOptions = require('./UserRepositoryOptions');
 
 class User {
@@ -107,14 +107,14 @@ class User {
  * @returns {void}
  */
 function buildAccountFields (user) {
-  const accountMap = SystemStreamsSerializer.accountMap;
+  const accountMap = accountStreams.accountMap;
   user.accountFieldsWithPrefix = [];
   user.uniqueAccountFields = [];
   user.readableAccountFields = [];
   user.accountFields = [];
   for (const [streamId, stream] of Object.entries(accountMap)) {
     user.accountFieldsWithPrefix.push(streamId);
-    const withoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+    const withoutPrefix = accountStreams.toFieldName(streamId);
     if (stream.isUnique === true) user.uniqueAccountFields.push(withoutPrefix);
     if (stream.isShown === true) user.readableAccountFields.push(withoutPrefix);
     user.accountFields.push(withoutPrefix);
@@ -144,12 +144,12 @@ function loadAccountData (user, params) {
  * @returns {Promise<any[]>}
  */
 async function buildEventsFromAccount (user) {
-  const accountLeavesMap = SystemStreamsSerializer.accountLeavesMap;
+  const accountLeavesMap = accountStreams.accountLeavesMap;
   // convert to events
   const account = user.getFullAccount();
   const events = [];
   for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
-    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+    const streamIdWithoutPrefix = accountStreams.toFieldName(streamId);
     const content = account[streamIdWithoutPrefix]
       ? account[streamIdWithoutPrefix]
       : stream.default;
@@ -192,7 +192,7 @@ function createEvent (streamId, type, isUnique, content, accessId) {
  * @returns {any[]}
  */
 function buildAccountDataFromListOfEvents (user, events) {
-  const account = buildAccountRecursive(SystemStreamsSerializer.accountChildren, events, {});
+  const account = buildAccountRecursive(accountStreams.accountChildren, events, {});
   Object.keys(account).forEach((param) => {
     user[param] = account[param];
   });
@@ -214,7 +214,7 @@ function buildAccountRecursive (streams, events, user) {
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
     const currentStream = streams[streamIndex];
     const streamIdWithPrefix = currentStream.id;
-    const streamIdWithoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);
+    const streamIdWithoutPrefix = accountStreams.toFieldName(streamIdWithPrefix);
     // if stream has children recursivelly call the same function
     if (Array.isArray(currentStream.children) &&
             currentStream.children.length > 0) {

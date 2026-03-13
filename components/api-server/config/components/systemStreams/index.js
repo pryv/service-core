@@ -12,12 +12,7 @@ const treeUtils = require('utils/src/treeUtils');
 const validation = require('api-server/src/schema/validation');
 const systemStreamSchema = require('./systemStreamSchema');
 
-const features = require('business/src/system-streams/features');
-const { IS_SHOWN, IS_INDEXED, IS_EDITABLE, IS_UNIQUE, IS_REQUIRED_IN_VALIDATION } = features;
-
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
-
-module.exports.features = features;
 
 const DEFAULT = 'default';
 
@@ -25,11 +20,11 @@ const PRYV_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
 
 const DEFAULT_VALUES_FOR_FIELDS = {
-  [IS_INDEXED]: false,
-  [IS_UNIQUE]: false,
-  [IS_SHOWN]: true,
-  [IS_EDITABLE]: true,
-  [IS_REQUIRED_IN_VALIDATION]: false,
+  isIndexed: false,
+  isUnique: false,
+  isShown: true,
+  isEditable: true,
+  isRequiredInValidation: false,
   created: dataStoreDefaults.UnknownDate,
   modified: dataStoreDefaults.UnknownDate,
   createdBy: dataStoreDefaults.SystemAccessId,
@@ -59,35 +54,35 @@ function load (config) {
           name: 'Language',
           type: 'language/iso-639-1',
           [DEFAULT]: 'en',
-          [IS_INDEXED]: true
+          isIndexed: true
         },
         {
           id: 'appId',
           name: 'appId',
           type: 'identifier/string',
           [DEFAULT]: '',
-          [IS_INDEXED]: true,
-          [IS_REQUIRED_IN_VALIDATION]: true,
-          [IS_SHOWN]: false,
-          [IS_EDITABLE]: false
+          isIndexed: true,
+          isRequiredInValidation: true,
+          isShown: false,
+          isEditable: false
         },
         {
           id: 'invitationToken',
           name: 'Invitation Token',
           type: 'token/string',
           [DEFAULT]: 'no-token',
-          [IS_INDEXED]: true,
-          [IS_SHOWN]: false,
-          [IS_EDITABLE]: false
+          isIndexed: true,
+          isShown: false,
+          isEditable: false
         },
         {
           id: 'referer',
           name: 'Referer',
           type: 'identifier/string',
           [DEFAULT]: null,
-          [IS_INDEXED]: true,
-          [IS_SHOWN]: false,
-          [IS_EDITABLE]: false
+          isIndexed: true,
+          isShown: false,
+          isEditable: false
         },
         {
           id: 'storageUsed',
@@ -99,14 +94,14 @@ function load (config) {
               name: 'Db Documents',
               type: 'data-quantity/b',
               [DEFAULT]: 0,
-              [IS_EDITABLE]: false
+              isEditable: false
             },
             {
               id: 'attachedFiles',
               name: 'Attached files',
               type: 'data-quantity/b',
               [DEFAULT]: 0,
-              [IS_EDITABLE]: false
+              isEditable: false
             }
           ]
         }
@@ -222,7 +217,7 @@ function validateSystemStreamWithSchema (systemStream) {
   });
   throwIfUniqueAndNotIndexed(systemStream);
   function throwIfUniqueAndNotIndexed (systemStream) {
-    if (systemStream[IS_UNIQUE] && !systemStream[IS_INDEXED]) {
+    if (systemStream.isUnique && !systemStream.isIndexed) {
       throw new Error('Config error: custom system stream cannot be unique and not indexed. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }
@@ -241,31 +236,31 @@ function validateOtherStreams (systemStream) {
   throwIfNonVisible(systemStream);
 
   function throwIfUnique (systemStream) {
-    if (systemStream[IS_UNIQUE]) {
+    if (systemStream.isUnique) {
       throw new Error('Config error: custom "other" system stream cannot be unique. Only "account" streams can be unique. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }
   }
   function throwIfIndexed (systemStream) {
-    if (systemStream[IS_INDEXED]) {
+    if (systemStream.isIndexed) {
       throw new Error('Config error: custom "other" system stream cannot be indexed. Only "account" streams can be indexed. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }
   }
   function throwIfNonEditable (systemStream) {
-    if (!systemStream[IS_EDITABLE]) {
+    if (!systemStream.isEditable) {
       throw new Error('Config error: custom "other" system stream cannot be non-editable. Only "account" streams can be non-editable. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }
   }
   function throwIfRequiredAtRegistration (systemStream) {
-    if (systemStream[IS_REQUIRED_IN_VALIDATION]) {
+    if (systemStream.isRequiredInValidation) {
       throw new Error('Config error: custom "other" system stream cannot be required at registration. Only "account" streams can be required at registration. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }
   }
   function throwIfNonVisible (systemStream) {
-    if (!systemStream[IS_SHOWN]) {
+    if (!systemStream.isShown) {
       throw new Error('Config error: custom "other" system stream cannot be non visible. Only "account" streams can non visible. Stream: ' +
                 JSON.stringify(systemStream, null, 2));
     }

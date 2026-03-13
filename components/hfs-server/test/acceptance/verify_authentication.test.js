@@ -18,7 +18,7 @@ const { getMall } = require('mall');
 describe('[METL] Metadata Loader', function () {
   let storageLayer, pryv, mall;
   before(async function () {
-    await require('business/src/system-streams/serializer').init();
+    await require('business/src/system-streams').init();
     storageLayer = await storage.getStorageLayer();
     pryv = databaseFixture(storageLayer);
     mall = await getMall();
