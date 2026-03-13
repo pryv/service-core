@@ -104,7 +104,7 @@ class UsersRepository {
    * @returns {Promise<{ id: string, username: string, events: any[] }>}
    */
   async getUserById (userId) {
-    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAccountMap());
+    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.accountMap);
     const query = {
       state: 'all',
       streams: [
@@ -241,17 +241,17 @@ class UsersRepository {
   async insertOne (user, withSession = false, skipFowardToRegister = false) {
     // Create the User at a Platfrom Level..
     const operations = [];
-    for (const key of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+    for (const key of SystemStreamsSerializer.indexedFieldsWithoutPrefix) {
       // use default value is null;
       const value = user[key] != null
         ? user[key]
-        : SystemStreamsSerializer.getAccountFieldDefaultValue(key);
+        : SystemStreamsSerializer.accountMap[':_system:' + key]?.default;
       if (value != null) {
         operations.push({
           action: 'create',
           key,
           value,
-          isUnique: SystemStreamsSerializer.isUniqueAccountField(key),
+          isUnique: SystemStreamsSerializer.uniqueFieldsWithoutPrefix.includes(key),
           isActive: true
         });
       }
@@ -283,7 +283,7 @@ class UsersRepository {
       await this.usersIndex.addUser(user.username, user.id);
       // Store account fields directly in userAccountStorage (Platform already called above)
       const accountData = user.getFullAccount();
-      const accountLeavesMap = SystemStreamsSerializer.getAccountLeavesMap();
+      const accountLeavesMap = SystemStreamsSerializer.accountLeavesMap;
       const now = timestamp.now();
       for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
         const fieldName = SystemStreamsSerializer.removePrefixFromStreamId(streamId);

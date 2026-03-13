@@ -35,7 +35,7 @@ module.exports = async function (context, callback) {
 
 async function migrateAccountEvents (context, logger) {
   // Build set of account stream IDs (both :_system: and :system: prefixes)
-  const accountMap = SystemStreamsSerializer.getAccountMap();
+  const accountMap = SystemStreamsSerializer.accountMap;
   const accountStreamIds = Object.keys(accountMap);
 
   if (accountStreamIds.length === 0) {

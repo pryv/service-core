@@ -206,7 +206,7 @@ module.exports = {
 function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
-  const accountStreamsSettings = SystemStreamsSerializer.getAccountMap();
+  const accountStreamsSettings = SystemStreamsSerializer.accountMap;
   for (const [streamIdWithPrefix, systemStream] of Object.entries(accountStreamsSettings)) {
     // if streamIdWithPrefix is set as required - add required validation
     const streamId = SystemStreamsSerializer.removePrefixFromStreamId(streamIdWithPrefix);

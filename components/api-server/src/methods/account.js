@@ -80,7 +80,7 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
-    const editableAccountMap = SystemStreamsSerializer.getEditableAccountMap();
+    const editableAccountMap = SystemStreamsSerializer.editableAccountMap;
     Object.keys(params.update).forEach((streamId) => {
       const streamIdWithPrefix = SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamId);
       if (editableAccountMap[streamIdWithPrefix] == null) {
@@ -227,7 +227,7 @@ module.exports = async function (api) {
 
   async function updateDataOnPlatform (context, params, result, next) {
     try {
-      const editableAccountMap = SystemStreamsSerializer.getEditableAccountMap();
+      const editableAccountMap = SystemStreamsSerializer.editableAccountMap;
       const operations = [];
       for (const [key, value] of Object.entries(params.update)) {
         // get previous value of the field;

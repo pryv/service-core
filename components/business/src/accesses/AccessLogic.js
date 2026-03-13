@@ -173,7 +173,7 @@ class AccessLogic {
    * @returns {Array<cleanStreamIds>}
    */
   getCannotListStreamsStreamIds (storeId) {
-    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()) : [];
+    const res = (storeId === 'local') ? [].concat(SystemStreamsSerializer.forbiddenStreamIds) : [];
 
     if (this._streamByStorePermissionsMap == null) return res;
     const perms = this._streamByStorePermissionsMap[storeId];

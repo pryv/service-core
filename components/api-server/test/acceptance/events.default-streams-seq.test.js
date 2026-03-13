@@ -102,7 +102,7 @@ describe('[FG5R] Events of system streams', () => {
       });
       it('[KS6K] should return visible system events only', () => {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-        const readableMap = { ...SystemStreamsSerializer.getReadableAccountMap() };
+        const readableMap = Object.fromEntries(Object.entries(SystemStreamsSerializer.accountMap).filter(([, s]) => s.isShown));
         delete readableMap[':_system:storageUsed'];
         const accountStreams = Object.keys(readableMap);
         assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);
@@ -133,7 +133,7 @@ describe('[FG5R] Events of system streams', () => {
       });
 
       it('[DRFH] should return visible system events only', () => {
-        const readableMap = { ...SystemStreamsSerializer.getReadableAccountMap() };
+        const readableMap = Object.fromEntries(Object.entries(SystemStreamsSerializer.accountMap).filter(([, s]) => s.isShown));
         delete readableMap[':_system:storageUsed'];
         const accountStreams = Object.keys(readableMap);
         assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);

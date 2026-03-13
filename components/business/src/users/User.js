@@ -107,11 +107,18 @@ class User {
  * @returns {void}
  */
 function buildAccountFields (user) {
-  const userAccountStreamIds = SystemStreamsSerializer.getAccountStreamIdsForUser();
-  user.accountFieldsWithPrefix = userAccountStreamIds.accountFieldsWithPrefix;
-  user.uniqueAccountFields = userAccountStreamIds.uniqueAccountFields;
-  user.readableAccountFields = userAccountStreamIds.readableAccountFields;
-  user.accountFields = userAccountStreamIds.accountFields;
+  const accountMap = SystemStreamsSerializer.accountMap;
+  user.accountFieldsWithPrefix = [];
+  user.uniqueAccountFields = [];
+  user.readableAccountFields = [];
+  user.accountFields = [];
+  for (const [streamId, stream] of Object.entries(accountMap)) {
+    user.accountFieldsWithPrefix.push(streamId);
+    const withoutPrefix = SystemStreamsSerializer.removePrefixFromStreamId(streamId);
+    if (stream.isUnique === true) user.uniqueAccountFields.push(withoutPrefix);
+    if (stream.isShown === true) user.readableAccountFields.push(withoutPrefix);
+    user.accountFields.push(withoutPrefix);
+  }
 }
 /**
  * @param {User} user
@@ -137,7 +144,7 @@ function loadAccountData (user, params) {
  * @returns {Promise<any[]>}
  */
 async function buildEventsFromAccount (user) {
-  const accountLeavesMap = SystemStreamsSerializer.getAccountLeavesMap();
+  const accountLeavesMap = SystemStreamsSerializer.accountLeavesMap;
   // convert to events
   const account = user.getFullAccount();
   const events = [];
@@ -185,7 +192,7 @@ function createEvent (streamId, type, isUnique, content, accessId) {
  * @returns {any[]}
  */
 function buildAccountDataFromListOfEvents (user, events) {
-  const account = buildAccountRecursive(SystemStreamsSerializer.getAccountChildren(), events, {});
+  const account = buildAccountRecursive(SystemStreamsSerializer.accountChildren, events, {});
   Object.keys(account).forEach((param) => {
     user[param] = account[param];
   });

@@ -74,12 +74,12 @@ class Mall {
     const SystemStreamsSerializer = require('business/src/system-streams/serializer');
     await SystemStreamsSerializer.init();
     const systemStreams = {
-      accountStreamIds: SystemStreamsSerializer.getAccountStreamIds()
+      accountStreamIds: Object.keys(SystemStreamsSerializer.accountMap)
     };
 
     // Build account store stream tree from system streams config (includes type info)
     const { treeUtils } = require('utils');
-    const accountRoot = treeUtils.findById(SystemStreamsSerializer.getAll(), ':_system:account');
+    const accountRoot = treeUtils.findById(SystemStreamsSerializer.allAsTree, ':_system:account');
 
     for (const [storeId, store] of this.storesById) {
       const storeKeyValueData = userAccountStorage.getKeyValueDataForStore(storeId);

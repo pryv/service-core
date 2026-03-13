@@ -120,7 +120,7 @@ module.exports = async function (api) {
     if (!context.event) { return next(); }
     const event = context.event;
     delete context.event;
-    const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+    const systemStreamIdsForbiddenForReading = SystemStreamsSerializer.forbiddenStreamIds;
     let canReadEvent = false;
     // special case no streamIds on event && deleted
     if (event.streamIds == null) { // event might be deleted - limit result to deleted property
@@ -210,7 +210,7 @@ module.exports = async function (api) {
    * used by subsequent account middleware (shared by create and update).
    */
   function detectAccountStream (context, params, result, next) {
-    const allAccountStreamIds = SystemStreamsSerializer.getAccountStreamIds();
+    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.accountMap);
     const streamIds = context.newEvent.streamIds || [];
     const oldStreamIds = context.oldEvent ? context.oldEvent.streamIds : [];
     context.accountStreamIds = _.intersection(allAccountStreamIds, streamIds);
@@ -234,7 +234,7 @@ module.exports = async function (api) {
       ));
     }
     context.accountStreamId = context.accountStreamIds[0];
-    const editableMap = SystemStreamsSerializer.getEditableAccountMap();
+    const editableMap = SystemStreamsSerializer.editableAccountMap;
     if (editableMap[context.accountStreamId] == null) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
@@ -273,7 +273,7 @@ module.exports = async function (api) {
       }
     }
     context.accountStreamId = activeStreamIds[0];
-    const editableMap = SystemStreamsSerializer.getEditableAccountMap();
+    const editableMap = SystemStreamsSerializer.editableAccountMap;
     if (editableMap[context.accountStreamId] == null) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],

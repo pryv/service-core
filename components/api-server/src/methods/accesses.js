@@ -117,8 +117,8 @@ module.exports = async function produceAccessesApiMethods (api) {
 
   // CREATION
 
-  const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-  const visibleAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreamIds();
+  const notVisibleAccountStreamsIds = SystemStreamsSerializer.forbiddenStreamIds;
+  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.accountMap).filter(id => SystemStreamsSerializer.accountMap[id].isShown);
 
   api.register(
     'accesses.create',
@@ -206,7 +206,7 @@ module.exports = async function produceAccessesApiMethods (api) {
     }
 
     function isUnknownSystemStream (streamId) {
-      return (SystemStreamsSerializer.hasSystemStreamPrefix(streamId) &&
+      return ((streamId.startsWith(':_system:') || streamId.startsWith(':system:')) &&
                 SystemStreamsSerializer.removePrefixFromStreamId(streamId) === streamId);
     }
     return next();

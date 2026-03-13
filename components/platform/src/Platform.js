@@ -191,13 +191,13 @@ class Platform {
     // unique fields
     const operations = [];
     if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
-      for (const field of SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()) {
+      for (const field of SystemStreamsSerializer.uniqueFieldsWithoutPrefix) {
         operations.push({ action: 'delete', key: field, value: user[field], isUnique: true });
       }
     }
 
     // indexed fields
-    for (const field of SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix()) {
+    for (const field of SystemStreamsSerializer.indexedFieldsWithoutPrefix) {
       operations.push({ action: 'delete', key: field, isUnique: false });
     }
 

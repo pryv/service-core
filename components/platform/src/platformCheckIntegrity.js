@@ -22,7 +22,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
   // Retrieve all existing users
   const usersRepository = await getUsersRepository();
   const usersFromRepository = await usersRepository.getAll();
-  const indexedFields = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
+  const indexedFields = SystemStreamsSerializer.indexedFieldsWithoutPrefix;
 
   const infos = {
     usersCountOnPlatform: Object.keys(platformEntryByUser).length,
@@ -46,7 +46,7 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
 
       if (valueRepo == null) continue; // we do not expect to find null values in repo
 
-      const isUnique = SystemStreamsSerializer.isUniqueAccountField(field);
+      const isUnique = SystemStreamsSerializer.uniqueFieldsWithoutPrefix.includes(field);
 
       if (platformEntryByUser[username] == null) {
         errors.push(`Cannot find username "${username}" data in platform db while looking for field "${field}" expected value:  "${valueRepo}"`);

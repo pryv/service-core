@@ -21,8 +21,8 @@ class Registration {
   logger;
 
   storageLayer;
-  /** @default SystemStreamsSerializer.getAccountMap() */
-  accountStreamsSettings = SystemStreamsSerializer.getAccountMap();
+  /** @default SystemStreamsSerializer.accountMap */
+  accountStreamsSettings = SystemStreamsSerializer.accountMap;
 
   servicesSettings; // settigns to get the email to send user welcome email
 
@@ -149,7 +149,7 @@ class Registration {
   async createUserStep2_CreateUserOnPlatform (context, params, result, next) {
     try {
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutPrefix();
+      const userStreamsIds = SystemStreamsSerializer.indexedFieldsWithoutPrefix;
       // build data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
       const userData = {
@@ -160,7 +160,7 @@ class Registration {
         host: { name: context.host },
         unique: [
           'username',
-          ...SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutPrefix()
+          ...SystemStreamsSerializer.uniqueFieldsWithoutPrefix
         ]
       };
       userStreamsIds.forEach((streamId) => {

@@ -395,7 +395,7 @@ function stripDoNotExpandMarker (streamIdWithDoNotExpandMarker) {
  */
 async function streamQueryAddHiddenStreams (context, params, result, next) {
   // forbidden stream
-  const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+  const forbiddenStreamIds = SystemStreamsSerializer.forbiddenStreamIds;
   for (const streamQuery of params.arrayOfStreamQueriesWithStoreId) {
     if (streamQuery.storeId !== 'local' && streamQuery.storeId !== storeDataUtils.AccountStoreId) { continue; }
     if (streamQuery.and == null) { streamQuery.and = []; }
