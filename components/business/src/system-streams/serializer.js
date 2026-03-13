@@ -12,14 +12,11 @@
 
 const treeUtils = require('utils').treeUtils;
 const { getConfig } = require('@pryv/boiler');
-const { features } = require('api-server/config/components/systemStreams');
+const { IS_SHOWN, IS_INDEXED, IS_UNIQUE } = require('./features');
 
 const PRYV_PREFIX = ':_system:';
 const CUSTOMER_PREFIX = ':system:';
 const STREAM_ID_ACCOUNT = PRYV_PREFIX + 'account';
-const IS_SHOWN = features.IS_SHOWN;
-const IS_INDEXED = features.IS_INDEXED;
-const IS_UNIQUE = features.IS_UNIQUE;
 const ALL = 'all';
 
 // Module-level state — all set by initializeState()

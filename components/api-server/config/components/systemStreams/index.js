@@ -12,23 +12,12 @@ const treeUtils = require('utils/src/treeUtils');
 const validation = require('api-server/src/schema/validation');
 const systemStreamSchema = require('./systemStreamSchema');
 
-const IS_SHOWN = 'isShown';
-const IS_INDEXED = 'isIndexed';
-const IS_EDITABLE = 'isEditable';
-const IS_UNIQUE = 'isUnique';
-const IS_REQUIRED_IN_VALIDATION = 'isRequiredInValidation';
-const REGEX_VALIDATION = 'regexValidation';
+const features = require('business/src/system-streams/features');
+const { IS_SHOWN, IS_INDEXED, IS_EDITABLE, IS_UNIQUE, IS_REQUIRED_IN_VALIDATION } = features;
 
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 
-module.exports.features = {
-  IS_SHOWN,
-  IS_INDEXED,
-  IS_EDITABLE,
-  IS_UNIQUE,
-  IS_REQUIRED_IN_VALIDATION,
-  REGEX_VALIDATION
-};
+module.exports.features = features;
 
 const DEFAULT = 'default';
 

@@ -9,7 +9,7 @@
  */
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');
-const { features } = require('api-server/config/components/systemStreams');
+const features = require('business/src/system-streams/features');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const helpers = require('./helpers');
 const object = helpers.object;
