@@ -61,11 +61,33 @@ function removeSystemStreams (streams) {
   return streams.filter(s => !isSystemStreamId(s.id));
 }
 
+/**
+ * Adds private system stream prefix to a stream id.
+ * Test-only — simple concatenation, no validation.
+ * @param {string} id
+ * @returns {string}
+ */
+function addPrivatePrefixToStreamId (id) {
+  return PRYV_PREFIX + id;
+}
+
+/**
+ * Adds customer system stream prefix to a stream id.
+ * Test-only — simple concatenation, no validation.
+ * @param {string} id
+ * @returns {string}
+ */
+function addCustomerPrefixToStreamId (id) {
+  return CUSTOMER_PREFIX + id;
+}
+
 module.exports = {
   PRYV_PREFIX,
   CUSTOMER_PREFIX,
   isSystemStreamId,
   removeSystemEvents,
   separateSystemEvents,
-  removeSystemStreams
+  removeSystemStreams,
+  addPrivatePrefixToStreamId,
+  addCustomerPrefixToStreamId
 };

@@ -17,7 +17,7 @@ const validation = helpers.validation;
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const testData = helpers.dynData({ prefix: 'vers' });
-const SystemStreamSerializer = require('business/src/system-streams/serializer');
+const { addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const { integrity } = require('business');
 const { getMall } = require('mall');
 
@@ -620,7 +620,7 @@ describe('[VERS] Versioning', function () {
       const resEvents = await req
         .get(buildPath(`/${user1.username}/events`))
         .set('Authorization', token)
-        .query({ streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')] });
+        .query({ streams: [addCustomerPrefixToStreamId('email')] });
       const oldEmailEvent = resEvents.body.events[0];
 
       // 2.
@@ -647,7 +647,7 @@ describe('[VERS] Versioning', function () {
       const resEvents2 = await req
         .get(buildPath(`/${user2.username}/events`))
         .set('Authorization', token2)
-        .query({ streams: [SystemStreamSerializer.addCustomerPrefixToStreamId('email')] });
+        .query({ streams: [addCustomerPrefixToStreamId('email')] });
       const emailEvent = resEvents2.body.events[0];
       assert.strictEqual(emailEvent.content, oldEmailEvent.content);
     });

@@ -16,7 +16,7 @@ const { pubsub } = require('messages');
 const { databaseFixture } = require('test-helpers');
 const validation = require('api-server/test/helpers').validation;
 const { produceStorageConnection } = require('api-server/test/test-helpers');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { addPrivatePrefixToStreamId, addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const treeUtils = require('utils/src/treeUtils');
 
@@ -72,50 +72,50 @@ describe('[SYSS] System streams', function () {
         let readableStreams = [
           {
             name: 'Account',
-            id: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+            id: addPrivatePrefixToStreamId('account'),
             parentId: null,
             children: [
               {
                 name: 'Language',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('language'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                id: addPrivatePrefixToStreamId('language'),
+                parentId: addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Storage used',
-                id: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                id: addPrivatePrefixToStreamId('storageUsed'),
+                parentId: addPrivatePrefixToStreamId('account'),
                 children: [
                   {
                     name: 'Db Documents',
-                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments'),
-                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
+                    id: addPrivatePrefixToStreamId('dbDocuments'),
+                    parentId: addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   },
                   {
                     name: 'Attached files',
-                    id: SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles'),
-                    parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('storageUsed'),
+                    id: addPrivatePrefixToStreamId('attachedFiles'),
+                    parentId: addPrivatePrefixToStreamId('storageUsed'),
                     children: []
                   }
                 ]
               },
               {
                 name: 'insurancenumber',
-                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                id: addCustomerPrefixToStreamId('insurancenumber'),
+                parentId: addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'phoneNumber',
-                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                id: addCustomerPrefixToStreamId('phoneNumber'),
+                parentId: addPrivatePrefixToStreamId('account'),
                 children: []
               },
               {
                 name: 'Email',
-                id: SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
-                parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+                id: addCustomerPrefixToStreamId('email'),
+                parentId: addPrivatePrefixToStreamId('account'),
                 children: []
               }
             ]
@@ -148,7 +148,7 @@ describe('[SYSS] System streams', function () {
           res = await request.post(basePath)
             .send({
               name: charlatan.Lorem.characters(7),
-              parentId: SystemStreamsSerializer.addPrivatePrefixToStreamId('language')
+              parentId: addPrivatePrefixToStreamId('language')
             })
             .set('authorization', access.token);
         });
@@ -171,7 +171,7 @@ describe('[SYSS] System streams', function () {
           streamData = {
             name: 'lanugage2'
           };
-          res = await request.put(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
+          res = await request.put(path.join(basePath, addPrivatePrefixToStreamId('language')))
             .send(streamData)
             .set('authorization', access.token);
         });
@@ -190,7 +190,7 @@ describe('[SYSS] System streams', function () {
       describe('[SS11] to delete a system stream', () => {
         before(async function () {
           await createUser();
-          res = await request.delete(path.join(basePath, SystemStreamsSerializer.addPrivatePrefixToStreamId('language')))
+          res = await request.delete(path.join(basePath, addPrivatePrefixToStreamId('language')))
             .set('authorization', access.token);
         });
         it('[1R35] should return status 400', async () => {

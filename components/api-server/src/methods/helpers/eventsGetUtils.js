@@ -326,7 +326,7 @@ function streamQueryAddForcedAndForbiddenStreams (context, params, result, next)
     // stream expansion to exclude all children.
     if (streamQuery.storeId === storeDataUtils.LocalStoreId && !context.access.isPersonal()) {
       if (streamQuery.not == null) { streamQuery.not = []; }
-      streamQuery.not.push(SystemStreamsSerializer.options.STREAM_ID_ACCOUNT);
+      streamQuery.not.push(SystemStreamsSerializer.STREAM_ID_ACCOUNT);
     }
   }
   next();

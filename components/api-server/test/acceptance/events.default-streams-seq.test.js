@@ -19,6 +19,7 @@ const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { addPrivatePrefixToStreamId, addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const { databaseFixture } = require('test-helpers');
 const { produceStorageConnection } = require('api-server/test/test-helpers');
 
@@ -101,7 +102,9 @@ describe('[FG5R] Events of system streams', () => {
       });
       it('[KS6K] should return visible system events only', () => {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountMapForTests());
+        const readableMap = { ...SystemStreamsSerializer.getReadableAccountMap() };
+        delete readableMap[':_system:storageUsed'];
+        const accountStreams = Object.keys(readableMap);
         assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);
         accountStreams.forEach(accountStreamId => {
           let found = false;
@@ -120,7 +123,7 @@ describe('[FG5R] Events of system streams', () => {
           token: cuid(),
           type: 'shared',
           permissions: [{
-            streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('account'),
+            streamId: addPrivatePrefixToStreamId('account'),
             level: 'read'
           }]
         });
@@ -130,7 +133,9 @@ describe('[FG5R] Events of system streams', () => {
       });
 
       it('[DRFH] should return visible system events only', () => {
-        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountMapForTests());
+        const readableMap = { ...SystemStreamsSerializer.getReadableAccountMap() };
+        delete readableMap[':_system:storageUsed'];
+        const accountStreams = Object.keys(readableMap);
         assert.strictEqual(separatedEvents.accountStreamsEvents.length, accountStreams.length);
         accountStreams.forEach(accountStreamId => {
           let found = false;
@@ -146,7 +151,7 @@ describe('[FG5R] Events of system streams', () => {
       let sharedAccess;
       let systemStreamId;
       before(async function () {
-        systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+        systemStreamId = addCustomerPrefixToStreamId('email');
         await createUser();
         sharedAccess = await user.access({
           token: cuid(),
@@ -163,7 +168,7 @@ describe('[FG5R] Events of system streams', () => {
       });
 
       it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
-        res = await request.get(basePath).query({ streams: [SystemStreamsSerializer.addCustomerPrefixToStreamId('email')] }).set('authorization', sharedAccess.attrs.token);
+        res = await request.get(basePath).query({ streams: [addCustomerPrefixToStreamId('email')] }).set('authorization', sharedAccess.attrs.token);
         assert.strictEqual(res.body.events.length, 1);
         assert.strictEqual(res.body.events[0].streamIds.includes(systemStreamId), true);
       });
@@ -200,7 +205,7 @@ describe('[FG5R] Events of system streams', () => {
         const streamId = 'language';
         let systemStreamId;
         before(async function () {
-          systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+          systemStreamId = addPrivatePrefixToStreamId(streamId);
           await createUser();
           defaultEvent = await findDefaultCoreEvent(systemStreamId);
           res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
@@ -216,7 +221,7 @@ describe('[FG5R] Events of system streams', () => {
       describe('[ED12] to retrieve a non visible system event', () => {
         before(async function () {
           await createUser();
-          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'));
+          const defaultEvent = await findDefaultCoreEvent(addPrivatePrefixToStreamId('invitationToken'));
           res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
         });
         it('[Y2OA] should return 403', () => {
@@ -233,7 +238,7 @@ describe('[FG5R] Events of system streams', () => {
       let defaultEvent;
       let systemStreamId;
       before(async () => {
-        systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
+        systemStreamId = addPrivatePrefixToStreamId('language');
         await createUser();
         const sharedAccess = await user.access({
           token: cuid(),
@@ -270,7 +275,7 @@ describe('[FG5R] Events of system streams', () => {
           before(async function () {
             await createUser();
             eventData = {
-              streamIds: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')],
+              streamIds: [addCustomerPrefixToStreamId('phoneNumber')],
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
@@ -285,15 +290,15 @@ describe('[FG5R] Events of system streams', () => {
           it('[9C2D] should return the created event', () => {
             assert.strictEqual(res.body.event.content, eventData.content);
             assert.strictEqual(res.body.event.type, eventData.type);
-            assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
+            assert.deepStrictEqual(res.body.event.streamIds, [addCustomerPrefixToStreamId('phoneNumber')]);
           });
           it('[A9DC] should update the field value (single event per field)', async () => {
             const allEvents = await mall.events.get(user.attrs.id,
-              { streams: [{ any: [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')] }] });
+              { streams: [{ any: [addCustomerPrefixToStreamId('phoneNumber')] }] });
 
             assert.strictEqual(allEvents.length, 1);
             assert.strictEqual(allEvents[0].content, eventData.content);
-            assert.deepStrictEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
+            assert.deepStrictEqual(allEvents[0].streamIds, [addCustomerPrefixToStreamId('phoneNumber')]);
           });
         });
         describe('[ED17] which is indexed', function () {
@@ -301,7 +306,7 @@ describe('[FG5R] Events of system streams', () => {
             before(async function () {
               await createUser();
               eventData = {
-                streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
+                streamIds: [addPrivatePrefixToStreamId('language')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
@@ -326,15 +331,15 @@ describe('[FG5R] Events of system streams', () => {
               assert.strictEqual(res.body.event.content, eventData.content);
               // Account store enforces the configured type for the stream
               assert.strictEqual(res.body.event.type, 'language/iso-639-1');
-              assert.deepStrictEqual(res.body.event.streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
+              assert.deepStrictEqual(res.body.event.streamIds, [addPrivatePrefixToStreamId('language')]);
             });
             it('[467D] should update the field value (single event per field)', async () => {
               const allEvents = await mall.events.get(user.attrs.id,
-                { streams: [{ any: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')] }] });
+                { streams: [{ any: [addPrivatePrefixToStreamId('language')] }] });
 
               assert.strictEqual(allEvents.length, 1);
               assert.strictEqual(allEvents[0].content, eventData.content);
-              assert.deepStrictEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
+              assert.deepStrictEqual(allEvents[0].streamIds, [addPrivatePrefixToStreamId('language')]);
             });
             it('[199D] should notify register with the new data', function () {
               if (isDnsLess) this.skip();
@@ -359,7 +364,7 @@ describe('[FG5R] Events of system streams', () => {
             before(async function () {
               await createUser();
               eventData = {
-                streamIds: [SystemStreamsSerializer.addPrivatePrefixToStreamId('language')],
+                streamIds: [addPrivatePrefixToStreamId('language')],
                 content: [charlatan.Lorem.characters(7)],
                 type: 'string/pryv'
               };
@@ -379,7 +384,7 @@ describe('[FG5R] Events of system streams', () => {
             let allEventsInDb;
             let streamId;
             before(async function () {
-              streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+              streamId = addCustomerPrefixToStreamId('email');
               await createUser();
               eventData = {
                 streamIds: [streamId],
@@ -436,7 +441,7 @@ describe('[FG5R] Events of system streams', () => {
               if (isDnsLess) this.skip();
               await createUser();
               eventData = {
-                streamIds: [SystemStreamsSerializer.addCustomerPrefixToStreamId('email')],
+                streamIds: [addCustomerPrefixToStreamId('email')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
@@ -470,7 +475,7 @@ describe('[FG5R] Events of system streams', () => {
             let streamId;
             const email = charlatan.Internet.email();
             before(async function () {
-              streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+              streamId = addCustomerPrefixToStreamId('email');
               await createUser();
               eventData = {
                 streamIds: [streamId],
@@ -533,7 +538,7 @@ describe('[FG5R] Events of system streams', () => {
       const streamId = 'email';
       let systemStreamId;
       before(async function () {
-        systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+        systemStreamId = addCustomerPrefixToStreamId(streamId);
         const user2 = await createUser();
         sharedAccess = await user2.access({
           token: cuid(),
@@ -592,7 +597,7 @@ describe('[FG5R] Events of system streams', () => {
       let sharedAccess;
       let systemStreamId;
       before(async function () {
-        systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+        systemStreamId = addCustomerPrefixToStreamId('email');
         await createUser();
         sharedAccess = await user.access({
           token: cuid(),
@@ -649,7 +654,7 @@ describe('[FG5R] Events of system streams', () => {
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
-            const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+            const initialEvent = await getOneEvent(user.attrs.id, addCustomerPrefixToStreamId('phoneNumber'));
 
             res = await request.put(path.join(basePath, initialEvent.id))
               .send(eventData)
@@ -662,7 +667,7 @@ describe('[FG5R] Events of system streams', () => {
             assert.strictEqual(res.body.event.content, eventData.content);
             assert.strictEqual(res.body.event.type, eventData.type);
             assert.deepStrictEqual(res.body.event.streamIds, [
-              SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
+              addCustomerPrefixToStreamId('phoneNumber')]);
           });
 
           describe('[ED29] by changing its steamIds', () => {
@@ -670,8 +675,8 @@ describe('[FG5R] Events of system streams', () => {
               let streamIds;
               before(async function () {
                 streamIds = [
-                  SystemStreamsSerializer.addCustomerPrefixToStreamId('email'),
-                  SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')
+                  addCustomerPrefixToStreamId('email'),
+                  addCustomerPrefixToStreamId('phoneNumber')
                 ];
                 await createUser();
                 eventData = {
@@ -679,7 +684,7 @@ describe('[FG5R] Events of system streams', () => {
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
-                const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+                const initialEvent = await getOneEvent(user.attrs.id, addCustomerPrefixToStreamId('phoneNumber'));
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
                   .set('authorization', access.token);
@@ -697,11 +702,11 @@ describe('[FG5R] Events of system streams', () => {
               before(async function () {
                 await createUser();
                 eventData = {
-                  streamIds: [SystemStreamsSerializer.addCustomerPrefixToStreamId('email')],
+                  streamIds: [addCustomerPrefixToStreamId('email')],
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
-                const initialEvent = await await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+                const initialEvent = await await getOneEvent(user.attrs.id, addCustomerPrefixToStreamId('phoneNumber'));
 
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -727,7 +732,7 @@ describe('[FG5R] Events of system streams', () => {
               const streamId = 'language';
               let systemStreamId;
               before(async function () {
-                systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+                systemStreamId = addPrivatePrefixToStreamId(streamId);
                 await createUser();
                 nock.cleanAll();
                 scope = nock(config.get('services:register:url'));
@@ -762,7 +767,7 @@ describe('[FG5R] Events of system streams', () => {
               const streamId = 'language';
               let systemStreamId;
               before(async function () {
-                systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+                systemStreamId = addPrivatePrefixToStreamId(streamId);
                 await createUser();
                 await editEvent(systemStreamId, true);
               });
@@ -775,7 +780,7 @@ describe('[FG5R] Events of system streams', () => {
             const streamId = 'language';
             let systemStreamId;
             before(async function () {
-              systemStreamId = SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId);
+              systemStreamId = addPrivatePrefixToStreamId(streamId);
               await createUser();
               nock.cleanAll();
               scope = nock(config.get('services:register:url'));
@@ -815,7 +820,7 @@ describe('[FG5R] Events of system streams', () => {
             const streamId = 'email';
             let systemStreamId;
             before(async function () {
-              systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+              systemStreamId = addCustomerPrefixToStreamId(streamId);
               await createUser();
               scope = nock(config.get('services:register:url'));
               scope.put('/users',
@@ -851,7 +856,7 @@ describe('[FG5R] Events of system streams', () => {
               before(async function () {
                 if (isDnsLess) this.skip();
                 const streamId = 'email';
-                systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+                systemStreamId = addCustomerPrefixToStreamId(streamId);
 
                 await createUser();
                 eventData = {
@@ -904,7 +909,7 @@ describe('[FG5R] Events of system streams', () => {
             });
             describe('[ED43] with a field that is not unique in mongodb', () => {
               before(async function () {
-                const streamId = SystemStreamsSerializer.addCustomerPrefixToStreamId('email');
+                const streamId = addCustomerPrefixToStreamId('email');
                 const user1 = await createUser();
                 const user2 = await createUser();
                 eventData = {
@@ -945,7 +950,7 @@ describe('[FG5R] Events of system streams', () => {
             content: charlatan.Lorem.characters(7),
             type: 'password-hash/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken'));
+          const initialEvent = await getOneEvent(user.attrs.id, addPrivatePrefixToStreamId('invitationToken'));
 
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -957,7 +962,7 @@ describe('[FG5R] Events of system streams', () => {
         it('[BB5F] should return the correct error', () => {
           assert.strictEqual(res.body.error.id, ErrorIds.InvalidOperation);
           assert.strictEqual(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountEventModification]);
-          assert.deepStrictEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addPrivatePrefixToStreamId('invitationToken') });
+          assert.deepStrictEqual(res.body.error.data, { streamId: addPrivatePrefixToStreamId('invitationToken') });
         });
       });
     });
@@ -969,14 +974,14 @@ describe('[FG5R] Events of system streams', () => {
             token: cuid(),
             type: 'shared',
             permissions: [{
-              streamId: SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'),
+              streamId: addCustomerPrefixToStreamId('phoneNumber'),
               level: 'contribute'
             }]
           });
           eventData = {
             content: charlatan.Internet.email()
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+          const initialEvent = await getOneEvent(user.attrs.id, addCustomerPrefixToStreamId('phoneNumber'));
 
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -988,7 +993,7 @@ describe('[FG5R] Events of system streams', () => {
         it('[TFOI] should return the updated event', () => {
           assert.strictEqual(res.body.event.content, eventData.content);
           assert.deepStrictEqual(res.body.event.streamIds, [
-            SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')]);
+            addCustomerPrefixToStreamId('phoneNumber')]);
         });
       });
     });
@@ -1008,7 +1013,7 @@ describe('[FG5R] Events of system streams', () => {
             content: charlatan.Lorem.characters(7),
             type: 'string/pryv'
           };
-          const initialEvent = await getOneEvent(user.attrs.id, SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber'));
+          const initialEvent = await getOneEvent(user.attrs.id, addCustomerPrefixToStreamId('phoneNumber'));
 
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -1032,7 +1037,7 @@ describe('[FG5R] Events of system streams', () => {
           let systemStreamId;
           let initialEvent;
           before(async function () {
-            systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+            systemStreamId = addCustomerPrefixToStreamId(streamId);
             await createUser();
             initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
             res = await request.delete(path.join(basePath, initialEvent.id))
@@ -1049,7 +1054,7 @@ describe('[FG5R] Events of system streams', () => {
           let streamId;
           let initialEvent;
           before(async function () {
-            streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
+            streamId = addPrivatePrefixToStreamId('language');
             await createUser();
             initialEvent = await getOneEvent(user.attrs.id, streamId);
             res = await request.delete(path.join(basePath, initialEvent.id))
@@ -1067,7 +1072,7 @@ describe('[FG5R] Events of system streams', () => {
         let streamId;
         let initialEvent;
         before(async function () {
-          streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments');
+          streamId = addPrivatePrefixToStreamId('dbDocuments');
           await createUser();
           initialEvent = await getOneEvent(user.attrs.id, streamId);
           res = await request.delete(path.join(basePath, initialEvent.id))
@@ -1086,7 +1091,7 @@ describe('[FG5R] Events of system streams', () => {
       let streamId;
       let initialEvent;
       before(async function () {
-        streamId = SystemStreamsSerializer.addPrivatePrefixToStreamId('language');
+        streamId = addPrivatePrefixToStreamId('language');
         await createUser();
         initialEvent = await getOneEvent(user.attrs.id, streamId);
         res = await request.delete(path.join(basePath, initialEvent.id))
@@ -1105,7 +1110,7 @@ describe('[FG5R] Events of system streams', () => {
       let systemStreamId;
       let initialEvent;
       before(async function () {
-        systemStreamId = SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+        systemStreamId = addCustomerPrefixToStreamId(streamId);
         await createUser();
         initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
 

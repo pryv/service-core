@@ -9,6 +9,7 @@ const assert = require('node:assert');
 const nconf = require('nconf');
 const systemStreamsConfig = require('api-server/config/components/systemStreams');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const treeUtils = require('utils/src/treeUtils');
 const { defaults: dataStoreDefaults } = require('@pryv/datastore');
 const PRIVATE_PREFIX = ':_system:';
@@ -84,7 +85,7 @@ describe('[SSDC] SystemStreams config', () => {
       customStreamIds = treeUtils
         .flattenTree(customStreams.account)
         .concat(treeUtils.flattenTree(customStreams.other))
-        .map((s) => SystemStreamsSerializer.addCustomerPrefixToStreamId(s.id));
+        .map((s) => addCustomerPrefixToStreamId(s.id));
     });
     it('[GB8G] must set default values and other fields', () => {
       const systemStreams = store.get('systemStreams');

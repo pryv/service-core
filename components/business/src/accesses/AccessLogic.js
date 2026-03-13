@@ -53,7 +53,7 @@ class AccessLogic {
 
     // Lock account streams by default — explicit permissions can override.
     // This also makes the 'none' level visible in access-info API responses.
-    this.permissions.unshift({ streamId: SystemStreamsSerializer.options.STREAM_ID_ACCOUNT, level: 'none' });
+    this.permissions.unshift({ streamId: SystemStreamsSerializer.STREAM_ID_ACCOUNT, level: 'none' });
 
     // add audit permissions
     if (!addAuditStreams()) return;

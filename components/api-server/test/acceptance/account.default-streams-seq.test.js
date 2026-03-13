@@ -15,7 +15,7 @@ const { ErrorIds } = require('errors');
 const { getApplication } = require('api-server/src/application');
 
 const { pubsub } = require('messages');
-const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { addPrivatePrefixToStreamId, addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 
 const { getUserAccountStorage } = require('storage');
 const { getConfig } = require('@pryv/boiler');
@@ -63,7 +63,7 @@ describe('[ACCO] Account with system streams', function () {
   }
 
   async function getAccountEvent (streamId, isPrivate = true) {
-    const streamIdWithPrefix = isPrivate ? SystemStreamsSerializer.addPrivatePrefixToStreamId(streamId) : SystemStreamsSerializer.addCustomerPrefixToStreamId(streamId);
+    const streamIdWithPrefix = isPrivate ? addPrivatePrefixToStreamId(streamId) : addCustomerPrefixToStreamId(streamId);
     const res = await mall.events.get(user.attrs.id, { streams: [{ any: [streamIdWithPrefix] }] });
     if (res.length === 0) return null;
     return res[0];
@@ -124,11 +124,11 @@ describe('[ACCO] Account with system streams', function () {
             return true;
           }).times(3).reply(200, { errors: [] });
         const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
-          .map(SystemStreamsSerializer.addCustomerPrefixToStreamId)
-          .concat([SystemStreamsSerializer.addPrivatePrefixToStreamId('language')]);
+          .map(addCustomerPrefixToStreamId)
+          .concat([addPrivatePrefixToStreamId('language')]);
         const visibleStreamsIds = ['language', 'dbDocuments', 'attachedFiles']
-          .map(SystemStreamsSerializer.addPrivatePrefixToStreamId)
-          .concat(['email', 'phoneNumber', 'insurancenumber'].map(SystemStreamsSerializer.addCustomerPrefixToStreamId));
+          .map(addPrivatePrefixToStreamId)
+          .concat(['email', 'phoneNumber', 'insurancenumber'].map(addCustomerPrefixToStreamId));
 
         for (const editableStreamsId of editableStreamsIds) {
           await createAdditionalEvent(editableStreamsId);
@@ -147,18 +147,18 @@ describe('[ACCO] Account with system streams', function () {
       });
       it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
         const emailAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('email')));
+          event.streamIds.includes(addCustomerPrefixToStreamId('email')));
         const languageAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('language')));
+          event.streamIds.includes(addPrivatePrefixToStreamId('language')));
         const dbDocumentsAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('dbDocuments')));
+          event.streamIds.includes(addPrivatePrefixToStreamId('dbDocuments')));
         const attachedFilesAccountEvent = allVisibleAccountEvents.find(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addPrivatePrefixToStreamId('attachedFiles')));
+          event.streamIds.includes(addPrivatePrefixToStreamId('attachedFiles')));
         // TODO: verify the following data or remove those lines
         // const insurancenumberAccountEvent = allVisibleAccountEvents.find(event =>
-        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('insurancenumber')));
+        //   event.streamIds.includes(addCustomerPrefixToStreamId('insurancenumber')));
         // const phoneNumberAccountEvent = allVisibleAccountEvents.find(event =>
-        //   event.streamIds.includes(SystemStreamsSerializer.addCustomerPrefixToStreamId('phoneNumber')));
+        //   event.streamIds.includes(addCustomerPrefixToStreamId('phoneNumber')));
         assert.strictEqual(res.body.account.email, emailAccountEvent.content);
         assert.strictEqual(res.body.account.language, languageAccountEvent.content);
         assert.strictEqual(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
