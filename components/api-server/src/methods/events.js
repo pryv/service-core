@@ -234,14 +234,14 @@ module.exports = async function (api) {
       ));
     }
     context.accountStreamId = context.accountStreamIds[0];
-    const editableMap = SystemStreamsSerializer.editableAccountMap;
-    if (editableMap[context.accountStreamId] == null) {
+    const streamConfig = SystemStreamsSerializer.accountMap[context.accountStreamId];
+    if (!streamConfig?.isEditable) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
         { streamId: context.accountStreamId }
       ));
     }
-    context.systemStream = editableMap[context.accountStreamId];
+    context.systemStream = streamConfig;
     context.accountStreamIdWithoutPrefix =
       SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
     next();
@@ -273,14 +273,14 @@ module.exports = async function (api) {
       }
     }
     context.accountStreamId = activeStreamIds[0];
-    const editableMap = SystemStreamsSerializer.editableAccountMap;
-    if (editableMap[context.accountStreamId] == null) {
+    const streamConfig = SystemStreamsSerializer.accountMap[context.accountStreamId];
+    if (!streamConfig?.isEditable) {
       return next(errors.invalidOperation(
         ErrorMessages[ErrorIds.ForbiddenAccountEventModification],
         { streamId: context.accountStreamId }
       ));
     }
-    context.systemStream = editableMap[context.accountStreamId];
+    context.systemStream = streamConfig;
     context.accountStreamIdWithoutPrefix =
       SystemStreamsSerializer.removePrefixFromStreamId(context.accountStreamId);
     next();

@@ -19,7 +19,6 @@ const CUSTOMER_PREFIX = ':system:';
 const STREAM_ID_ACCOUNT = PRYV_PREFIX + 'account';
 const IS_SHOWN = features.IS_SHOWN;
 const IS_INDEXED = features.IS_INDEXED;
-const IS_EDITABLE = features.IS_EDITABLE;
 const IS_UNIQUE = features.IS_UNIQUE;
 const ALL = 'all';
 
@@ -64,8 +63,6 @@ function initializeState (settings) {
   // Account stream maps (flat)
   exports_.accountMap = filterMapStreams(exports_.accountChildren, ALL);
   exports_.accountLeavesMap = buildLeavesMap(exports_.accountChildren);
-  exports_.editableAccountMap = filterMapStreams(exports_.accountChildren, IS_EDITABLE);
-
   // ID arrays
   const accountStreamIds = Object.keys(exports_.accountMap);
   const readableIds = Object.keys(filterMapStreams(exports_.accountChildren, IS_SHOWN));
@@ -143,7 +140,6 @@ const exports_ = module.exports = {
   accountChildren: null,
   accountMap: null,
   accountLeavesMap: null,
-  editableAccountMap: null,
   forbiddenStreamIds: null,
   indexedFieldsWithoutPrefix: null,
   uniqueFieldsWithoutPrefix: null,

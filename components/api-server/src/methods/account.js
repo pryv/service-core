@@ -80,10 +80,10 @@ module.exports = async function (api) {
    * @param {*} next
    */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
-    const editableAccountMap = SystemStreamsSerializer.editableAccountMap;
+    const accountMap = SystemStreamsSerializer.accountMap;
     Object.keys(params.update).forEach((streamId) => {
       const streamIdWithPrefix = SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(streamId);
-      if (editableAccountMap[streamIdWithPrefix] == null) {
+      if (!accountMap[streamIdWithPrefix]?.isEditable) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenToEditNoneditableAccountFields], { field: streamId }));
       }
@@ -227,7 +227,7 @@ module.exports = async function (api) {
 
   async function updateDataOnPlatform (context, params, result, next) {
     try {
-      const editableAccountMap = SystemStreamsSerializer.editableAccountMap;
+      const accountMap = SystemStreamsSerializer.accountMap;
       const operations = [];
       for (const [key, value] of Object.entries(params.update)) {
         // get previous value of the field;
@@ -237,7 +237,7 @@ module.exports = async function (api) {
           key,
           value,
           previousValue,
-          isUnique: editableAccountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
+          isUnique: accountMap[SystemStreamsSerializer.addCorrectPrefixToAccountStreamId(key)].isUnique,
           isActive: true
         });
       }
