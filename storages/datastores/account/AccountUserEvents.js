@@ -94,9 +94,8 @@ function create (fieldStreamMap, getStorage) {
       if (!streamConfig) {
         throw ds.errors.invalidRequestStructure(`Unknown account field: ${fieldName}`);
       }
-      if (!streamConfig.isEditable) {
-        throw ds.errors.invalidRequestStructure('Account field is not editable: ' + fieldName);
-      }
+      // Editability is enforced at the API layer (events.js, account.js).
+      // Internal system operations need to create non-editable field events.
       const storage = await getStorage();
       const time = eventData.time || timestamp.now();
       const createdBy = eventData.createdBy || 'system';
@@ -108,9 +107,9 @@ function create (fieldStreamMap, getStorage) {
       const fieldName = toFieldName(eventData.id);
       const streamConfig = fieldStreamMap.get(fieldName);
       if (!streamConfig) return false;
-      if (!streamConfig.isEditable) {
-        throw ds.errors.invalidRequestStructure('Account field is not editable: ' + fieldName);
-      }
+      // Editability is enforced at the API layer (events.js, account.js).
+      // Internal system operations (e.g. storageUsed computation) need to
+      // update non-editable fields, so no guard here.
       const storage = await getStorage();
       const time = eventData.modified || timestamp.now();
       const modifiedBy = eventData.modifiedBy || 'system';

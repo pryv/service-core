@@ -124,3 +124,4 @@ accessTracking:
 
 cluster:
   apiWorkers: 2
+  hfsWorkers: 1

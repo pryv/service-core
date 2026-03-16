@@ -52,6 +52,7 @@ Cluster mode: `just start-master` or `node bin/master.js`
 ```yaml
 cluster:
   apiWorkers: 2    # number of API workers (default: 2)
+  hfsWorkers: 1    # number of HFS workers (default: 1, 0 = disabled)
 
 webhooks:
   inProcess: true  # start webhooks in API server (default: true)
@@ -262,7 +263,7 @@ Consolidating service-core's separate processes behind a single master.
 - [x] Phase 1.1: Inline metadata updater into HFS (remove TChannel RPC)
 - [x] Phase 1.2: Webhooks as in-process subscriber (remove separate container)
 - [x] Phase 2: Create `bin/master.js` with cluster module
-- [ ] Phase 3: Add HFS as configurable child processes (M workers, 0=disabled)
+- [x] Phase 3: Add HFS as configurable child processes (M workers, 0=disabled)
 - [ ] Phase 4: Add lazy previews worker (spawned on first request)
 - [ ] Phase 5: Single Dockerfile (replace per-component Dockerfiles + runit)
 - [ ] Phase 6: Socket.IO sticky sessions for cluster mode

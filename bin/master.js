@@ -7,7 +7,7 @@
  * Refer to LICENSE file
  */
 
-// Master process: manages API workers via Node.js cluster module.
+// Master process: manages API and HFS workers via Node.js cluster module.
 // Replaces runit-based multi-process orchestration.
 //
 // Usage:
@@ -15,6 +15,7 @@
 //
 // Config keys:
 //   cluster.apiWorkers  — number of API workers (default: 2)
+//   cluster.hfsWorkers  — number of HFS workers (default: 1, 0 = disabled)
 
 const cluster = require('node:cluster');
 const path = require('node:path');
@@ -44,30 +45,66 @@ if (cluster.isPrimary) {
     await tcpPubsub.init();
     log('TCP pub/sub broker started');
 
-    // Determine worker count
-    const configuredWorkers = config.get('cluster:apiWorkers');
-    const numWorkers = (configuredWorkers != null)
-      ? configuredWorkers
+    // Track worker types for targeted restart
+    const workerTypes = new Map(); // worker.id → 'api' | 'hfs'
+    let shuttingDown = false;
+    let apiWorkerId = 0;
+    let hfsWorkerId = 0;
+
+    // --- API workers ---
+    const configuredApiWorkers = config.get('cluster:apiWorkers');
+    const numApiWorkers = (configuredApiWorkers != null)
+      ? configuredApiWorkers
       : Math.min(os.cpus().length, 4);
 
-    let shuttingDown = false;
-    let workerId = 0;
-
-    log(`Forking ${numWorkers} API worker(s)`);
-    for (let i = 0; i < numWorkers; i++) {
-      forkWorker();
+    log(`Forking ${numApiWorkers} API worker(s)`);
+    for (let i = 0; i < numApiWorkers; i++) {
+      forkApiWorker();
     }
 
-    function forkWorker () {
-      const id = workerId++;
-      const worker = cluster.fork({ PRYV_BOILER_SUFFIX: `-w${id}` });
-      log(`Worker w${id} started (pid ${worker.process.pid})`);
+    function forkApiWorker () {
+      const id = apiWorkerId++;
+      const worker = cluster.fork({
+        PRYV_WORKER_TYPE: 'api',
+        PRYV_BOILER_SUFFIX: `-w${id}`
+      });
+      workerTypes.set(worker.id, 'api');
+      log(`API worker w${id} started (pid ${worker.process.pid})`);
     }
 
+    // --- HFS workers ---
+    const numHfsWorkers = config.get('cluster:hfsWorkers') ?? 1;
+
+    if (numHfsWorkers > 0) {
+      log(`Forking ${numHfsWorkers} HFS worker(s)`);
+      for (let i = 0; i < numHfsWorkers; i++) {
+        forkHfsWorker();
+      }
+    } else {
+      log('HFS workers disabled (cluster:hfsWorkers = 0)');
+    }
+
+    function forkHfsWorker () {
+      const id = hfsWorkerId++;
+      const worker = cluster.fork({
+        PRYV_WORKER_TYPE: 'hfs',
+        PRYV_BOILER_SUFFIX: `-hfs${id}`
+      });
+      workerTypes.set(worker.id, 'hfs');
+      log(`HFS worker hfs${id} started (pid ${worker.process.pid})`);
+    }
+
+    // --- Worker lifecycle ---
     cluster.on('exit', (worker, code, signal) => {
+      const type = workerTypes.get(worker.id);
+      workerTypes.delete(worker.id);
       if (shuttingDown) return;
-      log(`Worker pid ${worker.process.pid} died (code=${code} signal=${signal}), restarting`);
-      forkWorker();
+      log(`${type ?? 'unknown'} worker pid ${worker.process.pid} died (code=${code} signal=${signal}), restarting`);
+      if (type === 'hfs') {
+        forkHfsWorker();
+      } else {
+        forkApiWorker();
+      }
     });
 
     const shutdown = (sig) => {
@@ -103,6 +140,10 @@ if (cluster.isPrimary) {
     process.exit(1);
   });
 } else {
-  // Worker: run the existing api-server
-  require('../components/api-server/bin/server');
+  // Worker: route to the correct server based on type
+  if (process.env.PRYV_WORKER_TYPE === 'hfs') {
+    require('../components/hfs-server/bin/server');
+  } else {
+    require('../components/api-server/bin/server');
+  }
 }
