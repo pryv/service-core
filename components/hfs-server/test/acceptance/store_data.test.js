@@ -16,8 +16,6 @@ const timestamp = require('unix-timestamp');
 const { spawnContext, produceStorageConnection, produceSeriesConnection, getTimeDelta } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 const apiServerContext = require('api-server/test/test-helpers').context;
-const rpc = require('tprpc');
-const metadata = require('metadata');
 const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
 const { getMall } = require('mall');
@@ -491,50 +489,19 @@ describe('[SDHF] Storing data in a HF series', function () {
           }
         });
         describe('[SD34] when using a metadata updater stub', () => {
-          // A stub for the real service. Tests might replace parts of this to do
-          // custom assertions.
-          let stub;
-          beforeEach(() => {
-            stub = {
-              scheduleUpdate: () => {
-                return Promise.resolve({});
-              },
-              getPendingUpdate: () => {
-                return Promise.resolve({ found: false, deadline: 0 });
-              }
-            };
-          });
-          // Loads the definition for the MetadataUpdaterService.
-          let definition;
-          before(async () => {
-            definition = await metadata.updater.definition;
-          });
-          // Constructs and launches an RPC server on port 14000.
-          let rpcServer;
           beforeEach(async () => {
-            const endpoint = '127.0.0.1:14000';
-            rpcServer = new rpc.Server();
-            rpcServer.add(definition, 'MetadataUpdaterService', stub);
-            await rpcServer.listen(endpoint);
-            // Tell the server (already running) to use our rpc server.
-            await server.process.sendToChild('useMetadataUpdater', endpoint);
+            await server.process.sendToChild('mockMetadataUpdater');
           });
           afterEach(async () => {
             // Since we modified the test server, spawn a new one that is clean.
             server.stop();
             server = await spawnContext.spawn();
-            rpcServer.close();
           });
           it('[GU3L] should schedule a metadata update on every store', async () => {
-            let updaterCalled = false;
-            // This is ok, we're replacing the stub with something compatible.
-            stub.scheduleUpdate = () => {
-              updaterCalled = true;
-              return Promise.resolve({});
-            };
             const data = produceData();
             await storeData(data).expect(200);
-            assert.strictEqual(updaterCalled, true);
+            const calls = await server.process.sendToChild('getMetadataUpdaterCalls');
+            assert.strictEqual(calls.length >= 1, true);
           });
         });
       });

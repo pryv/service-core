@@ -49,15 +49,29 @@ class ApplicationLauncher {
     };
   }
 
-  // Tells the server to use the metadata updater service located at `endpoint`
+  // Replaces the metadata updater with a tracking noop stub.
+  // Returns call info via the 'getMetadataUpdaterCalls' method.
   /**
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async useMetadataUpdater (endpoint) {
+  mockMetadataUpdater () {
     const app = this.app;
     if (app == null) { throw new Error('AF: app should not be null anymore'); }
-    const context = app.context;
-    await context.configureMetadataUpdater(endpoint);
+    this._metadataUpdaterCalls = [];
+    const calls = this._metadataUpdaterCalls;
+    app.context.metadataUpdater = {
+      scheduleUpdate: (req) => {
+        calls.push(req);
+        return Promise.resolve({});
+      }
+    };
+  }
+
+  /**
+   * @returns {Array}
+   */
+  getMetadataUpdaterCalls () {
+    return this._metadataUpdaterCalls || [];
   }
 
   /**

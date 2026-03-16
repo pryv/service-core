@@ -1,3 +1,0 @@
-#!/bin/sh
-exec chpst -u app node /app/bin/components/metadata/bin/server \
-    --config /app/conf/metadata.hjson

@@ -4,10 +4,9 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const lodash = require('lodash');
 const business = require('business');
 const { MetadataLoader, MetadataCache } = require('./metadata_cache');
-const metadataUpdater = require('./metadata_updater');
+const { MetadataUpdater, MetadataForgetter } = require('./metadata_updater');
 const cls = require('./tracing/cls');
 const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
@@ -32,7 +31,7 @@ class Context {
   config;
   constructor (influxConn, tracer, typeRepoUpdateUrl, config) {
     this.series = new business.series.Repository(influxConn);
-    this.metadataUpdater = new metadataUpdater.MetadataForgetter(getLogger('metadata.update'));
+    this.metadataUpdater = new MetadataForgetter(getLogger('metadata.update'));
     this.tracer = tracer;
     this.config = config;
     this.configureTypeRepository(typeRepoUpdateUrl);
@@ -65,14 +64,11 @@ class Context {
     this.metadata = new MetadataCache(this.series, metadataLoader, this.config);
   }
 
-  // Configures the metadata updater service.
+  // Starts the in-process metadata updater.
   //
-  /**
-   * @param {string} endpoint
-   * @returns {Promise<void>}
-   */
-  async configureMetadataUpdater (endpoint) {
-    const updater = await metadataUpdater.produce(endpoint);
+  startMetadataUpdater () {
+    const updater = new MetadataUpdater();
+    updater.start();
     this.metadataUpdater = updater;
   }
 
@@ -86,7 +82,7 @@ class Context {
   childSpan (name, opts) {
     const tracer = this.tracer;
     const rootSpan = cls.getRootSpan();
-    const spanOpts = lodash.extend({}, { childOf: rootSpan }, opts);
+    const spanOpts = Object.assign({}, { childOf: rootSpan }, opts);
     const span = tracer.startSpan(name, spanOpts);
     // It becomes our new root - setRootSpan hooks the span to detect an end.
     cls.setRootSpan(span);

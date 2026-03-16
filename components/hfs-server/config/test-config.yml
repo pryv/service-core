@@ -10,6 +10,5 @@ logs:
   console:
     active: false
     level: warn
-# we must not activate metadataUpdater
 trace:
   enable: true

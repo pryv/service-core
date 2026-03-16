@@ -39,7 +39,6 @@ const initTracer = require('jaeger-client').initTracer;
  * @returns {Promise<any>}
  */
 async function createContext (config) {
-  const logger = getLogger('setup');
   const storages = require('storages');
   await storages.init(config);
   const influx = storages.seriesConnection;
@@ -51,15 +50,7 @@ async function createContext (config) {
   const typeRepoUpdateUrl = config.get('service:eventTypes');
   const context = new Context(influx, tracer, typeRepoUpdateUrl, config);
   await context.init();
-  if (config.has('metadataUpdater:host')) {
-    const mdHost = config.get('metadataUpdater:host');
-    const mdPort = config.get('metadataUpdater:port');
-    const metadataEndpoint = `${mdHost}:${mdPort}`;
-    logger.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
-    await context.configureMetadataUpdater(metadataEndpoint);
-  } else {
-    logger.info('No Metadata Updater');
-  }
+  context.startMetadataUpdater();
   return context;
 }
 // Produce a tracer that allows creating span trees for a subset of all calls.

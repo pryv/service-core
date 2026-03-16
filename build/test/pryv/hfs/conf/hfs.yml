@@ -15,9 +15,6 @@ userFiles:
 eventFiles:
   attachmentsDirPath: "/app/data/attachments"
   previewsDirPath: "/app/data/previews"
-metadataUpdater:
-  host: "127.0.0.1"
-  port: 9000
 tcpBroker:
   port: 4222
 services:

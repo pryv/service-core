@@ -7,8 +7,6 @@
 
 const assert = require('node:assert');
 const cuid = require('cuid');
-const rpc = require('tprpc');
-const metadata = require('metadata');
 const { spawnContext, produceStorageConnection, produceSeriesConnection, getTimeDelta } = require('./test-helpers');
 const { databaseFixture } = require('test-helpers');
 
@@ -286,59 +284,23 @@ describe('[HFBT] Storing BATCH data in a HF series', function () {
       });
     });
     describe('[HB05] when using a metadata updater stub', () => {
-      // A stub for the real service. Tests might replace parts of this to do
-      // custom assertions.
-      let stub;
-      beforeEach(() => {
-        stub = {
-          scheduleUpdate: () => {
-            return Promise.resolve({});
-          },
-          getPendingUpdate: () => {
-            return Promise.resolve({ found: false, deadline: 0 });
-          }
-        };
-      });
-      // Loads the definition for the MetadataUpdaterService.
-      let definition;
-      before(async () => {
-        definition = await metadata.updater.definition;
-      });
-      // Constructs and launches an RPC server on port 14000.
-      let rpcServer;
       beforeEach(async () => {
-        const endpoint = '127.0.0.1:14000';
-        rpcServer = new rpc.Server();
-        rpcServer.add(definition, 'MetadataUpdaterService', stub);
-        await rpcServer.listen(endpoint);
-        // Tell the server (already running) to use our rpc server.
-        await server.process.sendToChild('useMetadataUpdater', endpoint);
+        await server.process.sendToChild('mockMetadataUpdater');
       });
       afterEach(async () => {
-        // Since we modified the test server, spawn a new one that is clean.
         server.stop();
         server = await spawnContext.spawn();
-        rpcServer.close();
       });
       it('[OO01] should schedule a metadata update on every store', async () => {
-        // Formulates an update for 2 events, to test if we get two entries in
-        // the end.
         const data = {
           format: 'seriesBatch',
           data: [data1, data2]
         };
-
-        let updaterCalled = false;
-        // This is ok, we're replacing the stub with something compatible.
-        stub.scheduleUpdate = (req) => {
-          updaterCalled = true;
-          assert.strictEqual(req.entries.length, 2);
-          return Promise.resolve({});
-        };
         await storeData(server.request(), data)
-        // .then(res => console.log(res.body));
           .expect(200);
-        assert.strictEqual(updaterCalled, true);
+        const calls = await server.process.sendToChild('getMetadataUpdaterCalls');
+        assert.strictEqual(calls.length >= 1, true);
+        assert.strictEqual(calls[0].entries.length, 2);
       });
     });
     function storeData (request, data) {
