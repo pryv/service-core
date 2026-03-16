@@ -121,3 +121,6 @@ integrity:
 
 accessTracking:
   isActive: true
+
+cluster:
+  apiWorkers: 2

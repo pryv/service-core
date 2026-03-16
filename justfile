@@ -36,6 +36,10 @@ start-deps:
         --prefix-colors "green,magenta" \
         storages/engines/mongodb/scripts/start influxd
 
+# Start the master process (cluster mode with N API workers)
+start-master *params:
+    NODE_ENV=development node bin/master.js {{params}}
+
 # Start the given server component for dev (expects '{component}/bin/server')
 start component *params:
     cd components/{{component}} && \
