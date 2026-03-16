@@ -1,5 +1,14 @@
 # Changelog - API Changes
 
+## Plan 12: Refactor System Streams
+
+- **REMOVED**: `:_system:helpers` stream and its children (`:_system:active`, `:_system:unique`) — these internal marker streams are no longer part of the system streams tree. Account field uniqueness and indexing are now enforced directly by the platform coordination layer.
+- **No other API changes**: All other system stream IDs (`:_system:email`, `:_system:language`, `:system:email`, etc.) remain unchanged. Events, permissions, and stream queries work identically.
+
+## Plan 13: Remove `openSource:isActive` Flag
+
+- **REMOVED**: `openSource:isActive` configuration key — no longer recognized. All features (webhooks, HFS/series events, distributed cache sync, registration email check) are now always enabled regardless of deployment mode.
+
 ## Remove Deprecated Features (Phase 2)
 
 ### Phase 1: Remove Stream ID Prefix Backward Compatibility

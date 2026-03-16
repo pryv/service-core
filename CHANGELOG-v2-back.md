@@ -1,5 +1,63 @@
 # Changelog - Internal (no API impact)
 
+## Plan 13: Remove `openSource:isActive` Flag
+
+- Removed `openSource:isActive` config flag and all gated code — features always enabled: webhooks, HFS/series events, distributed cache sync, email check route
+- Removed `isOpenSource` fields and constructor logic from Application, Server, Manager, NamespaceContext classes
+- Removed `openSourceSettings` config reads and conditional series creation/integrity/notification logic in events.js
+- Changed `isSynchroActive` from `!config.get('openSource:isActive')` to `true` in cache
+- Removed early-return gate on HFS deletion in business/auth/deletion.js
+- Removed `openSource:` config sections from 5 config files (default, development, test, hfs-server, build/test)
+- Removed all test skips and conditional logic based on `openSource` (12 test files)
+- Deleted dead code: `www`/`register` package requires in application.js that would crash if ever reached
+- Cleaned up unused imports across all modified files
+
+## Plan 12: Refactor System Streams
+
+### Phase 1-6: Account store architecture
+- Extended `UserAccountStorage` with account field CRUD methods (`getAccountFields`, `setAccountField`, `deleteAccountField`, `getAccountFieldHistory`)
+- Created `accountStore` adapter implementing pryv-datastore interface, wrapping baseStorage account operations
+- Registered `accountStore` in Mall alongside local + audit stores
+- Changed `storeDataUtils.js` routing: `:_system:`/`:system:` prefixes → `account` store (was `local`)
+- Removed system stream merge from Mall — handled by store routing
+- Added migration 1.9.4: copies account events from local store to account-field storage
+
+### Phase 7: Dead code removal
+- Removed `forbidSystemStreamsActions()` from streams.js — account store handles rejection
+- Removed `filterNonePermissionsOnSystemStreams()` from utility.js — standard permissions apply
+- Removed 11 dead serializer methods + 5 static properties
+- Removed `ForbiddenAccountStreamsModification` error constant
+- Removed pre-1.9.0 migrations (1.7.0, 1.7.1, 1.8.0) + their test files
+- Removed debug `console.log('XXXXX')` traps from User.js
+
+### Phase 8: Simplify permissions
+- Removed redundant `isAccountStreamId` hard block from AccessLogic — `includedInStarPermissions` handles it
+- Simplified `none` prepend from serializer iterator to single `STREAM_ID_ACCOUNT` constant
+- Replaced permission-based account exclusion in eventsGetUtils with direct config-based exclusion
+
+### Phase 9: Decouple tests from SystemStreamsSerializer
+- Created `systemStreamFilters.js` in test-helpers for test-only prefix helpers
+- Removed redundant `init()` calls from hfs-server tests
+
+### Phase 10: Remove active/unique markers
+- Removed `:_system:helpers` stream (parent of `active`/`unique` markers)
+- Account events: one event per field, no sibling demotion
+- Platform coordination moved to events.js middleware
+- Default event queries include both local and account stores
+- Account store returns `structuredClone()` to prevent readableTree mutation
+
+### Phase 11-12: Flatten and reduce serializer
+- Flattened SystemStreamsSerializer class to plain eager-init module
+- Dropped lodash dependency
+- Migrated all 16 production callers to direct data access
+- Removed all dead getter functions and helpers
+- 639 → 154 lines (76% reduction), 20+ → 13 exports
+
+### Phase 14+19: Rename and finalize
+- Extracted feature constants to `business/src/system-streams/features.js`, then inlined as plain strings
+- Renamed: `SystemStreamsSerializer` → `accountStreams`, `forbiddenStreamIds` → `hiddenStreamIds`, `removePrefixFromStreamId` → `toFieldName`, `addCorrectPrefixToAccountStreamId` → `toStreamId`, `indexedFieldsWithoutPrefix` → `indexedFieldNames`, `uniqueFieldsWithoutPrefix` → `uniqueFieldNames`
+- Deleted `serializer.js` — content moved to `system-streams/index.js`
+
 ## Phase 6c: Cleanup NATS/Axon Naming Remnants
 
 - Renamed all internal `nats`/`NATS` variable names, function names, comments, and config references to generic `transport`/`Transport` terms

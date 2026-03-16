@@ -1,6 +1,16 @@
 
 ## 2.0.0-pre
 
+### 2.0.0-pre.2
+
+- Refactor system streams: replace scattered serializer (639 lines, 20+ exports) with clean Mall-based account store architecture (158 lines, 12 exports)
+- Route `:_system:`/`:system:` streams to dedicated account datastore via Mall, removing all special-casing from main storage paths
+- Remove `:_system:helpers` stream (parent of `active`/`unique` markers) — platform coordination moved to events middleware
+- Remove `openSource:isActive` config flag — all features (webhooks, HFS/series, distributed cache sync, email check route) now always enabled
+- Remove pre-1.9.0 database migrations (1.7.0–1.8.0) and associated tests
+- Drop lodash dependency from system streams module
+- Rename `SystemStreamsSerializer` to `accountStreams` with clearer export names (`hiddenStreamIds`, `indexedFieldNames`, `toFieldName`, `toStreamId`)
+
 ### 2.0.0-pre.1
 
 - Introduce storage plugin architecture: engines (MongoDB, PostgreSQL, SQLite, filesystem, InfluxDB) are now plugins under `storages/engines/` with manifest-driven configuration
