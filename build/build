@@ -41,8 +41,9 @@ fi
 echo "---------------------------- building core base --------------------------------"
 docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version -f $SCRIPT_FOLDER/Dockerfile.common-intermediate -t pryvio/common-intermediate:latest .
 
-# Builds these images: core hfs webhooks preview
-for service in core hfs webhooks preview
+# Builds these images: core hfs preview
+# Note: webhooks service now runs in-process within core (Phase 1.2)
+for service in core hfs preview
 do
     echo "---------------------------- building $service --------------------------------"
     docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.component-intermediate -t pryvio/intermediate-$service:latest .

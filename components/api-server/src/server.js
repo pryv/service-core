@@ -16,6 +16,7 @@ const { pubsub } = require('messages');
 const { getUsersRepository } = require('business/src/users');
 const { getLogger, getConfig } = require('@pryv/boiler');
 const { getAPIVersion } = require('middleware/src/project_version');
+const WebhooksService = require('webhooks/src/service');
 let app;
 
 /**
@@ -82,6 +83,10 @@ class Server {
     await this.startListen(server, serverInfos);
     this.logger.info('Server ready. API Version: ' + apiVersion);
     pubsub.status.emit(pubsub.SERVER_READY);
+    // Start webhooks service in-process (unless explicitly disabled)
+    if (config.get('webhooks:inProcess') !== false) {
+      await this.startWebhooksService();
+    }
     this.logger.debug('start completed');
   }
 
@@ -199,6 +204,25 @@ class Server {
   async setupTestsNotificationBus () {
     const testNotifier = await testMessaging.getTestNotifier();
     pubsub.setTestNotifier(testNotifier);
+  }
+
+  /**
+   * Starts the webhooks service in-process, eliminating the need for a
+   * separate webhooks container/process.
+   * @returns {Promise<void>}
+   */
+  async startWebhooksService () {
+    const config = this.config;
+    const storage = require('storage');
+    const storageLayer = await storage.getStorageLayer();
+    const webhooksService = new WebhooksService({
+      storage: storageLayer,
+      logger: getLogger('webhooks_service'),
+      settings: config
+    });
+    app.webhooksService = webhooksService;
+    await webhooksService.start();
+    this.logger.info('Webhooks service started in-process');
   }
 
   /**

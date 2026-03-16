@@ -55,7 +55,8 @@ describe('[WH01] webhooks', function () {
     this.timeout(5000);
     apiServer = await context.spawn({
       webhooks: {
-        minIntervalMs: 10
+        minIntervalMs: 10,
+        inProcess: false
       }
     });
   });
