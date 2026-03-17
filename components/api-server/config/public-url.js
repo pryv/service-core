@@ -14,14 +14,18 @@ async function publicUrlToService (config) {
   const isDnsLess = config.get('dnsLess:isActive');
   const publicUrl = config.get('dnsLess:publicUrl');
   if (isDnsLess && publicUrl != null) {
-    config.set('service', {
+    // Preserve existing service fields (e.g. from serviceInfoUrl) and override with dnsLess URLs
+    const existing = config.get('service') || {};
+    config.set('service', Object.assign({}, existing, {
       api: buildUrl(publicUrl, '/{username}/'),
       register: buildUrl(publicUrl, path.join(REG_PATH, '/')),
       access: buildUrl(publicUrl, path.join(REG_PATH, '/access/')),
-      assets: {
+      assets: existing.assets || {
         definitions: buildUrl(publicUrl, path.join(WWW_PATH, '/assets/index.json'))
-      }
-    });
+      },
+      ...(existing.features ? { features: existing.features } : {})
+
+    }));
   }
 }
 

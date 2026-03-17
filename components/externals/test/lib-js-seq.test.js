@@ -1,0 +1,139 @@
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
+
+/**
+ * Integration test: runs lib-js test suite against a local API server with HTTPS.
+ *
+ * Server is spawned as a child process (development mode, dnsLess + HTTPS).
+ * Test files are required directly — mocha flags (--grep, --reporter, -b) work normally.
+ *
+ * Prerequisites:
+ *   cd external-ressources/lib-js && npm install
+ *
+ * Skipped automatically if lib-js is not cloned or not installed.
+ */
+
+const path = require('node:path');
+const fs = require('node:fs');
+const { execSync, spawn } = require('node:child_process');
+
+const LIB_JS_DIR = path.resolve(__dirname, '../../../external-ressources/lib-js');
+const SERVICE_CORE_DIR = path.resolve(__dirname, '../../../');
+const SERVER_BIN = path.resolve(__dirname, '../../api-server/bin/server');
+const OVERRIDE_SRC = path.resolve(__dirname, '../../api-server/config/libjs-test-config.yml');
+const OVERRIDE_DST = path.resolve(__dirname, '../../api-server/config/override-config.yml');
+
+const SERVER_PORT = 3000;
+const SERVER_URL = 'https://l.backloop.dev:' + SERVER_PORT + '/';
+
+function libJsAvailable () {
+  return fs.existsSync(path.join(LIB_JS_DIR, 'node_modules'));
+}
+
+if (!libJsAvailable()) {
+  describe('[ELJS] lib-js integration', function () {
+    it('SKIPPED — lib-js not installed (run: cd external-ressources/lib-js && npm install)', function () {
+      this.skip();
+    });
+  });
+} else {
+  // --- Setup env before any lib-js require ---
+  process.env.TEST_PRYVLIB_DNSLESS_URL = SERVER_URL;
+
+  let serverProcess;
+
+  // Start API server before all tests
+  before(async function () {
+    this.timeout(30000);
+    fs.copyFileSync(OVERRIDE_SRC, OVERRIDE_DST);
+
+    // Kill any leftover server on our port
+    try { execSync('fuser -k ' + SERVER_PORT + '/tcp 2>/dev/null || true', { stdio: 'ignore' }); } catch (e) { /* */ }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    serverProcess = spawn(process.execPath, [SERVER_BIN], {
+      cwd: SERVICE_CORE_DIR,
+      env: { ...process.env, NODE_ENV: 'development', PRYV_BOILER_SUFFIX: '-libjs' },
+      stdio: 'ignore'
+    });
+
+    await waitForServer(SERVER_URL + 'reg/service/info', 30000);
+  });
+
+  // Stop server after all tests
+  after(function (done) {
+    try { fs.unlinkSync(OVERRIDE_DST); } catch (e) { /* */ }
+    if (serverProcess) {
+      serverProcess.on('exit', () => done());
+      serverProcess.kill('SIGTERM');
+      setTimeout(() => {
+        try { serverProcess.kill('SIGKILL'); } catch (e) { /* */ }
+        done();
+      }, 3000).unref();
+    } else {
+      done();
+    }
+  });
+
+  // Change CWD to lib-js root so relative paths (e.g. ./test/Y.png) resolve correctly
+  process.chdir(path.join(LIB_JS_DIR, 'components/pryv'));
+
+  // --- Load lib-js globals (expect, pryv, testData) ---
+  require(path.join(LIB_JS_DIR, 'test/load-helpers'));
+
+  // --- Load pryv component tests ---
+  loadTestFiles('pryv');
+
+  // --- Load pryv-socket.io add-on + tests ---
+  require(path.join(LIB_JS_DIR, 'components/pryv-socket.io/src'))(global.pryv);
+  loadTestFiles('pryv-socket.io');
+
+  // --- Load pryv-monitor add-on + tests ---
+  require(path.join(LIB_JS_DIR, 'components/pryv-monitor/src'))(global.pryv);
+
+  // Set up monitor globals (unique stream per run)
+  const { createId: cuid } = require('@paralleldrive/cuid2');
+  const monTestStreamId = global.testStreamId = 'mon-' + cuid().slice(0, 8);
+  global.prepareAndCreateBaseStreams = async () => {
+    await global.testData.prepare();
+    global.apiEndpoint = global.testData.apiEndpointWithToken;
+    global.conn = new global.pryv.Connection(global.apiEndpoint);
+    const res = await global.conn.api([{
+      method: 'streams.create',
+      params: { id: monTestStreamId, name: monTestStreamId }
+    }]);
+    if (!res[0].stream && (!res[0].error || res[0].error.id !== 'item-already-exists')) {
+      throw new Error('Failed creating monitor stream: ' + JSON.stringify(res[0].error));
+    }
+  };
+  loadTestFiles('pryv-monitor');
+}
+
+function loadTestFiles (component) {
+  const testDir = path.join(LIB_JS_DIR, 'components', component, 'test');
+  if (!fs.existsSync(testDir)) return;
+  fs.readdirSync(testDir)
+    .filter(f => f.endsWith('.test.js'))
+    .sort()
+    .forEach(f => require(path.join(testDir, f)));
+}
+
+function waitForServer (url, timeoutMs) {
+  const https = require('node:https');
+  const deadline = Date.now() + timeoutMs;
+  return new Promise((resolve, reject) => {
+    (function attempt () {
+      if (Date.now() > deadline) return reject(new Error('Server not ready after ' + timeoutMs + 'ms'));
+      const req = https.get(url, { rejectUnauthorized: false }, (res) => {
+        res.on('data', () => {});
+        res.on('end', () => res.statusCode === 200 ? resolve() : setTimeout(attempt, 500));
+      });
+      req.on('error', () => setTimeout(attempt, 500));
+      req.end();
+    })();
+  });
+}

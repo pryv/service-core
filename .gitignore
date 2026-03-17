@@ -28,6 +28,8 @@ coverage/
 var-pryv*
 *.log
 learn-config
+external-ressources/
+components/api-server/config/override-config.yml
 
 # netbeans IDE
 nbproject/
