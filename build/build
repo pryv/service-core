@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
-# This file builds all images when packages are installed before the build
-# (no auth is needed inside the docker image itself)
+# Builds a single 'service-core' docker image.
+# master.js manages all workers (API, HFS, Previews) — no runit needed.
 set -e
 
-# Builds 'service-core' docker image with the version given below.
-
-# Determine the build_tag and whether we need to release.
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 
 if [ "$1" == "preview" ]
 then
   if [ -z "$2" ]; then
-    echo "preview requiers a tag argument for the version"
+    echo "preview requires a tag argument for the version"
     exit 0
   fi
   version=$2"-preview"
@@ -31,25 +28,16 @@ then
   # Copy the release version to the project root, so we can later display it to
   # clients:
   cp ./build_tag ./.api-version
-else ## test
+else ## test
   version=test
   host=localhost
   release=false
 fi
 
+echo "---------------------------- building service-core --------------------------------"
+docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version \
+  -f $SCRIPT_FOLDER/Dockerfile -t $host/pryvio/core:$version .
 
-echo "---------------------------- building core base --------------------------------"
-docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version -f $SCRIPT_FOLDER/Dockerfile.common-intermediate -t pryvio/common-intermediate:latest .
-
-# Builds these images: core hfs preview
-# Note: webhooks service now runs in-process within core (Phase 1.2)
-for service in core hfs preview
-do
-    echo "---------------------------- building $service --------------------------------"
-    docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.component-intermediate -t pryvio/intermediate-$service:latest .
-    echo $host/pryvio/$service:$version
-    docker build --build-arg BUILD_HOST=$host --build-arg BUILD_VERSION=$version -f $SCRIPT_FOLDER/$service/Dockerfile -t $host/pryvio/$service:$version .
-    if [ "$release" = true ]; then
-      docker push $host/pryvio/$service:$version
-    fi
-done
+if [ "$release" = true ]; then
+  docker push $host/pryvio/core:$version
+fi

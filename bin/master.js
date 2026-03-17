@@ -17,6 +17,7 @@
 //   cluster.apiWorkers      — number of API workers (default: 2)
 //   cluster.hfsWorkers      — number of HFS workers (default: 1, 0 = disabled)
 //   cluster.previewsWorker  — enable previews worker (default: true, requires GraphicsMagick)
+//   cluster.runMigrations   — run DB migrations before forking workers (default: true)
 
 const cluster = require('node:cluster');
 const path = require('node:path');
@@ -40,6 +41,19 @@ if (cluster.isPrimary) {
     const config = await getConfig();
     const logger = getLogger('master');
     const log = (msg) => { logger.info(msg); console.log(`[master] ${msg}`); };
+
+    // Run DB migrations before starting services (same as runit core/run)
+    const runMigrations = config.get('cluster:runMigrations') ?? true;
+    if (runMigrations) {
+      log('Running storage migrations...');
+      const { getApplication } = require('../components/api-server/src/application');
+      const app = getApplication();
+      await app.initiate();
+      const storageLayer = app.storageLayer;
+      await storageLayer.waitForConnection();
+      await storageLayer.versions.migrateIfNeeded();
+      log('Storage migrations complete');
+    }
 
     // Start TCP pub/sub broker in master (workers connect as clients)
     const tcpPubsub = require('../components/messages/src/tcp_pubsub');

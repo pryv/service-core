@@ -7,21 +7,20 @@ services:
     networks:
       - frontend
       - backend
-    ports:  ## Added to test localy 
-      - "3000:3000"
+    ports:
+      - "3000:3000"   # API
+      - "4000:4000"   # HFS
+      - "3001:3001"   # Previews
     volumes:
       - ${PRYV_CONF_ROOT}/pryv/core/conf/:/app/conf/:ro
       - ${PRYV_CONF_ROOT}/pryv/core/data/:/app/data/
       - ${PRYV_CONF_ROOT}/pryv/core/log/:/app/log/
       - /dev/log:/dev/log-host # for audit log
     environment:
-      - NUM_PROCS=4
-      - STARTING_PORT=3000
       - HOSTNAME=$HOSTNAME
     links:
       - mongodb
       - influxdb
-      #- mail
     restart: always
 
   mongodb:
@@ -36,24 +35,6 @@ services:
       - ${PRYV_CONF_ROOT}/pryv/mongodb/backup/:/app/backup/
     restart: always
 
-  hfs:
-    image: "localhost/pryvio/hfs:test"
-    container_name: pryvio_hfs
-    networks:
-      - frontend
-      - backend
-    volumes:
-      - ${PRYV_CONF_ROOT}/pryv/hfs/conf/:/app/conf/:ro
-      - ${PRYV_CONF_ROOT}/pryv/core/data/:/app/data/
-      - ${PRYV_CONF_ROOT}/pryv/hfs/log/:/app/log/
-    environment:
-      - NUM_PROCS=2
-      - HOSTNAME=$HOSTNAME
-    links:
-      - influxdb
-      - core
-    restart: always
-  
   influxdb:
     image: "influxdb:1.7.8"
     container_name: pryvio_influxdb
@@ -63,8 +44,6 @@ services:
       - ${PRYV_CONF_ROOT}/pryv/influxdb/data/:/var/lib/influxdb
       - ${PRYV_CONF_ROOT}/pryv/influxdb/backup/:/pryv/backup/
     restart: always
-
-
 
 networks:
   frontend:
