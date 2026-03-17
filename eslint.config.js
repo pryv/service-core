@@ -15,7 +15,8 @@ module.exports = [
     ignores: [
       'build/test/pryv/*',
       'node_modules/**',
-      '**/node_modules/**'
+      '**/node_modules/**',
+      'external-ressources/**'
     ]
   },
   {
