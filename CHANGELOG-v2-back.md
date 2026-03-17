@@ -1,5 +1,12 @@
 # Changelog - Internal (no API impact)
 
+## Plan 16: Replace GraphicsMagick with sharp
+
+- Replaced `gm` (GraphicsMagick wrapper, requires system binary) with `sharp` (npm-native, bundles libvips)
+- Removed `apt-get install graphicsmagick` from Dockerfile — no system image dependencies for previews
+- Removed GM availability check from `master.js` — previews worker always starts when enabled
+- Removed `bluebird` usage from event-previews.js (sharp is Promise-native)
+
 ## Plan 15: Integrate lib-js tests into service-core
 
 - Added `components/externals/` — runs lib-js test suite (169 tests) via `just test externals`
