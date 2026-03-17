@@ -1,12 +1,8 @@
-# Config overlay for running lib-js tests against local API with HTTPS
-# Loaded via override-config.yml mechanism (highest priority)
-#
-# Usage:
-#   cp components/api-server/config/libjs-test-config.yml components/api-server/config/override-config.yml
-#   NODE_ENV=development node components/api-server/bin/server
+# Config overlay for running lib-js tests via HTTPS proxy.
+# API server runs on HTTP :3001 (no SSL), proxy on HTTPS :3000 (backloop.dev).
+# Loaded via override-config.yml mechanism (highest priority).
 http:
-  ssl:
-    backloop.dev: true
+  port: 3001
 
 dnsLess:
   isActive: true
@@ -15,5 +11,3 @@ dnsLess:
 service:
   assets:
     definitions: https://pryv.github.io/assets-pryv.me/index.json
-  features:
-    noHF: true

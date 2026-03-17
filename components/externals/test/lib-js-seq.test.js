@@ -6,10 +6,13 @@
  */
 
 /**
- * Integration test: runs lib-js test suite against a local API server with HTTPS.
+ * Integration test: runs lib-js test suite against local API + HFS servers.
  *
- * Server is spawned as a child process (development mode, dnsLess + HTTPS).
- * Test files are required directly — mocha flags (--grep, --reporter, -b) work normally.
+ * Architecture (mirrors production nginx setup):
+ *   HTTPS proxy (:3000, backloop.dev) -> API server (HTTP :3001)
+ *                                     -> HFS server (HTTP :4000) for /events/x/series
+ *
+ * Test files are required directly - mocha flags (--grep, --reporter, -b) work normally.
  *
  * Prerequisites:
  *   cd external-ressources/lib-js && npm install
@@ -23,12 +26,16 @@ const { execSync, spawn } = require('node:child_process');
 
 const LIB_JS_DIR = path.resolve(__dirname, '../../../external-ressources/lib-js');
 const SERVICE_CORE_DIR = path.resolve(__dirname, '../../../');
-const SERVER_BIN = path.resolve(__dirname, '../../api-server/bin/server');
+const API_SERVER_BIN = path.resolve(__dirname, '../../api-server/bin/server');
+const HFS_SERVER_BIN = path.resolve(__dirname, '../../hfs-server/bin/server');
+const PROXY_BIN = path.resolve(__dirname, 'proxy.js');
 const OVERRIDE_SRC = path.resolve(__dirname, '../../api-server/config/libjs-test-config.yml');
 const OVERRIDE_DST = path.resolve(__dirname, '../../api-server/config/override-config.yml');
 
-const SERVER_PORT = 3000;
-const SERVER_URL = 'https://l.backloop.dev:' + SERVER_PORT + '/';
+const PROXY_PORT = 3000; // HTTPS — what lib-js connects to
+const API_PORT = 3001; // HTTP — API server (plain, behind proxy)
+const HFS_PORT = 4000; // HTTP — HFS server
+const SERVER_URL = 'https://l.backloop.dev:' + PROXY_PORT + '/';
 
 function libJsAvailable () {
   return fs.existsSync(path.join(LIB_JS_DIR, 'node_modules'));
@@ -44,39 +51,59 @@ if (!libJsAvailable()) {
   // --- Setup env before any lib-js require ---
   process.env.TEST_PRYVLIB_DNSLESS_URL = SERVER_URL;
 
-  let serverProcess;
+  const childProcesses = [];
 
-  // Start API server before all tests
+  // Start API + HFS + proxy before all tests
   before(async function () {
     this.timeout(30000);
     fs.copyFileSync(OVERRIDE_SRC, OVERRIDE_DST);
 
-    // Kill any leftover server on our port
-    try { execSync('fuser -k ' + SERVER_PORT + '/tcp 2>/dev/null || true', { stdio: 'ignore' }); } catch (e) { /* */ }
+    // Kill any leftover servers on our ports
+    for (const port of [PROXY_PORT, API_PORT, HFS_PORT]) {
+      try { execSync('fuser -k ' + port + '/tcp 2>/dev/null || true', { stdio: 'ignore' }); } catch (e) { /* */ }
+    }
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    serverProcess = spawn(process.execPath, [SERVER_BIN], {
+    // 1. API server (HTTP, no SSL — proxy handles HTTPS)
+    childProcesses.push(spawn(process.execPath, [API_SERVER_BIN], {
       cwd: SERVICE_CORE_DIR,
-      env: { ...process.env, NODE_ENV: 'development', PRYV_BOILER_SUFFIX: '-libjs' },
+      env: { ...process.env, NODE_ENV: 'development', PRYV_BOILER_SUFFIX: '-libjs-api' },
       stdio: 'ignore'
-    });
+    }));
 
+    // 2. HFS server (HTTP)
+    childProcesses.push(spawn(process.execPath, [HFS_SERVER_BIN], {
+      cwd: SERVICE_CORE_DIR,
+      env: { ...process.env, NODE_ENV: 'development', PRYV_BOILER_SUFFIX: '-libjs-hfs' },
+      stdio: 'ignore'
+    }));
+
+    // 3. HTTPS proxy (backloop.dev, routes series→HFS, rest→API)
+    childProcesses.push(spawn(process.execPath, [PROXY_BIN, '' + PROXY_PORT, '' + API_PORT, '' + HFS_PORT], {
+      cwd: SERVICE_CORE_DIR,
+      stdio: 'ignore'
+    }));
+
+    // Wait for proxy to be ready (it sits in front of everything)
     await waitForServer(SERVER_URL + 'reg/service/info', 30000);
   });
 
-  // Stop server after all tests
+  // Stop all child processes after tests
   after(function (done) {
     try { fs.unlinkSync(OVERRIDE_DST); } catch (e) { /* */ }
-    if (serverProcess) {
-      serverProcess.on('exit', () => done());
-      serverProcess.kill('SIGTERM');
-      setTimeout(() => {
-        try { serverProcess.kill('SIGKILL'); } catch (e) { /* */ }
-        done();
-      }, 3000).unref();
-    } else {
-      done();
+    let remaining = childProcesses.length;
+    if (remaining === 0) return done();
+    let settled = false;
+    for (const proc of childProcesses) {
+      proc.on('exit', () => { if (--remaining === 0 && !settled) { settled = true; done(); } });
+      proc.kill('SIGTERM');
     }
+    setTimeout(() => {
+      for (const proc of childProcesses) {
+        try { proc.kill('SIGKILL'); } catch (e) { /* */ }
+      }
+      if (!settled) { settled = true; done(); }
+    }, 3000).unref();
   });
 
   // Change CWD to lib-js root so relative paths (e.g. ./test/Y.png) resolve correctly
