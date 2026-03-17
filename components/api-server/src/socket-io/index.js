@@ -7,13 +7,19 @@
 /**
  * Note: Debug tests with: DEBUG=engine,socket.io* npm test --grep="Socket"
  */
+const cluster = require('node:cluster');
 const socketIO = require('socket.io')({
   cors: {
     origin: true,
     methods: 'GET,POST',
     credentials: true
   },
-  allowEIO3: true // for compatibility with v2 clients
+  allowEIO3: true, // for compatibility with v2 clients
+  // Force WebSocket transport when running in cluster mode.
+  // HTTP long-polling breaks with cluster round-robin scheduling because
+  // successive requests land on different workers that don't share session state.
+  // WebSocket connections are long-lived and stay on the same worker.
+  ...(cluster.isWorker ? { transports: ['websocket'] } : {})
 });
 const MethodContext = require('business').MethodContext;
 const Manager = require('./Manager');

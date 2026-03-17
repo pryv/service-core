@@ -146,7 +146,7 @@ The master process hosts the TCP pub/sub broker (:4222). All workers connect as 
 ```nginx
 upstream api_backend {
     # Cluster workers share :3000 — single upstream entry
-    # ip_hash needed for Socket.IO sticky sessions
+    # ip_hash recommended for connection affinity (optional: Socket.IO uses WebSocket-only in cluster mode)
     ip_hash;
     server 127.0.0.1:3000;
 }
@@ -264,9 +264,9 @@ Consolidating service-core's separate processes behind a single master.
 - [x] Phase 1.2: Webhooks as in-process subscriber (remove separate container)
 - [x] Phase 2: Create `bin/master.js` with cluster module
 - [x] Phase 3: Add HFS as configurable child processes (M workers, 0=disabled)
-- [ ] Phase 4: Add lazy previews worker (spawned on first request)
-- [ ] Phase 5: Single Dockerfile (replace per-component Dockerfiles + runit)
-- [ ] Phase 6: Socket.IO sticky sessions for cluster mode
+- [x] Phase 4: Add previews worker (config-toggleable, GM check)
+- [x] Phase 5: Single Dockerfile (replace per-component Dockerfiles + runit)
+- [x] Phase 6: Socket.IO WebSocket-only in cluster mode (no sticky sessions needed)
 
 ### Backlog
 
