@@ -1,5 +1,14 @@
 # Changelog - Internal (no API impact)
 
+## Plan 15: Integrate lib-js tests into service-core
+
+- Added `components/externals/` — runs lib-js test suite (169 tests) via `just test externals`
+- HTTPS proxy (backloop.dev) routes API (:3001) and HFS (:4000) through single endpoint (:3000)
+- `public-url.js`: preserve `service.assets` and `service.features` from config in dnsLess mode
+- Added `libjs-test-config.yml` for dnsLess + HTTPS + pryv.me assets configuration
+- Excluded `external-ressources/` from eslint and source-licenser
+- New lib-js tests: Streams CRUD, Accesses CRUD, Account/Password (contributed back to lib-js)
+
 ## Plan 14: Merge service-core servers behind a single master process
 
 ### Phase 1: Quick wins
