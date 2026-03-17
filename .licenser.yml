@@ -71,6 +71,7 @@ ignore:
 - .vscode
 - build/test/pryv
 - coverage
+- external-ressources
 - node_modules
 - test-results
 - var-pryv
