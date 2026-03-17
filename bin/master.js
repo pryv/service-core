@@ -7,15 +7,16 @@
  * Refer to LICENSE file
  */
 
-// Master process: manages API and HFS workers via Node.js cluster module.
+// Master process: manages API, HFS, and Previews workers via Node.js cluster module.
 // Replaces runit-based multi-process orchestration.
 //
 // Usage:
 //   node bin/master.js [--config <path>]
 //
 // Config keys:
-//   cluster.apiWorkers  — number of API workers (default: 2)
-//   cluster.hfsWorkers  — number of HFS workers (default: 1, 0 = disabled)
+//   cluster.apiWorkers      — number of API workers (default: 2)
+//   cluster.hfsWorkers      — number of HFS workers (default: 1, 0 = disabled)
+//   cluster.previewsWorker  — enable previews worker (default: true, requires GraphicsMagick)
 
 const cluster = require('node:cluster');
 const path = require('node:path');
@@ -46,7 +47,7 @@ if (cluster.isPrimary) {
     log('TCP pub/sub broker started');
 
     // Track worker types for targeted restart
-    const workerTypes = new Map(); // worker.id → 'api' | 'hfs'
+    const workerTypes = new Map(); // worker.id → 'api' | 'hfs' | 'previews'
     let shuttingDown = false;
     let apiWorkerId = 0;
     let hfsWorkerId = 0;
@@ -94,6 +95,39 @@ if (cluster.isPrimary) {
       log(`HFS worker hfs${id} started (pid ${worker.process.pid})`);
     }
 
+    // --- Previews worker ---
+    let previewsWorkerId = 0;
+    const previewsEnabled = config.get('cluster:previewsWorker') ?? true;
+
+    if (previewsEnabled) {
+      // Check if GraphicsMagick is available before forking
+      const { execSync } = require('node:child_process');
+      let gmAvailable = false;
+      try {
+        execSync('gm version', { stdio: 'pipe' });
+        gmAvailable = true;
+      } catch (e) {
+        // GM not installed
+      }
+      if (gmAvailable) {
+        forkPreviewsWorker();
+      } else {
+        log('Previews worker disabled (GraphicsMagick not installed)');
+      }
+    } else {
+      log('Previews worker disabled (cluster:previewsWorker = false)');
+    }
+
+    function forkPreviewsWorker () {
+      const id = previewsWorkerId++;
+      const worker = cluster.fork({
+        PRYV_WORKER_TYPE: 'previews',
+        PRYV_BOILER_SUFFIX: `-prev${id}`
+      });
+      workerTypes.set(worker.id, 'previews');
+      log(`Previews worker prev${id} started (pid ${worker.process.pid})`);
+    }
+
     // --- Worker lifecycle ---
     cluster.on('exit', (worker, code, signal) => {
       const type = workerTypes.get(worker.id);
@@ -102,6 +136,8 @@ if (cluster.isPrimary) {
       log(`${type ?? 'unknown'} worker pid ${worker.process.pid} died (code=${code} signal=${signal}), restarting`);
       if (type === 'hfs') {
         forkHfsWorker();
+      } else if (type === 'previews') {
+        forkPreviewsWorker();
       } else {
         forkApiWorker();
       }
@@ -143,6 +179,8 @@ if (cluster.isPrimary) {
   // Worker: route to the correct server based on type
   if (process.env.PRYV_WORKER_TYPE === 'hfs') {
     require('../components/hfs-server/bin/server');
+  } else if (process.env.PRYV_WORKER_TYPE === 'previews') {
+    require('../components/previews-server/bin/server');
   } else {
     require('../components/api-server/bin/server');
   }
