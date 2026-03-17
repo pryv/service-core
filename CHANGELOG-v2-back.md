@@ -1,5 +1,35 @@
 # Changelog - Internal (no API impact)
 
+## Plan 14: Merge service-core servers behind a single master process
+
+### Phase 1: Quick wins
+- Inlined metadata updater into HFS server — removed TChannel RPC, `metadata` and `tprpc` components, `tchannel`/`protobufjs` dependencies
+- Moved webhooks service in-process within API server — removed separate webhooks container and `build/webhooks/` (Dockerfile + runit)
+
+### Phase 2–3: Cluster master with API + HFS workers
+- Created `bin/master.js` — single master process using Node.js cluster module
+- TCP pub/sub broker runs in master; workers connect as clients
+- N API workers share port :3000 via cluster (config: `cluster:apiWorkers`, default 2)
+- M HFS workers share port :4000 via cluster (config: `cluster:hfsWorkers`, default 1, 0 = disabled)
+- Workers auto-restart on crash; graceful shutdown on SIGTERM/SIGINT
+- Worker log differentiation via `PRYV_BOILER_SUFFIX` (`-wN`, `-hfsN`)
+
+### Phase 4: Previews worker
+- Master forks 0 or 1 previews worker on port :3001 (config: `cluster:previewsWorker`, default true)
+- GraphicsMagick availability check at startup — gracefully skips if GM not installed
+
+### Phase 5: Single Dockerfile
+- Replaced 3 per-component Docker images (core, hfs, preview) with single `pryvio/core` image
+- Entry point: `node bin/master.js` — replaces runit-based orchestration
+- DB migrations run in master before forking workers (config: `cluster:runMigrations`, default true)
+- Removed: `build/core/`, `build/hfs/`, `build/preview/` (Dockerfiles + runit scripts), `Dockerfile.component-intermediate`, `Dockerfile.common-intermediate`
+- GraphicsMagick installed in unified image for previews support
+
+### Phase 6: Socket.IO cluster compatibility
+- Socket.IO uses WebSocket-only transport in cluster mode (no HTTP long-polling)
+- Avoids need for sticky sessions — WebSocket connections are long-lived and stay on one worker
+- Single-process mode (tests, dev) retains long-polling fallback
+
 ## Plan 13: Remove `openSource:isActive` Flag
 
 - Removed `openSource:isActive` config flag and all gated code — features always enabled: webhooks, HFS/series events, distributed cache sync, email check route
