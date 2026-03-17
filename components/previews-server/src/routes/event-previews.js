@@ -10,11 +10,10 @@ const Cache = require('../cache');
 const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
 const errors = require('errors').factory;
-const gm = require('gm');
+const sharp = require('sharp');
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const _ = require('lodash');
-const bluebird = require('bluebird');
 const getAuth = require('middleware/src/getAuth');
 const { getLogger } = require('@pryv/boiler');
 const { getMall } = require('mall');
@@ -80,11 +79,12 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
         originalSize = { width: attachment.width, height: attachment.height };
       }
       try {
-        originalSize = await bluebird.fromCallback((cb) => gm(attachmentPath).size(cb));
+        const metadata = await sharp(attachmentPath).metadata();
+        originalSize = { width: metadata.width, height: metadata.height };
         attachment.width = originalSize.width;
         attachment.height = originalSize.height;
       } catch (err) {
-        return next(adjustGMResultError(err));
+        return next(adjustImageError(err));
       }
       // Prepare path
       const targetSize = getPreviewSize(originalSize, {
@@ -100,13 +100,12 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
       }
       if (!cached) {
         try {
-          await bluebird.fromCallback((cb) => gm(attachmentPath + '[0]') // to cover animated GIFs
-            .resize(targetSize.width, targetSize.height)
-            .noProfile()
-            .interlace('Line') // progressive JPEG
-            .write(previewPath, cb));
+          await sharp(attachmentPath, { pages: 1 }) // pages: 1 extracts first frame (animated GIFs)
+            .resize(Math.round(targetSize.width), Math.round(targetSize.height))
+            .jpeg({ progressive: true })
+            .toFile(previewPath);
         } catch (err) {
-          return next(adjustGMResultError(err));
+          return next(adjustImageError(err));
         }
         await xattr.set(previewPath, Cache.EventModifiedXattrKey, event.modified.toString());
       }
@@ -126,11 +125,12 @@ module.exports = async function (expressApp, initContextMiddleware, loadAccessMi
       return true;
     });
   }
-  function adjustGMResultError (err) {
-    // assume file not found if code = 1 (gm command result)
-    return err.code === 1
-      ? errors.corruptedData('Corrupt event data: expected an attached file.', err)
-      : err;
+  function adjustImageError (err) {
+    // sharp throws on corrupt/missing files with specific messages
+    if (err.message && (err.message.includes('Input file is missing') || err.message.includes('unsupported image format'))) {
+      return errors.corruptedData('Corrupt event data: expected an attached file.', err);
+    }
+    return err;
   }
   function getPreviewSize (original, desired) {
     if (!(desired.width || desired.height)) {

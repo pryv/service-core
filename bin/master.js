@@ -16,7 +16,7 @@
 // Config keys:
 //   cluster.apiWorkers      — number of API workers (default: 2)
 //   cluster.hfsWorkers      — number of HFS workers (default: 1, 0 = disabled)
-//   cluster.previewsWorker  — enable previews worker (default: true, requires GraphicsMagick)
+//   cluster.previewsWorker  — enable previews worker (default: true)
 //   cluster.runMigrations   — run DB migrations before forking workers (default: true)
 
 const cluster = require('node:cluster');
@@ -114,20 +114,7 @@ if (cluster.isPrimary) {
     const previewsEnabled = config.get('cluster:previewsWorker') ?? true;
 
     if (previewsEnabled) {
-      // Check if GraphicsMagick is available before forking
-      const { execSync } = require('node:child_process');
-      let gmAvailable = false;
-      try {
-        execSync('gm version', { stdio: 'pipe' });
-        gmAvailable = true;
-      } catch (e) {
-        // GM not installed
-      }
-      if (gmAvailable) {
-        forkPreviewsWorker();
-      } else {
-        log('Previews worker disabled (GraphicsMagick not installed)');
-      }
+      forkPreviewsWorker();
     } else {
       log('Previews worker disabled (cluster:previewsWorker = false)');
     }

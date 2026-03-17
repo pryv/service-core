@@ -10,8 +10,7 @@ const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const errors = require('errors');
 const fs = require('fs');
-const { promisify } = require('util');
-const gm = require('gm');
+const sharp = require('sharp');
 const assert = require('node:assert');
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
@@ -115,8 +114,7 @@ describe('[EP01] event previews', function () {
      * @param done
      */
     async function checkSizeFits (imageBuffer, minTargetSize, maxTargetSize) {
-      const gmSizeAsync = promisify((buffer, cb) => gm(buffer).size({ bufferStream: true }, cb));
-      const size = await gmSizeAsync(imageBuffer);
+      const size = await sharp(imageBuffer).metadata();
 
       assert.ok(size.width >= (minTargetSize.width || 0));
       assert.ok(size.width <= maxTargetSize.width);

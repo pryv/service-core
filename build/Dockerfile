@@ -13,11 +13,8 @@ WORKDIR $TARGET_DIR
 RUN apt-get update
 RUN apt-get install -y python3
 
-# install node modules here
+# install node modules here (sharp bundles libvips — no system image deps needed)
 RUN npm ci --omit=dev --omit=optional
-
-# install GraphicsMagick for previews support (optional at runtime via config)
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y graphicsmagick
 
 # remove build dependencies
 RUN apt-get -y --purge autoremove python3
