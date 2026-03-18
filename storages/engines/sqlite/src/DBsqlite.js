@@ -93,6 +93,16 @@ class DB {
     await this.set(key, username);
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    const key = getUserUniqueKey(field, value);
+    const existing = this.getOne(key);
+    if (existing != null) {
+      return existing === username; // true if same user, false if collision
+    }
+    await this.set(key, username);
+    return true;
+  }
+
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
     await this.delete(key);

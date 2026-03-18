@@ -31,6 +31,24 @@ class DBpostgresql {
     );
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    // Atomic: INSERT only if no row exists for (field, value), or if same username
+    const result = await this.db.query(
+      `INSERT INTO platform_unique_fields (field, value, username)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (field, value) DO NOTHING
+       RETURNING field`,
+      [field, value, username]
+    );
+    if (result.rows.length > 0) return true; // inserted
+    // Check if the existing row is for the same user
+    const existing = await this.db.query(
+      'SELECT username FROM platform_unique_fields WHERE field = $1 AND value = $2',
+      [field, value]
+    );
+    return existing.rows.length > 0 && existing.rows[0].username === username;
+  }
+
   async deleteUserUniqueField (field, value) {
     await this.db.query(
       'DELETE FROM platform_unique_fields WHERE field = $1 AND value = $2',

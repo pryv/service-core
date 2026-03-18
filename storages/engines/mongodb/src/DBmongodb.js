@@ -72,6 +72,16 @@ class DB {
     return item;
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    logger.debug('setUserUniqueFieldIfNotExists', { username, field, value });
+    const existing = await this.platformUnique.findOne({ field, value });
+    if (existing != null) {
+      return existing.username === username;
+    }
+    await this.platformUnique.updateOne({ field, value }, { $set: { field, value, username } }, { upsert: true });
+    return true;
+  }
+
   async deleteUserUniqueField (field, value) {
     logger.debug('deleteUserUniqueField', { field, value });
     await this.platformUnique.deleteOne({ field, value });

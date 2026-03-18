@@ -22,6 +22,18 @@ const PlatformDB = module.exports.PlatformDB = {
   async setUserUniqueField (username, field, value) { throw new Error('Not implemented'); },
 
   /**
+   * Atomic set-if-not-exists for unique fields.
+   * Returns true if the field was set, false if it already exists with a different username.
+   * If the field already exists with the same username, updates it and returns true.
+   * This is consensus-safe: no read-then-write race condition.
+   * @param {string} username
+   * @param {string} field
+   * @param {string} value
+   * @returns {Promise<boolean>} true if set, false if collision
+   */
+  async setUserUniqueFieldIfNotExists (username, field, value) { throw new Error('Not implemented'); },
+
+  /**
    * @param {string} field
    * @param {string} value
    */

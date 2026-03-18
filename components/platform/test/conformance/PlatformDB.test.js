@@ -40,6 +40,41 @@ module.exports = function conformanceTests (getDB) {
       });
     });
 
+    describe('setUserUniqueFieldIfNotExists()', () => {
+      it('must set a new unique field and return true', async () => {
+        const username = 'user-' + cuid();
+        const email = 'ifne-' + cuid() + '@example.com';
+        const result = await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        assert.strictEqual(result, true);
+
+        const stored = await db.getUsersUniqueField('email', email);
+        assert.strictEqual(stored, username);
+      });
+
+      it('must return false when field already exists for different user', async () => {
+        const user1 = 'user1-' + cuid();
+        const user2 = 'user2-' + cuid();
+        const email = 'dup-' + cuid() + '@example.com';
+
+        await db.setUserUniqueFieldIfNotExists(user1, 'email', email);
+        const result = await db.setUserUniqueFieldIfNotExists(user2, 'email', email);
+        assert.strictEqual(result, false);
+
+        // Original value unchanged
+        const stored = await db.getUsersUniqueField('email', email);
+        assert.strictEqual(stored, user1);
+      });
+
+      it('must return true when re-setting for the same user', async () => {
+        const username = 'user-' + cuid();
+        const email = 'same-' + cuid() + '@example.com';
+
+        await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        const result = await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        assert.strictEqual(result, true);
+      });
+    });
+
     describe('setUserIndexedField() / getUserIndexedField()', () => {
       it('must set and retrieve an indexed field', async () => {
         const username = 'user-' + cuid();

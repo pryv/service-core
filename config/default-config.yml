@@ -52,6 +52,8 @@ storages:
     influxdb:
       host: 127.0.0.1
       port: 8086
+    rqlite:
+      url: http://localhost:4001
 
 eventFiles:
   previewsCacheMaxAge: 604800000 # 1 week in ms
