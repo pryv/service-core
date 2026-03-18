@@ -204,7 +204,7 @@ function getMochaHooks (isParallelMode = false) {
   return {
     async beforeAll () {
       const config = await getConfig();
-      const previewsDirPath = config.get('eventFiles:previewsDirPath');
+      const previewsDirPath = config.get('storages:engines:filesystem:previewsDirPath');
       if (!fs.existsSync(previewsDirPath)) {
         fs.mkdirSync(previewsDirPath, { recursive: true });
       }

@@ -3,15 +3,17 @@ env: production
 http:
   ip: 127.0.0.1
   port: 9000
-database:
-  authUser: api-server
-  authPassword: OVERRIDE ME
-  host: 127.0.0.1
-  port: 27017
-  name: pryv-node
-eventFiles:
-  attachmentsDirPath: "${PRYV_DATADIR}/service-core-files/attachments"
-  previewsDirPath: "${PRYV_DATADIR}/service-core-files/previews"
+storages:
+  engines:
+    mongodb:
+      authUser: api-server
+      authPassword: OVERRIDE ME
+      host: 127.0.0.1
+      port: 27017
+      name: pryv-node
+    filesystem:
+      attachmentsDirPath: "${PRYV_DATADIR}/service-core-files/attachments"
+      previewsDirPath: "${PRYV_DATADIR}/service-core-files/previews"
 register:
   secret: OVERRIDE ME
 auth:

@@ -5,7 +5,7 @@
  * Refer to LICENSE file
  */
 const helpers = require('../../../test/helpers');
-helpers.config = helpers.getEngineConfig(require('../manifest.json'));
+helpers.config = helpers.getEngineConfig('influxdb', require('../manifest.json'));
 
 before(async function () {
   await helpers.dependencies.init();

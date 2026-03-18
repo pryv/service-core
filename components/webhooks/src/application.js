@@ -8,7 +8,7 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'webhooks',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../config/'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
@@ -16,7 +16,7 @@ require('@pryv/boiler').init({
       urlFromKey: 'serviceInfoUrl'
     },
     {
-      plugin: require('api-server/config/components/systemStreams')
+      plugin: require('../../../config/plugins/systemStreams')
     }
   ]
 });

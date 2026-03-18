@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { getConfigUnsafe } = require('@pryv/boiler');
 
-const previewsDirPath = getConfigUnsafe(true).get('eventFiles:previewsDirPath');
+const previewsDirPath = getConfigUnsafe(true).get('storages:engines:filesystem:previewsDirPath');
 
 /**
  * Ensures the preview path for the specific event exists.

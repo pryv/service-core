@@ -16,7 +16,7 @@ describe('[ACFM] Account fields (MongoDB)', () => {
     const engine = require('storages/engines/mongodb/src/index');
     const helpers = require('../../../../test/helpers');
     const manifest = require('../../manifest.json');
-    const config = helpers.getEngineConfig(manifest);
+    const config = helpers.getEngineConfig('mongodb', manifest);
     const internals = helpers.getInternals(manifest);
     await engine.init(config, helpers.getLogger, internals);
     userAccountStorage = engine.getUserAccountStorage();

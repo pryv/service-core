@@ -7,7 +7,7 @@
 
 const assert = require('node:assert');
 const nconf = require('nconf');
-const systemStreamsConfig = require('api-server/config/components/systemStreams');
+const systemStreamsConfig = require('../../../../config/plugins/systemStreams');
 const accountStreams = require('business/src/system-streams');
 const { addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 const treeUtils = require('utils/src/treeUtils');

@@ -12,7 +12,6 @@
     "createUserAccountStorage"
   ],
   "configuration": {
-    "configKey": "postgresql",
     "fields": {
       "host":      { "type": "string",  "default": "127.0.0.1",  "description": "PostgreSQL host" },
       "port":      { "type": "number",  "default": 5432,         "description": "PostgreSQL port" },

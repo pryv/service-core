@@ -13,15 +13,12 @@ const path = require('path');
 const { getConfigUnsafe, getLogger } = require('@pryv/boiler').init({
   appName: 'previews-cache-clean',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../../api-server/config'), // api-server config
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [{
-    scope: 'defaults-previews',
-    file: path.resolve(__dirname, '../config/defaults-config.yml')
-  }, {
     scope: 'defaults-paths',
-    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+    file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
   }, {
-    plugin: require('api-server/config/components/systemStreams')
+    plugin: require('../../../config/plugins/systemStreams')
   }]
 });
 

@@ -9,6 +9,9 @@ logs:
     active: false
     level: info
     timestamp: false
+  file:
+    active: true
+    filename: test-application.log
 serviceInfoUrl: file://test/service-info.json
 services:
   email:
@@ -29,18 +32,20 @@ tcpBroker:
   port: 4222
 reporting:
   templateVersion: 1.0.0
-database:
-  host: 127.0.0.1
-  port: 27017
-  name: pryv-node-test
-  authUser: ''
-  authPassword: ''
+storages:
+  engines:
+    mongodb:
+      host: 127.0.0.1
+      port: 27017
+      name: pryv-node-test
+      authUser: ''
+      authPassword: ''
+    influxdb:
+      host: 127.0.0.1
+      port: 8086
 dnsLess:
   isActive: false
   publicUrl: http://127.0.0.1:3000/
-influxdb:
-  host: 127.0.0.1
-  port: 8086
 custom:
   systemStreams:
     account:
@@ -77,3 +82,25 @@ custom:
       settings: null
 trace:
   enable: true
+
+# --- Audit test overrides ---
+audit:
+  active: true
+  storage:
+    filter:
+      methods:
+        include: ['all']
+        exclude: []
+
+  syslog:
+    formats:
+      test: # for 'log/test' event.type
+        template: "{userid} {type} createdBy:{createdBy} streamIds:{streamIds} {content.message}"
+        level: notice
+      test-filtered: # for 'log/filtered' event.type
+        plugin: "config/plugins/syslog/test-filtered.js"
+        level: notice # can be overriden by plugin
+    filter:
+      methods:
+        include: ['all']
+        exclude: []

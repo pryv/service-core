@@ -23,9 +23,16 @@ const isAuditMode = process.env.PATTERN_C_AUDIT === '1';
 
 // Build test config based on environment
 const testConfig = {};
-// Inject storageEngine into test config if overridden via env
+// Override storage engines via STORAGE_ENGINE env var (e.g. 'postgresql')
 if (process.env.STORAGE_ENGINE) {
-  testConfig.storageEngine = process.env.STORAGE_ENGINE;
+  const eng = process.env.STORAGE_ENGINE;
+  testConfig.storages = {
+    base: { engine: eng },
+    platform: { engine: eng },
+    series: { engine: eng === 'postgresql' ? 'postgresql' : 'influxdb' },
+    file: { engine: 'filesystem' },
+    audit: { engine: 'sqlite' }
+  };
 }
 
 if (isAuditMode) {

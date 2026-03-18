@@ -105,9 +105,11 @@ function DynamicInstanceManager (config, options = {}) {
           logger.debug(`Allocated new port: HTTP ${httpPort}`);
         }
 
-        // Configure HTTP
+        // Configure HTTP — set all port keys so any server type gets the right port
         settingsCopy.http = settingsCopy.http || {};
         settingsCopy.http.port = httpPort;
+        settingsCopy.http.hfsPort = httpPort;
+        settingsCopy.http.previewsPort = httpPort;
         settingsCopy.http.ip = settingsCopy.http.ip || '127.0.0.1';
 
         // Configure test notifications (IPC-based, no port needed)

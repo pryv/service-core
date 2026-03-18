@@ -108,7 +108,9 @@ class SpawnContext {
     customSettings = customSettings || {};
     const settings = _.merge({
       http: {
-        port // use this port for http/express
+        port, // use this port for http/express
+        hfsPort: port,
+        previewsPort: port
       },
       testNotifications: {
         enabled: true

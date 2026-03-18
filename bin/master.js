@@ -29,9 +29,9 @@ if (cluster.isPrimary) {
   require('@pryv/boiler').init({
     appName: 'master',
     baseFilesDir: path.resolve(__dirname, '../'),
-    baseConfigDir: path.resolve(__dirname, '../components/api-server/config/'),
+    baseConfigDir: path.resolve(__dirname, '../config/'),
     extraConfigs: [{
-      plugin: require('../components/api-server/config/components/systemStreams')
+      plugin: require('../config/plugins/systemStreams')
     }]
   });
 

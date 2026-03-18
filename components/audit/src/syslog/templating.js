@@ -25,7 +25,8 @@ class Plugin extends SyslogTransform {
 
   constructor (key, format) {
     super(key);
-    const rootPath = path.resolve(__dirname, '../../');
+    // Resolve plugin paths relative to service-core root (config is unified there)
+    const rootPath = path.resolve(__dirname, '../../../../');
     this.plugin = require(path.resolve(rootPath, format.plugin));
     logger.debug('Loaded plugin for [' + key + ']: ' + format.plugin);
   }

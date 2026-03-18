@@ -13,7 +13,7 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'dump-test-data',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
@@ -22,16 +22,16 @@ require('@pryv/boiler').init({
     },
     {
       scope: 'defaults-paths',
-      file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+      file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
     },
     {
-      plugin: require(path.resolve(__dirname, '../../api-server/config/components/systemStreams'))
+      plugin: require(path.resolve(__dirname, '../../../config/plugins/systemStreams'))
     },
     {
-      plugin: require(path.resolve(__dirname, '../../api-server/config/public-url'))
+      plugin: require(path.resolve(__dirname, '../../../config/plugins/public-url'))
     },
     {
-      plugin: require(path.resolve(__dirname, '../../api-server/config/config-validation'))
+      plugin: require(path.resolve(__dirname, '../../../config/plugins/config-validation'))
     }
   ]
 });
