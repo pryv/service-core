@@ -1,5 +1,14 @@
 # Changelog - API Changes
 
+## Plan 17: Merge service-register into service-core
+
+- **NEW**: `GET /reg/cores?username=X|email=X` — core discovery endpoint. Returns `{ core: { url } }` for the core hosting the given user. Single-instance always returns self.
+- **NEW**: `GET /system/admin/users` — list all registered users (admin-key protected). Returns `{ users: [{ username, id, email, language }] }`.
+- **NEW**: `invitationTokens` configuration key — controls registration access. `null` = allow all (default), `[]` = block all, `['token1', ...]` = require valid token.
+- **CHANGED**: Registration (`POST /users`, `POST /reg/user`) now validates locally via PlatformDB instead of forwarding to external service-register. Username uniqueness, email uniqueness, invitation tokens, and reserved usernames are all checked locally.
+- **CHANGED**: `GET /reg/:username/check_username` and `GET /reg/:email/check_email` routes are now always available (previously DNS-less only).
+- **REMOVED**: External service-register dependency — all registration logic is self-contained in service-core.
+
 ## Plan 14: Merge service-core servers
 
 - **CHANGED**: Socket.IO connections now use WebSocket transport only when running in cluster mode. HTTP long-polling fallback is no longer available in clustered deployments. Single-process mode (development, tests) is unaffected.

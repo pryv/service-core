@@ -1,5 +1,20 @@
 # Changelog - Internal (no API impact)
 
+## Plan 17: Merge service-register into service-core
+
+- Unified config at `service-core/config/` (merged from per-component configs)
+- Storage config restructured: `storages.{base,platform,series,file,audit}.engine` + `storages.engines.<name>`
+- PlatformDB `setUserUniqueFieldIfNotExists()` atomic method (all 4 backends)
+- rqlite engine (`storages/engines/rqlite/`) for distributed PlatformDB
+- Access authorization flow (`POST/GET /reg/access`) with in-memory TTL store
+- Registration pipeline simplified: `validateOnPlatform → createUser → buildResponse`
+- `Platform.js`: removed service-register HTTP client, added `validateRegistration()` with invitation tokens, reserved words, atomic unique field reservation
+- Deleted `service_register.js`, `reserved-words.json` (124K words) copied to platform component
+- `repository.js`: renamed `updateUserAndForward` → `updateUser`, removed `skipFowardToRegister` parameter
+- Removed `testsSkipForwardToRegister` config key, `isDnsLess` conditionals from registration logic
+- Register routes always loaded (no `isDnsLess` guard)
+- Tests: removed all nock mocking for service-register
+
 ## Plan 16: Replace GraphicsMagick with sharp
 
 - Replaced `gm` (GraphicsMagick wrapper, requires system binary) with `sharp` (npm-native, bundles libvips)

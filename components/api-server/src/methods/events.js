@@ -303,7 +303,7 @@ module.exports = async function (api) {
   }
 
   /**
-   * Notify platform (service-register) of a new or changed indexed account field value.
+   * Notify platform of a new or changed indexed account field value.
    * Uses 'update' action when the field already has a value (to clean up old unique entries).
    */
   async function notifyPlatformForCreate (context, params, result, next) {
