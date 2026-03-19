@@ -37,4 +37,9 @@ module.exports = function (expressApp, app) {
   expressApp.post(path.join(regPath, '/email/check'), (req, res, next) => {
     next(errors.goneResource());
   });
+
+  // Core discovery — find which core hosts a given user
+  expressApp.get(path.join(regPath, '/cores'), setMinimalMethodContext, setMethodId('auth.cores'), (req, res, next) => {
+    api.call(req.context, req.query, methodCallback(res, next, 200));
+  });
 };

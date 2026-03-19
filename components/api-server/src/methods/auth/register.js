@@ -88,4 +88,40 @@ module.exports = async function (api) {
     }
     next();
   }
+
+  // Core discovery — find which core hosts a given user
+  const { ApiEndpoint } = require('utils');
+
+  api.register('auth.cores',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
+    coresLookup);
+
+  async function coresLookup (context, params, result, next) {
+    if (params.username == null && params.email == null) {
+      return next(errors.invalidParametersFormat('provide "username" or "email" as query parameter'));
+    }
+    if (params.username != null && params.email != null) {
+      return next(errors.invalidParametersFormat('provide only "username" or "email", not both'));
+    }
+
+    let username = params.username;
+
+    // Resolve email → username via PlatformDB unique field
+    if (params.email != null) {
+      username = await platform.getUsersUniqueField('email', params.email);
+      if (username == null) {
+        // Unknown email — return self URL (client can attempt registration)
+        result.core = { url: ApiEndpoint.build('', null) };
+        return next();
+      }
+    }
+
+    // Check username exists
+    if (!(await usersRepository.usernameExists(username))) {
+      return next(errors.unknownResource('user', username));
+    }
+
+    result.core = { url: ApiEndpoint.build(username, null) };
+    next();
+  }
 };

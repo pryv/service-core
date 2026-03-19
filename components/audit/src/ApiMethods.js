@@ -13,6 +13,7 @@ const ALL_METHODS = [
   'auth.register',
   'auth.usernameCheck',
   'auth.emailCheck',
+  'auth.cores',
   'auth.delete',
   'accesses.get',
   'accesses.create',
@@ -51,6 +52,7 @@ const ALL_METHODS = [
   'system.createUser',
   'system.deactivateMfa',
   'system.getUserInfo',
+  'system.listUsers',
   'audit.getLogs'
 ];
 
@@ -59,6 +61,7 @@ const NOT_AUDITED_METHODS = [
   'system.getUserInfo',
   'auth.usernameCheck',
   'auth.emailCheck',
+  'auth.cores',
   'system.checkPlatformIntegrity'
 ];
 

@@ -115,6 +115,31 @@ module.exports = async function (systemAPI, api) {
     });
   }
 
+  // --------------------------------------------------------------- listUsers
+  systemAPI.register('system.listUsers',
+    setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
+    async function listUsers (context, params, result, next) {
+      try {
+        const usersMap = await usersIndex.getAllByUsername();
+        const users = [];
+        for (const [username, userId] of Object.entries(usersMap)) {
+          const user = await usersRepository.getUserById(userId);
+          if (user == null) continue;
+          users.push({
+            username,
+            id: userId,
+            email: user.email,
+            language: user.language
+          });
+        }
+        result.users = users;
+        next();
+      } catch (err) {
+        return next(errors.unexpectedError(err));
+      }
+    }
+  );
+
   // --------------------------------------------------------------- checks
   systemAPI.register('system.checkPlatformIntegrity',
     async function performSystemsChecks (context, params, result, next) {

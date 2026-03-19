@@ -35,6 +35,10 @@ module.exports = function system (expressApp, app) {
   expressApp.delete(Paths.System + '/users/:username/mfa', setMethodId('system.deactivateMfa'), function (req, res, next) {
     systemAPI.call(req.context, { username: req.params.username }, methodCallback(res, next, 204));
   });
+  // --------------------- admin user listing ----------------- //
+  expressApp.get(Paths.System + '/admin/users', setMethodId('system.listUsers'), function (req, res, next) {
+    systemAPI.call(req.context, {}, methodCallback(res, next, 200));
+  });
   // --------------------- health checks ----------------- //
   expressApp.get(Paths.System + '/check-platform-integrity', setMethodId('system.checkPlatformIntegrity'), function (req, res, next) {
     systemAPI.call(req.context, {}, methodCallback(res, next, 200));
