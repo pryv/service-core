@@ -53,6 +53,8 @@ const ALL_METHODS = [
   'system.deactivateMfa',
   'system.getUserInfo',
   'system.listUsers',
+  'system.listCores',
+  'auth.hostings',
   'audit.getLogs'
 ];
 
@@ -62,7 +64,9 @@ const NOT_AUDITED_METHODS = [
   'auth.usernameCheck',
   'auth.emailCheck',
   'auth.cores',
-  'system.checkPlatformIntegrity'
+  'auth.hostings',
+  'system.checkPlatformIntegrity',
+  'system.listCores'
 ];
 
 const AUDITED_METHODS = ALL_METHODS.filter(m => !NOT_AUDITED_METHODS.includes(m));

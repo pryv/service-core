@@ -151,6 +151,45 @@ class DBpostgresql {
   async clearAll () {
     await this.deleteAll();
   }
+
+  // --- User-to-core mapping --- //
+
+  async setUserCore (username, coreId) {
+    await this.setUserIndexedField(username, '_core', coreId);
+  }
+
+  async getUserCore (username) {
+    return await this.getUserIndexedField(username, '_core');
+  }
+
+  async getAllUserCores () {
+    const res = await this.db.query(
+      "SELECT username, value FROM platform_indexed_fields WHERE field = '_core'"
+    );
+    return res.rows.map(row => ({
+      username: row.username,
+      coreId: row.value
+    }));
+  }
+
+  // --- Core registration --- //
+
+  async setCoreInfo (coreId, info) {
+    // Store as indexed field with reserved username '__cores__'
+    await this.setUserIndexedField('__cores__', coreId, JSON.stringify(info));
+  }
+
+  async getCoreInfo (coreId) {
+    const val = await this.getUserIndexedField('__cores__', coreId);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllCoreInfos () {
+    const res = await this.db.query(
+      "SELECT value FROM platform_indexed_fields WHERE username = '__cores__'"
+    );
+    return res.rows.map(row => JSON.parse(row.value));
+  }
 }
 
 module.exports = DBpostgresql;

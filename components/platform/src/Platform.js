@@ -43,6 +43,9 @@ class Platform {
     this.#config = await getConfig();
     this.#db = await getPlatformDB();
 
+    // Register this core in PlatformDB so other cores can discover it
+    await this.registerSelf();
+
     return this;
   }
 
@@ -169,6 +172,162 @@ class Platform {
     await this.#applyOperations(username, operations);
   }
 
+  // ----------------  Core identity (multi-core)  ----------------
+
+  /**
+   * @returns {string} This core's ID.
+   */
+  get coreId () {
+    return this.#config.get('core:id') || 'single';
+  }
+
+  /**
+   * @returns {string|null} This core's public URL.
+   */
+  get coreUrl () {
+    return this.#config.get('core:url') || null;
+  }
+
+  /**
+   * @returns {boolean} True when in dnsLess / single-core mode.
+   */
+  get isSingleCore () {
+    return this.#config.get('core:isSingleCore') !== false;
+  }
+
+  /**
+   * @returns {string|null} The primary domain (dns:domain).
+   */
+  get domain () {
+    return this.#config.get('dns:domain') || null;
+  }
+
+  /**
+   * Build the public URL for a core given its ID.
+   * @param {string} coreId
+   * @returns {string}
+   */
+  coreIdToUrl (coreId) {
+    const domain = this.domain;
+    if (domain != null) {
+      return 'https://' + coreId + '.' + domain;
+    }
+    // dnsLess fallback: return own URL
+    return this.coreUrl;
+  }
+
+  /**
+   * Register this core in PlatformDB on startup.
+   * Other cores will discover it via getAllCoreInfos().
+   */
+  async registerSelf () {
+    const info = {
+      id: this.coreId,
+      ip: this.#config.get('core:ip') || null,
+      ipv6: this.#config.get('core:ipv6') || null,
+      cname: this.#config.get('core:cname') || null,
+      hosting: this.#config.get('core:hosting') || null,
+      available: this.#config.get('core:available') !== false
+    };
+    await this.#db.setCoreInfo(this.coreId, info);
+  }
+
+  /**
+   * Get which core hosts a user.
+   * @param {string} username
+   * @returns {Promise<string|null>} core ID
+   */
+  async getUserCore (username) {
+    return await this.#db.getUserCore(username);
+  }
+
+  /**
+   * Set which core hosts a user.
+   * @param {string} username
+   * @param {string} coreId
+   */
+  async setUserCore (username, coreId) {
+    await this.#db.setUserCore(username, coreId);
+  }
+
+  /**
+   * Get all user-to-core mappings.
+   * @returns {Promise<Array<{username: string, coreId: string}>>}
+   */
+  async getAllUserCores () {
+    return await this.#db.getAllUserCores();
+  }
+
+  /**
+   * Get info for a specific core.
+   * @param {string} coreId
+   * @returns {Promise<Object|null>}
+   */
+  async getCoreInfo (coreId) {
+    return await this.#db.getCoreInfo(coreId);
+  }
+
+  /**
+   * Get all registered cores.
+   * @returns {Promise<Array<Object>>}
+   */
+  async getAllCoreInfos () {
+    return await this.#db.getAllCoreInfos();
+  }
+
+  /**
+   * Update this core's availability in PlatformDB.
+   * @param {boolean} available
+   */
+  async setAvailable (available) {
+    const info = await this.#db.getCoreInfo(this.coreId);
+    if (info != null) {
+      info.available = available;
+      await this.#db.setCoreInfo(this.coreId, info);
+    }
+  }
+
+  /**
+   * Select a core for a new registration.
+   * Single-core: returns self. Multi-core: least-users among available cores in the given hosting.
+   * @param {string|null} [hosting] - hosting key (null = any)
+   * @returns {Promise<string>} core ID
+   */
+  async selectCoreForRegistration (hosting) {
+    if (this.isSingleCore) return this.coreId;
+
+    // Get all registered cores, filter by hosting + availability
+    const allCores = await this.#db.getAllCoreInfos();
+    let candidates = allCores.filter(c => c.available !== false);
+    if (hosting != null) {
+      candidates = candidates.filter(c => c.hosting === hosting);
+    }
+    if (candidates.length === 0) return this.coreId; // fallback to self
+    if (candidates.length === 1) return candidates[0].id;
+
+    // Count users per core
+    const allMappings = await this.#db.getAllUserCores();
+    const counts = {};
+    for (const core of candidates) {
+      counts[core.id] = 0;
+    }
+    for (const mapping of allMappings) {
+      if (mapping.coreId && counts[mapping.coreId] != null) {
+        counts[mapping.coreId]++;
+      }
+    }
+    // Return core with fewest users
+    let minCore = candidates[0].id;
+    let minCount = Infinity;
+    for (const [id, count] of Object.entries(counts)) {
+      if (count < minCount) {
+        minCount = count;
+        minCore = id;
+      }
+    }
+    return minCore;
+  }
+
   // ----------------  Registration  ----------------
 
   /**
@@ -177,10 +336,12 @@ class Platform {
    * - Check reserved usernames
    * - Check username existence
    * - Atomically reserve unique fields
+   * - Assign user to core (multi-core: may redirect)
    *
    * @param {string} username
    * @param {string|undefined} invitationToken
    * @param {Object} uniqueFields - e.g. { username: 'bob', email: 'bob@example.com' }
+   * @returns {Promise<{redirect?: string}>} redirect URL if registration should happen elsewhere
    */
   async validateRegistration (username, invitationToken, uniqueFields) {
     // 1. Check invitation token
@@ -220,6 +381,18 @@ class Platform {
     if (Object.keys(conflicts).length > 0) {
       throw errors.itemAlreadyExists('user', conflicts);
     }
+
+    // 5. Assign user to a core
+    const selectedCoreId = await this.selectCoreForRegistration();
+    if (selectedCoreId != null) {
+      await this.#db.setUserCore(username, selectedCoreId);
+    }
+
+    // 6. If selected core is not self, return redirect
+    if (!this.isSingleCore && selectedCoreId !== this.coreId) {
+      return { redirect: this.coreIdToUrl(selectedCoreId) };
+    }
+    return {};
   }
 
   /**

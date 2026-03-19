@@ -111,7 +111,8 @@ module.exports = async function (api) {
       username = await platform.getUsersUniqueField('email', params.email);
       if (username == null) {
         // Unknown email — return self URL (client can attempt registration)
-        result.core = { url: ApiEndpoint.build('', null) };
+        const coreUrl = platform.coreUrl || ApiEndpoint.build('', null);
+        result.core = { url: coreUrl };
         return next();
       }
     }
@@ -121,7 +122,78 @@ module.exports = async function (api) {
       return next(errors.unknownResource('user', username));
     }
 
+    // Multi-core: look up which core hosts this user
+    if (!platform.isSingleCore) {
+      const userCoreId = await platform.getUserCore(username);
+      if (userCoreId != null) {
+        result.core = { url: platform.coreIdToUrl(userCoreId) };
+        return next();
+      }
+    }
+
+    // Single-core or no mapping: return API endpoint for this user
     result.core = { url: ApiEndpoint.build(username, null) };
     next();
+  }
+
+  // Hostings — available cores (regions/zones/hostings hierarchy)
+  api.register('auth.hostings',
+    setAuditAccessId(AuditAccessIds.PUBLIC),
+    hostingsLookup);
+
+  async function hostingsLookup (context, params, result, next) {
+    try {
+      const configHostings = config.get('hostings');
+      const allCores = await platform.getAllCoreInfos();
+
+      // Build hosting → available core URL map
+      const hostingCores = {};
+      for (const core of allCores) {
+        if (core.available === false) continue;
+        const h = core.hosting || 'default';
+        if (!hostingCores[h]) hostingCores[h] = [];
+        hostingCores[h].push(core);
+      }
+
+      if (configHostings != null && configHostings.regions != null) {
+        // Use configured hierarchy, enrich with availability from PlatformDB
+        const regions = JSON.parse(JSON.stringify(configHostings.regions));
+        for (const region of Object.values(regions)) {
+          for (const zone of Object.values(region.zones || {})) {
+            for (const [hKey, hosting] of Object.entries(zone.hostings || {})) {
+              const cores = hostingCores[hKey] || [];
+              hosting.available = cores.length > 0;
+              hosting.availableCore = cores.length > 0
+                ? platform.coreIdToUrl(cores[0].id)
+                : '';
+            }
+          }
+        }
+        result.regions = regions;
+      } else {
+        // Auto-generate minimal hierarchy for single-core / unconfigured
+        const selfUrl = platform.coreUrl || ApiEndpoint.build('', null);
+        result.regions = {
+          default: {
+            name: 'Default',
+            zones: {
+              default: {
+                name: 'Default',
+                hostings: {
+                  default: {
+                    name: 'Default',
+                    available: true,
+                    availableCore: selfUrl
+                  }
+                }
+              }
+            }
+          }
+        };
+      }
+      next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 };

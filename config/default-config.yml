@@ -54,6 +54,9 @@ storages:
       port: 8086
     rqlite:
       url: http://localhost:4001
+      raftPort: 4002                  # Raft consensus port (common across all cores)
+      dataDir: var-pryv/rqlite-data   # rqlite data directory (relative to service-core root)
+      binPath: var-pryv/rqlite-bin/rqlited  # rqlited binary path
 
 eventFiles:
   previewsCacheMaxAge: 604800000 # 1 week in ms
@@ -139,6 +142,25 @@ integrity:
 
 accessTracking:
   isActive: true
+
+# --- Core identity (multi-core) ---
+# Single-core: only core.id needed (default 'single').
+# Multi-core: each core has its own id; FQDN = {core.id}.{dns.domain}
+core:
+  id: single            # core identifier; FQDN = {id}.{dns.domain}
+  ip: null              # A record for this core (null = no DNS record)
+  ipv6: null            # AAAA record
+  cname: null            # CNAME record (used if no ip/ipv6)
+  hosting: null          # hosting key this core belongs to (null = default)
+  available: true        # false = not accepting new registrations
+
+dns:
+  domain: null           # primary domain (e.g. pryv.me); null = dnsLess mode
+
+# --- Hostings (regions/zones/providers) ---
+# Structure matches legacy /reg/hostings response for backward compatibility.
+# In single-core mode, a default hosting is auto-generated.
+hostings: null           # null = auto-generate; or { regions: { ... } }
 
 cluster:
   apiWorkers: 2

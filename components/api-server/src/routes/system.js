@@ -39,6 +39,10 @@ module.exports = function system (expressApp, app) {
   expressApp.get(Paths.System + '/admin/users', setMethodId('system.listUsers'), function (req, res, next) {
     systemAPI.call(req.context, {}, methodCallback(res, next, 200));
   });
+  // --------------------- admin cores listing ----------------- //
+  expressApp.get(Paths.System + '/admin/cores', setMethodId('system.listCores'), function (req, res, next) {
+    systemAPI.call(req.context, {}, methodCallback(res, next, 200));
+  });
   // --------------------- health checks ----------------- //
   expressApp.get(Paths.System + '/check-platform-integrity', setMethodId('system.checkPlatformIntegrity'), function (req, res, next) {
     systemAPI.call(req.context, {}, methodCallback(res, next, 200));

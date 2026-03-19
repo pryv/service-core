@@ -93,6 +93,8 @@ function update (key, update) {
     state.code = 200;
   } else if (update.status === 'REFUSED' || update.status === 'ERROR') {
     state.code = 403;
+  } else if (update.status === 'REDIRECTED') {
+    state.code = 301;
   }
   return state;
 }

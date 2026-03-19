@@ -125,14 +125,51 @@ module.exports = async function (systemAPI, api) {
         for (const [username, userId] of Object.entries(usersMap)) {
           const user = await usersRepository.getUserById(userId);
           if (user == null) continue;
-          users.push({
+          const entry = {
             username,
             id: userId,
             email: user.email,
             language: user.language
-          });
+          };
+          // Multi-core: include which core hosts this user
+          if (!platform.isSingleCore) {
+            const coreId = await platform.getUserCore(username);
+            entry.core = coreId != null ? platform.coreIdToUrl(coreId) : null;
+          }
+          users.push(entry);
         }
         result.users = users;
+        next();
+      } catch (err) {
+        return next(errors.unexpectedError(err));
+      }
+    }
+  );
+
+  // --------------------------------------------------------------- listCores
+  systemAPI.register('system.listCores',
+    setAuditAccessId(AuditAccessIds.ADMIN_TOKEN),
+    async function listCores (context, params, result, next) {
+      try {
+        const allCores = await platform.getAllCoreInfos();
+        // Count users per core from PlatformDB
+        const allMappings = await platform.getAllUserCores();
+        const counts = {};
+        for (const core of allCores) {
+          counts[core.id] = 0;
+        }
+        for (const mapping of allMappings) {
+          if (mapping.coreId && counts[mapping.coreId] != null) {
+            counts[mapping.coreId]++;
+          }
+        }
+        result.cores = allCores.map(core => ({
+          id: core.id,
+          url: platform.coreIdToUrl(core.id),
+          hosting: core.hosting || null,
+          available: core.available !== false,
+          userCount: counts[core.id] || 0
+        }));
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));

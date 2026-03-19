@@ -176,6 +176,55 @@ class DBrqlite {
   async clearAll () {
     return await this.deleteAll();
   }
+
+  // --- User-to-core mapping --- //
+
+  async setUserCore (username, coreId) {
+    const key = getUserCoreKey(username);
+    await this.execute(
+      'INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
+      [key, coreId]
+    );
+  }
+
+  async getUserCore (username) {
+    const key = getUserCoreKey(username);
+    const rows = await this.query('SELECT value FROM keyValue WHERE key = ?', [key]);
+    return rows.length === 0 ? null : rows[0].value;
+  }
+
+  async getAllUserCores () {
+    const rows = await this.query(
+      "SELECT key, value FROM keyValue WHERE key LIKE 'user-core/%'"
+    );
+    return rows.map(row => ({
+      username: row.key.slice('user-core/'.length),
+      coreId: row.value
+    }));
+  }
+
+  // --- Core registration --- //
+
+  async setCoreInfo (coreId, info) {
+    const key = 'core-info/' + coreId;
+    await this.execute(
+      'INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
+      [key, JSON.stringify(info)]
+    );
+  }
+
+  async getCoreInfo (coreId) {
+    const key = 'core-info/' + coreId;
+    const rows = await this.query('SELECT value FROM keyValue WHERE key = ?', [key]);
+    return rows.length === 0 ? null : JSON.parse(rows[0].value);
+  }
+
+  async getAllCoreInfos () {
+    const rows = await this.query(
+      "SELECT value FROM keyValue WHERE key LIKE 'core-info/%'"
+    );
+    return rows.map(row => JSON.parse(row.value));
+  }
 }
 
 // --- Key helpers (same as SQLite engine) --- //
@@ -197,6 +246,10 @@ function getUserUniqueKey (field, value) {
 
 function getUserIndexedKey (username, field) {
   return 'user-indexed/' + field + '/' + username;
+}
+
+function getUserCoreKey (username) {
+  return 'user-core/' + username;
 }
 
 module.exports = DBrqlite;

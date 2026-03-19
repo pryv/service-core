@@ -32,15 +32,35 @@ if (cluster.isPrimary) {
     baseConfigDir: path.resolve(__dirname, '../config/'),
     extraConfigs: [{
       plugin: require('../config/plugins/systemStreams')
+    }, {
+      plugin: require('../config/plugins/core-identity')
     }]
   });
 
   const { getConfig, getLogger } = require('@pryv/boiler');
+  const rqliteProcess = require('../storages/engines/rqlite/src/rqliteProcess');
 
   (async () => {
     const config = await getConfig();
     const logger = getLogger('master');
     const log = (msg) => { logger.info(msg); console.log(`[master] ${msg}`); };
+
+    // Start rqlited if platform engine is rqlite
+    const platformEngine = config.get('storages:platform:engine');
+    if (platformEngine === 'rqlite') {
+      const rqliteConfig = config.get('storages:engines:rqlite') || {};
+      const httpPort = new URL(rqliteConfig.url || 'http://localhost:4001').port || 4001;
+      await rqliteProcess.start({
+        coreId: config.get('core:id') || 'single',
+        binPath: rqliteConfig.binPath || 'var-pryv/rqlite-bin/rqlited',
+        dataDir: rqliteConfig.dataDir || 'var-pryv/rqlite-data',
+        httpPort: parseInt(httpPort),
+        raftPort: rqliteConfig.raftPort || 4002,
+        dnsDomain: config.get('dns:domain') || null,
+        coreIp: config.get('core:ip') || null,
+        log
+      });
+    }
 
     // Run DB migrations before starting services (same as runit core/run)
     const runMigrations = config.get('cluster:runMigrations') ?? true;
@@ -144,12 +164,16 @@ if (cluster.isPrimary) {
       }
     });
 
-    const shutdown = (sig) => {
+    const shutdown = async (sig) => {
       if (shuttingDown) return;
       shuttingDown = true;
       log(`Received ${sig}, shutting down workers...`);
       for (const id in cluster.workers) {
         cluster.workers[id].process.kill('SIGTERM');
+      }
+      // Stop rqlited after workers (so they can flush)
+      if (rqliteProcess.isRunning()) {
+        await rqliteProcess.stop(log);
       }
       // Force exit after timeout
       setTimeout(() => {

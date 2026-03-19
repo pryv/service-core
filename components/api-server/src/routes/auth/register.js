@@ -42,4 +42,9 @@ module.exports = function (expressApp, app) {
   expressApp.get(path.join(regPath, '/cores'), setMinimalMethodContext, setMethodId('auth.cores'), (req, res, next) => {
     api.call(req.context, req.query, methodCallback(res, next, 200));
   });
+
+  // Hostings — available cores
+  expressApp.get(path.join(regPath, '/hostings'), setMinimalMethodContext, setMethodId('auth.hostings'), (req, res, next) => {
+    api.call(req.context, {}, methodCallback(res, next, 200));
+  });
 };

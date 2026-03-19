@@ -86,6 +86,9 @@ module.exports = function (expressApp, app) {
     } else if (state.status === 'REFUSED' || state.status === 'ERROR') {
       response.reasonID = state.reasonID;
       response.message = state.message;
+    } else if (state.status === 'REDIRECTED') {
+      // Multi-core: auth moved to another core, follow the new poll URL
+      response.poll = state.redirectUrl;
     }
 
     res.status(state.code).json(response);
@@ -97,9 +100,9 @@ module.exports = function (expressApp, app) {
   expressApp.post('/reg/access/:key', (req, res) => {
     const { status } = req.body;
 
-    if (!status || !['ACCEPTED', 'REFUSED', 'ERROR'].includes(status)) {
+    if (!status || !['ACCEPTED', 'REFUSED', 'ERROR', 'REDIRECTED'].includes(status)) {
       return res.status(400).json({
-        error: { id: 'invalid-parameters', message: 'status must be ACCEPTED, REFUSED, or ERROR' }
+        error: { id: 'invalid-parameters', message: 'status must be ACCEPTED, REFUSED, ERROR, or REDIRECTED' }
       });
     }
 
@@ -107,6 +110,14 @@ module.exports = function (expressApp, app) {
       if (!req.body.username || !req.body.token) {
         return res.status(400).json({
           error: { id: 'invalid-parameters', message: 'ACCEPTED requires username and token' }
+        });
+      }
+    }
+
+    if (status === 'REDIRECTED') {
+      if (!req.body.redirectUrl) {
+        return res.status(400).json({
+          error: { id: 'invalid-parameters', message: 'REDIRECTED requires redirectUrl' }
         });
       }
     }
@@ -129,6 +140,8 @@ module.exports = function (expressApp, app) {
     } else if (state.status === 'REFUSED' || state.status === 'ERROR') {
       response.reasonID = state.reasonID;
       response.message = state.message;
+    } else if (state.status === 'REDIRECTED') {
+      response.poll = state.redirectUrl;
     }
     res.status(state.code).json(response);
   });

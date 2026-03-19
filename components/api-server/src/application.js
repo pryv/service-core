@@ -36,6 +36,9 @@ require('@pryv/boiler').init({
       file: path.resolve(__dirname, '../../../config/plugins/default-path.js')
     },
     {
+      plugin: require('../../../config/plugins/core-identity')
+    },
+    {
       plugin: require('../../../config/plugins/config-validation')
     },
     {

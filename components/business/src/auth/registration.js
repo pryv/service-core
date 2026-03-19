@@ -71,11 +71,16 @@ class Registration {
           uniqueFields[fieldName] = context.newUser[fieldName];
         }
       }
-      await this.platform.validateRegistration(
+      const validation = await this.platform.validateRegistration(
         context.newUser.username,
         context.newUser.invitationToken,
         uniqueFields
       );
+      // Multi-core: if registration should happen on another core, return redirect
+      if (validation?.redirect) {
+        result.redirect = validation.redirect;
+        return next();
+      }
     } catch (error) {
       return next(error);
     }
@@ -86,6 +91,8 @@ class Registration {
    * Save user to the database, then store indexed fields in PlatformDB
    */
   async createUser (context, params, result, next) {
+    // Multi-core redirect: skip local user creation
+    if (result.redirect) return next();
     // if it is testing user, skip registration process
     if (context.newUser.username === 'backloop') {
       result.id = 'dummy-test-user';
@@ -108,6 +115,12 @@ class Registration {
    * Build response for user registration
    */
   async buildResponse (context, params, result, next) {
+    // Multi-core redirect: tell client to re-register on the correct core
+    if (result.redirect) {
+      result.core = { url: result.redirect };
+      delete result.redirect;
+      return next();
+    }
     result.username = context.newUser.username;
     result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
     next();
@@ -117,6 +130,8 @@ class Registration {
    * Send welcome email
    */
   sendWelcomeMail (context, params, result, next) {
+    // Multi-core redirect: no user created locally, skip mail
+    if (result.core && !result.username) return next();
     const emailSettings = this.servicesSettings.email;
     // Skip this step if welcome mail is deactivated
     const emailActivation = emailSettings.enabled;

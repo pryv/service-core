@@ -98,7 +98,51 @@ const PlatformDB = module.exports.PlatformDB = {
   /**
    * Clear all entries.
    */
-  async clearAll () { throw new Error('Not implemented'); }
+  async clearAll () { throw new Error('Not implemented'); },
+
+  // --- User-to-core mapping (multi-core) --- //
+
+  /**
+   * Set which core hosts a user.
+   * @param {string} username
+   * @param {string} coreId
+   */
+  async setUserCore (username, coreId) { throw new Error('Not implemented'); },
+
+  /**
+   * Get the core ID for a user.
+   * @param {string} username
+   * @returns {Promise<string|null>}
+   */
+  async getUserCore (username) { throw new Error('Not implemented'); },
+
+  /**
+   * Get all user-to-core mappings.
+   * @returns {Promise<Array<{username: string, coreId: string}>>}
+   */
+  async getAllUserCores () { throw new Error('Not implemented'); },
+
+  // --- Core registration (multi-core) --- //
+
+  /**
+   * Register or update a core's info in PlatformDB.
+   * @param {string} coreId
+   * @param {Object} info - { id, ip, ipv6, cname, hosting, available }
+   */
+  async setCoreInfo (coreId, info) { throw new Error('Not implemented'); },
+
+  /**
+   * Get a core's registration info.
+   * @param {string} coreId
+   * @returns {Promise<Object|null>}
+   */
+  async getCoreInfo (coreId) { throw new Error('Not implemented'); },
+
+  /**
+   * Get all registered cores.
+   * @returns {Promise<Array<Object>>}
+   */
+  async getAllCoreInfos () { throw new Error('Not implemented'); }
 };
 
 // Limit tampering on existing properties
