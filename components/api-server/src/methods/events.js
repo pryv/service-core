@@ -321,7 +321,7 @@ module.exports = async function (api) {
         isUnique: context.systemStream.isUnique,
         isActive: true
       }];
-      await platform.updateUserAndForward(context.user.username, operations);
+      await platform.updateUser(context.user.username, operations);
     } catch (err) {
       return next(err);
     }
@@ -329,7 +329,7 @@ module.exports = async function (api) {
   }
 
   /**
-   * Notify platform (service-register) of an updated indexed account field value.
+   * Notify platform of an updated indexed account field value.
    */
   async function notifyPlatformForUpdate (context, params, result, next) {
     if (!context.doesEventBelongToAccountStream) return next();
@@ -343,7 +343,7 @@ module.exports = async function (api) {
         isUnique: context.systemStream.isUnique,
         isActive: true
       }];
-      await platform.updateUserAndForward(context.user.username, operations);
+      await platform.updateUser(context.user.username, operations);
     } catch (err) {
       return next(err);
     }

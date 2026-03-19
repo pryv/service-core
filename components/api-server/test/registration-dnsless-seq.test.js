@@ -4,7 +4,6 @@
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
  */
-const nock = require('nock');
 const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
@@ -28,7 +27,6 @@ describe('[BMM2] registration: DNS-less', () => {
   let request;
 
   before(async function () {
-    nock.cleanAll();
     config = await getConfig();
     config.injectTestConfig({
       dnsLess: { isActive: true },
@@ -62,7 +60,6 @@ describe('[BMM2] registration: DNS-less', () => {
   describe('[RD01] POST /users', () => {
     function generateRegisterBody () {
       return {
-        // Use cuid for unique username to avoid parallel test conflicts
         username: 'regd' + cuid.slug().toLowerCase(),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
@@ -74,7 +71,6 @@ describe('[BMM2] registration: DNS-less', () => {
 
     it('[KB3T] should respond with status 201 when given valid input', async function () {
       const registerData = generateRegisterBody();
-      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
       const res = await request.post('/users').send(registerData);
       assert.strictEqual(res.status, 201, '[KB3T] should respond with status 201');
       assert.strictEqual(res.body.username, registerData.username, '[VDA8] should respond with username');
@@ -82,7 +78,6 @@ describe('[BMM2] registration: DNS-less', () => {
 
     it('[VDA8] should respond with correct apiEndpoint for valid registration', async function () {
       const registerData = generateRegisterBody();
-      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
       const res = await request.post('/users').send(registerData);
       assert.strictEqual(res.body.username, registerData.username);
       const usersRepository = await getUsersRepository();
@@ -96,7 +91,6 @@ describe('[BMM2] registration: DNS-less', () => {
 
     it('[LPLP] Valid access token exists in the response', async function () {
       const registerData = generateRegisterBody();
-      nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
       const res = await request.post('/users').send(registerData);
       assert.ok(res.body.apiEndpoint);
       const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
@@ -201,12 +195,10 @@ describe('[BMM2] registration: DNS-less', () => {
     describe('[RD10] Property values uniqueness', function () {
       it('[LZ1K] should respond with status 409 and correct error for duplicate username/email', async function () {
         const registerData1ReuseUsername = generateRegisterBody();
-        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
         let res = await request.post('/users').send(registerData1ReuseUsername);
         assert.strictEqual(res.status, 201);
 
         const registerData1ReuseEmail = generateRegisterBody();
-        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
         res = await request.post('/users').send(registerData1ReuseEmail);
         assert.strictEqual(res.status, 201);
 
@@ -214,14 +206,12 @@ describe('[BMM2] registration: DNS-less', () => {
         const registerData = generateRegisterBody();
         registerData.username = registerData1ReuseUsername.username;
         registerData.email = registerData1ReuseEmail.email;
-        nock(config.get('services:register:url')).put('/users', (body) => { return true; }).reply(200, { errors: [] });
         res = await request.post('/users').send(registerData);
 
         assert.strictEqual(res.status, 409, '[LZ1K] should respond with status 409');
         assert.ok(res.error, '[M2HD] should have error');
         assert.ok(res.error.text, '[M2HD] should have error text');
 
-        // changed to new error format to match the cluster
         const error = JSON.parse(res.error.text);
         assert.deepEqual(error.error.data, { username: registerData.username, email: registerData.email }, '[M2HD] should respond with the correct error data');
       });
@@ -230,7 +220,6 @@ describe('[BMM2] registration: DNS-less', () => {
     describe('[RD11] When providing an indexed value that is neither a number nor a string', () => {
       function generateInvalidBodyWith (incorrectValue) {
         return {
-          // Use cuid for unique username to avoid parallel test conflicts
           username: 'regdi' + cuid.slug().toLowerCase(),
           password: charlatan.Lorem.characters(7),
           appId: charlatan.Lorem.characters(7),

@@ -5,7 +5,6 @@
  * Refer to LICENSE file
  */
 
-const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
@@ -41,12 +40,10 @@ let seriesConn;
 let seriesRepository;
 let config;
 let isAuditActive = false;
-let regUrl;
 let mall;
 describe('[PGTD] DELETE /users/:username', () => {
   before(async function () {
     config = await getConfig();
-    regUrl = config.get('services:register:url');
     isAuditActive = config.get('audit:active');
     app = getApplication();
     await app.initiate();
@@ -164,30 +161,18 @@ describe('[PGTD] DELETE /users/:username', () => {
     describe(`[DOA${i}] dnsLess:isActive = ${settingsToTest[i][0]}`, function () {
       before(async function () {
         config.injectTestConfig({
-          dnsLess: { isActive: settingsToTest[i][0] },
-          testsSkipForwardToRegister: settingsToTest[i][0]
+          dnsLess: { isActive: settingsToTest[i][0] }
         });
       });
       after(async function () {
         config.injectTestConfig({});
       });
       describe(`[D7H${i}] when given existing username`, function () {
-        let deletedOnRegister = false;
         let userToDelete;
         const delivered = [];
         before(async function () {
           userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
-          if (!settingsToTest[i][0]) {
-            // ! isDnsLess
-            nock(regUrl)
-              .delete('/users/' + username1 + '?onlyReg=true', () => {
-                deletedOnRegister = true;
-                return true;
-              })
-              .times(1)
-              .reply(200, { deleted: true });
-          }
           if (pubsub.isTransportEnabled()) {
             pubsub.setTestDeliverHook(function (scopeName, eventName, payload) {
               delivered.push({ scopeName, eventName, payload });
@@ -286,11 +271,6 @@ describe('[PGTD] DELETE /users/:username', () => {
           const sizeInfo = await mall.getUserStorageInfos(username2);
           assert.notStrictEqual(sizeInfo.local.files.sizeKb, 0);
         });
-        it(`[${testIDs[i][7]}] should delete on register`, async function () {
-          if (settingsToTest[i][0]) { this.skip(); } // isDnsLess
-          if (!pubsub.isTransportEnabled()) { this.skip(); } // openSource
-          assert.strictEqual(deletedOnRegister, true);
-        });
       });
       describe('[DL01] when given invalid authorization key', function () {
         before(async function () {
@@ -318,24 +298,6 @@ describe('[PGTD] DELETE /users/:username', () => {
     // Use cuid for unique username to avoid parallel test conflicts
     const usernamex = 'testdelx' + cuid.slug().toLowerCase();
     it('[JBZM] should be able to recreate this user, and login', async function () {
-      nock(regUrl)
-        .post('/users/validate', () => {
-          return true;
-        })
-        .times(2)
-        .reply(200, { errors: [] });
-      nock(regUrl)
-        .post('/users', () => {
-          return true;
-        })
-        .times(2)
-        .reply(201, { username: usernamex });
-      nock(regUrl)
-        .put('/users', () => {
-          return true;
-        })
-        .times(2)
-        .reply(200, { ok: true });
       await createUser();
       await deleteUser();
       await createUser();

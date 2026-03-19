@@ -9,13 +9,16 @@ const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform');
 
 const errors = require('errors').factory;
+const ErrorIds = require('errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getServiceRegisterConn } = require('platform/src/service_register');
 const accountStreams = require('business/src/system-streams');
 
 const getPlatformDB = require('./getPlatformDB');
 
 const platformCheckIntegrity = require('./platformCheckIntegrity');
+
+const reservedWords = new Set(require('./reserved-words.json').list);
 
 /**
  * @class Platform
@@ -24,7 +27,6 @@ const platformCheckIntegrity = require('./platformCheckIntegrity');
 class Platform {
   #initialized;
   #db;
-  #serviceRegisterConn;
   #config;
 
   constructor () {
@@ -37,13 +39,9 @@ class Platform {
       return this;
     }
 
-    this.initialized = true;
+    this.initialized = true; // intentionally public — see original code note
     this.#config = await getConfig();
-    const isDnsLess = this.#config.get('dnsLess:isActive');
     this.#db = await getPlatformDB();
-    if (!isDnsLess) {
-      this.#serviceRegisterConn = await getServiceRegisterConn();
-    }
 
     return this;
   }
@@ -52,102 +50,72 @@ class Platform {
     return await platformCheckIntegrity(this.#db);
   }
 
-  /**
-   * during tests forward to register might be activated and deactivated
-   */
-  #shouldForwardToRegister () {
-    return this.#serviceRegisterConn != null && (process.env.NODE_ENV !== 'test' || !this.#config.get('testsSkipForwardToRegister'));
-  }
-
   // for tests only - called by repository
   async deleteAll () {
     await this.#db.deleteAll();
   }
 
   /**
-   * Get if value exists for this unique key (only test on local db)
-   * Exposes directly a platform db method as it's needed by service_register in dnsLess mode
+   * Get if value exists for this unique key
    */
-  async getLocalUsersUniqueField (field, value) {
+  async getUsersUniqueField (field, value) {
     return await this.#db.getUsersUniqueField(field, value);
   }
 
   /**
-   * Use cases
-   * a) When performing updateUserAndForward pre check if there are some uniqueness errors.
-   * b) When creating a user, if a uniqueness error is username has been detected, we want to
-   *    complete the error message with other eventual conflicts
+   * Check uniqueness of operations against PlatformDB.
+   * Used by repository.insertOne to gather all conflicts before throwing.
    */
   async checkUpdateOperationUniqueness (username, operations) {
-    const localUniquenessErrors = {};
+    const uniquenessErrors = {};
     for (const op of operations) {
       if (op.action !== 'delete' && op.isUnique) {
         const value = await this.#db.getUsersUniqueField(op.key, op.value);
-        if (value != null) localUniquenessErrors[op.key] = op.value;
+        if (value != null && value !== username) uniquenessErrors[op.key] = op.value;
       }
     }
-    return localUniquenessErrors;
+    return uniquenessErrors;
   }
 
   /**
-   * @param {*} username
-   * @param {*} operations
-   * @param {*} isActive
-   * @param {*} isCreation
-   * @param {boolean} skipFowardToRegister - for tests only
+   * Update user fields in PlatformDB (unique + indexed).
+   * @param {string} username
+   * @param {Array} operations
    */
-  async updateUserAndForward (username, operations, skipFowardToRegister = false) {
-    // ** 1st check on local index before forwarding to register
-    // This should be removed when platformWideDB will be implemented
-    // This code is redundant with some check that will be performed by #updateUser after updating register
-
-    const localUniquenessErrors = await this.checkUpdateOperationUniqueness(username, operations);
-    if (Object.keys(localUniquenessErrors).length > 0) {
-      throw (errors.itemAlreadyExists('user', localUniquenessErrors));
+  async updateUser (username, operations) {
+    const uniquenessErrors = await this.checkUpdateOperationUniqueness(username, operations);
+    if (Object.keys(uniquenessErrors).length > 0) {
+      throw (errors.itemAlreadyExists('user', uniquenessErrors));
     }
-
-    // ** Execute request on register
-    if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
-      const ops2 = operations.map(op => {
-        const action = op.action === 'delete' ? 'delete' : 'update';
-        const isCreation = op.action === 'create';
-        return { [action]: { key: op.key, value: op.value, isUnique: op.isUnique, isCreation, isActive: op.isActive } };
-      });
-      await this.#serviceRegisterConn.updateUserInServiceRegister(username, ops2);
-    }
-    // ** execute request locally
-    await this.#updateUser(username, operations);
+    await this.#applyOperations(username, operations);
   }
 
   /**
-   * @private as long as we don't use a distributed db.
-   * @see updateUserAndForward to update an user
-   * Replace updateUserInServiceRegister()
-   * @param {*} key
+   * Apply operations to PlatformDB.
+   * @param {string} username
+   * @param {Array} operations
    */
-  async #updateUser (username, operations) {
-    // otherwise deletion
+  async #applyOperations (username, operations) {
     for (const op of operations) {
       switch (op.action) {
         case 'create':
           if (op.isUnique) {
-            if (!op.isActive) break; // only change value of (active setting)
+            if (!op.isActive) break;
             const potentialCollisionUsername = await this.#db.getUsersUniqueField(op.key, op.value);
             if (potentialCollisionUsername !== null && potentialCollisionUsername !== username) {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
             await this.#db.setUserUniqueField(username, op.key, op.value);
-          } else { // is Indexed
+          } else {
             await this.#db.setUserIndexedField(username, op.key, op.value);
           }
           break;
 
         case 'update':
-          if (!op.isActive) break; // only change value of (active setting) -- figure out what it means ;)
+          if (!op.isActive) break;
           if (op.isUnique) {
             const existingUsernameValue = await this.#db.getUsersUniqueField(op.key, op.previousValue);
             if (existingUsernameValue !== null && existingUsernameValue === username) {
-              // only delete eventual existing value if it is the same user
               await this.#db.deleteUserUniqueField(op.key, op.previousValue);
             }
 
@@ -156,7 +124,7 @@ class Platform {
               throw (errors.itemAlreadyExists('user', { [op.key]: op.value }));
             }
             await this.#db.setUserUniqueField(username, op.key, op.value);
-          } else { // is Indexed
+          } else {
             await this.#db.setUserIndexedField(username, op.key, op.value);
           }
           break;
@@ -170,7 +138,7 @@ class Platform {
             if (existingValue != null) {
               await this.#db.deleteUserUniqueField(op.key, op.value);
             }
-          } else { // is Indexed
+          } else {
             await this.#db.deleteUserIndexedField(username, op.key);
           }
           break;
@@ -182,62 +150,107 @@ class Platform {
   }
 
   /**
-   * Fully delete a user
+   * Fully delete a user from PlatformDB.
    * @param {string} username
-   * @param {[User]} User -- // for some tests User might be null
-   * @param {boolean} skipFowardToRegister -- for fixtures
+   * @param {User|null} user
    */
-  async deleteUser (username, user, skipFowardToRegister = false) {
-    // unique fields
+  async deleteUser (username, user) {
     const operations = [];
-    if (user != null) { // cannot delete unique keys if user is null! (as the current value is needed)
+    if (user != null) {
       for (const field of accountStreams.uniqueFieldNames) {
         operations.push({ action: 'delete', key: field, value: user[field], isUnique: true });
       }
     }
 
-    // indexed fields
     for (const field of accountStreams.indexedFieldNames) {
       operations.push({ action: 'delete', key: field, isUnique: false });
     }
 
-    await this.#updateUser(username, operations);
-
-    // forward to register
-    if (!skipFowardToRegister && this.#shouldForwardToRegister()) {
-      const res = await this.#serviceRegisterConn.deleteUser(username);
-      logger.debug('delete on register: ' + username, res);
-    }
+    await this.#applyOperations(username, operations);
   }
 
-  // ----------------  Simple abstractions for service register calls (to be removed)  ----------------
+  // ----------------  Registration  ----------------
 
   /**
-   * Check if username is available (FW to service register)
+   * Validate a registration request locally:
+   * - Check invitation token
+   * - Check reserved usernames
+   * - Check username existence
+   * - Atomically reserve unique fields
+   *
+   * @param {string} username
+   * @param {string|undefined} invitationToken
+   * @param {Object} uniqueFields - e.g. { username: 'bob', email: 'bob@example.com' }
    */
-  async isUsernameReserved (username) {
-    if (this.#serviceRegisterConn) {
-      const response = await this.#serviceRegisterConn.checkUsername(username);
-      if (response.reserved === true) {
-        return true;
+  async validateRegistration (username, invitationToken, uniqueFields) {
+    // 1. Check invitation token
+    this.#checkInvitationToken(invitationToken);
+
+    // 2. Check reserved usernames
+    if (this.#isUsernameReserved(username)) {
+      throw errors.itemAlreadyExists('user', { username });
+    }
+
+    // 3. Check username existence (lazy require to avoid circular dependency)
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    if (await usersRepository.usernameExists(username)) {
+      // Gather other eventual uniqueness conflicts for a complete error
+      const allConflicts = { username };
+      for (const [field, value] of Object.entries(uniqueFields)) {
+        if (field === 'username') continue;
+        const existingUsername = await this.#db.getUsersUniqueField(field, value);
+        if (existingUsername != null) {
+          allConflicts[field] = value;
+        }
       }
-      return false;
+      throw errors.itemAlreadyExists('user', allConflicts);
     }
-    throw new Error('Should not be used when dnsLess');
+
+    // 4. Atomically reserve unique fields (except username, handled by usersIndex)
+    const conflicts = {};
+    for (const [field, value] of Object.entries(uniqueFields)) {
+      if (field === 'username') continue;
+      if (value == null) continue;
+      const success = await this.#db.setUserUniqueFieldIfNotExists(username, field, value);
+      if (!success) {
+        conflicts[field] = value;
+      }
+    }
+    if (Object.keys(conflicts).length > 0) {
+      throw errors.itemAlreadyExists('user', conflicts);
+    }
   }
 
   /**
-   * Validate user and pre-register it (FW to service register)
+   * Check invitation token against configured list.
+   * - null/undefined config → allow all (no check)
+   * - [] empty array → block all
+   * - ['enjoy', ...] → check token against list
    */
-  async createUserStep1_ValidateUser (username, invitationToken, uniqueFields, hostname) {
-    await this.#serviceRegisterConn.validateUser(username, invitationToken, uniqueFields, hostname);
+  #checkInvitationToken (invitationToken) {
+    const tokens = this.#config.get('invitationTokens');
+    // null/undefined → allow all registrations
+    if (tokens == null) return;
+    // empty array → block all
+    if (Array.isArray(tokens) && tokens.length === 0) {
+      throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
+    }
+    // check token against list
+    if (!Array.isArray(tokens) || !tokens.includes(invitationToken)) {
+      throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
+    }
   }
 
   /**
-   * Validate user and pre-register it (FW to service register)
+   * Check if username is reserved (starts with "pryv" or in reserved words list).
+   * @param {string} username
+   * @returns {boolean}
    */
-  async createUserStep2_CreateUser (userData) {
-    await this.#serviceRegisterConn.createUser(userData);
+  #isUsernameReserved (username) {
+    const lower = username.toLowerCase();
+    if (/^pryv/.test(lower)) return true;
+    return reservedWords.has(lower);
   }
 }
 

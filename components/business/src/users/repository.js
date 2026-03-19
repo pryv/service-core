@@ -235,11 +235,10 @@ class UsersRepository {
   /**
    * @param {User} user
    * @param {boolean | undefined | null} withSession
-   * @param {boolean | undefined | null} skipFowardToRegister
    * @returns {Promise<any>}
    */
-  async insertOne (user, withSession = false, skipFowardToRegister = false) {
-    // Create the User at a Platfrom Level..
+  async insertOne (user, withSession = false) {
+    // Create the User at a Platform Level
     const operations = [];
     for (const key of accountStreams.indexedFieldNames) {
       // use default value is null;
@@ -256,7 +255,7 @@ class UsersRepository {
         });
       }
     }
-    // check locally for username // <== maybe this this.usersIndex should be fully moved to platform
+    // check locally for username
     if (await this.usersIndex.usernameExists(user.username)) {
       // gather eventual other uniqueness conflicts
       const eventualPlatformUniquenessErrors = await this.platform.checkUpdateOperationUniqueness(user.username, operations);
@@ -265,7 +264,7 @@ class UsersRepository {
       throw uniquenessError;
     }
     // could throw uniqueness errors
-    await this.platform.updateUserAndForward(user.username, operations, skipFowardToRegister);
+    await this.platform.updateUser(user.username, operations);
     const mallTransaction = await this.mall.newTransaction();
     const localTransaction = await mallTransaction.getStoreTransaction('local');
     await localTransaction.exec(async () => {
@@ -347,10 +346,9 @@ class UsersRepository {
   /**
    * @param {string} userId
    * @param {string | null} username
-   * @param {boolean | null} skipFowardToRegister
    * @returns {Promise<number>}
    */
-  async deleteOne (userId, username, skipFowardToRegister) {
+  async deleteOne (userId, username) {
     // Fetch user object BEFORE any deletions — platform.deleteUser needs it
     // for unique field cleanup (e.g. email).
     const user = await this.getUserById(userId);
@@ -364,7 +362,7 @@ class UsersRepository {
     await this.usersIndex.deleteById(userId);
     if (username != null) {
       cache.unsetUser(username);
-      await this.platform.deleteUser(username, user, skipFowardToRegister);
+      await this.platform.deleteUser(username, user);
     }
     await this.mall.deleteUser(userId);
   }

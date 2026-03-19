@@ -241,7 +241,7 @@ module.exports = async function (api) {
           isActive: true
         });
       }
-      await platform.updateUserAndForward(context.user.username, operations);
+      await platform.updateUser(context.user.username, operations);
     } catch (err) {
       return next(err);
     }

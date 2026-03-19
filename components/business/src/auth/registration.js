@@ -5,12 +5,11 @@
  * Refer to LICENSE file
  */
 
-const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
 const { getPlatform } = require('platform');
 const accountStreams = require('business/src/system-streams');
-const { getUsersRepository, User } = require('business/src/users');
+const { User } = require('business/src/users');
 const { getLogger } = require('@pryv/boiler');
 const { ApiEndpoint } = require('utils');
 
@@ -24,7 +23,7 @@ class Registration {
   /** @default accountStreams.accountMap */
   accountStreamsSettings = accountStreams.accountMap;
 
-  servicesSettings; // settigns to get the email to send user welcome email
+  servicesSettings; // settings to get the email to send user welcome email
 
   platform;
   constructor (logging, storageLayer, servicesSettings) {
@@ -45,11 +44,6 @@ class Registration {
 
   /**
    * Do minimal manipulation with data like username conversion to lowercase
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<void>}
    */
   async prepareUserData (context, params, result, next) {
     context.newUser = new User(params);
@@ -63,26 +57,25 @@ class Registration {
   }
 
   /**
-   * Validation and reservation in service-register
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<any>}
+   * Validate registration on PlatformDB:
+   * - Check invitation token
+   * - Check reserved usernames
+   * - Check username + unique field availability (atomically reserved)
    */
-  async createUserStep1_ValidateUserOnPlatform (context, params, result, next) {
+  async validateOnPlatform (context, params, result, next) {
     try {
       const uniqueFields = { username: context.newUser.username };
       for (const [streamIdWithPrefix, streamSettings] of Object.entries(this.accountStreamsSettings)) {
-        // if key is set as required - add required validation
         if (streamSettings?.isUnique) {
-          const streamIdWithoutPrefix = accountStreams.toFieldName(streamIdWithPrefix);
-          uniqueFields[streamIdWithoutPrefix] =
-                        context.newUser[streamIdWithoutPrefix];
+          const fieldName = accountStreams.toFieldName(streamIdWithPrefix);
+          uniqueFields[fieldName] = context.newUser[fieldName];
         }
       }
-      // do the validation and reservation in service-register
-      await this.platform.createUserStep1_ValidateUser(context.newUser.username, context.newUser.invitationToken, uniqueFields, context.host);
+      await this.platform.validateRegistration(
+        context.newUser.username,
+        context.newUser.invitationToken,
+        uniqueFields
+      );
     } catch (error) {
       return next(error);
     }
@@ -90,36 +83,7 @@ class Registration {
   }
 
   /**
-   * Check in service-register if email already exists
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<any>}
-   */
-  async deletePartiallySavedUserIfAny (context, params, result, next) {
-    try {
-      // assert that we have obtained a lock on register, so any conflicting fields here
-      // would be failed registration attempts that partially saved user data.
-      const usersRepository = await getUsersRepository();
-      const matchingUserId = await usersRepository.getUserIdForUsername(context.newUser.username);
-      if (matchingUserId != null) {
-        await usersRepository.deleteOne(matchingUserId);
-        this.logger.error(`User with id ${matchingUserId} was deleted because it was not found on service-register but uniqueness conflicted on service-core`);
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-
-  /**
-   * Save user to the database
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {*} result
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<any>}
+   * Save user to the database, then store indexed fields in PlatformDB
    */
   async createUser (context, params, result, next) {
     // if it is testing user, skip registration process
@@ -130,7 +94,9 @@ class Registration {
       return next();
     }
     try {
+      const { getUsersRepository } = require('business/src/users');
       const usersRepository = await getUsersRepository();
+      // insertOne handles PlatformDB storage (unique + indexed fields) internally
       await usersRepository.insertOne(context.newUser, true);
     } catch (err) {
       return next(err);
@@ -139,47 +105,7 @@ class Registration {
   }
 
   /**
-   * Save user in service-register
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<any>}
-   */
-  async createUserStep2_CreateUserOnPlatform (context, params, result, next) {
-    try {
-      // get streams ids from the config that should be retrieved
-      const userStreamsIds = accountStreams.indexedFieldNames;
-      // build data that should be sent to service-register
-      // some default values and indexed/uinique fields of the system
-      const userData = {
-        user: {
-          id: context.newUser.id,
-          username: context.newUser.username
-        },
-        host: { name: context.host },
-        unique: [
-          'username',
-          ...accountStreams.uniqueFieldNames
-        ]
-      };
-      userStreamsIds.forEach((streamId) => {
-        if (context.newUser[streamId] != null) { userData.user[streamId] = context.newUser[streamId]; }
-      });
-      await this.platform.createUserStep2_CreateUser(userData);
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-
-  /**
    * Build response for user registration
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {Promise<void>}
    */
   async buildResponse (context, params, result, next) {
     result.username = context.newUser.username;
@@ -188,12 +114,7 @@ class Registration {
   }
 
   /**
-   *
-   * @param {MethodContext} context  undefined
-   * @param {unknown} params  undefined
-   * @param {Result} result  undefined
-   * @param {ApiCallback} next  undefined
-   * @returns {any}
+   * Send welcome email
    */
   sendWelcomeMail (context, params, result, next) {
     const emailSettings = this.servicesSettings.email;

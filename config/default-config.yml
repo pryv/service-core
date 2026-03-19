@@ -59,6 +59,8 @@ eventFiles:
   previewsCacheMaxAge: 604800000 # 1 week in ms
   previewsCacheCleanUpCronTime: 00 00 2 * * * # every day at 2:00:00AM
 
+invitationTokens: null  # null = allow all, [] = block all, ['token1'] = check list
+
 auth:
   filesReadTokenSecret: 'REPLACE ME'
   passwordComplexityMinCharCategories: 0
