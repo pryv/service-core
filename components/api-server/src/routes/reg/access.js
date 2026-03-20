@@ -145,4 +145,25 @@ module.exports = function (expressApp, app) {
     }
     res.status(state.code).json(response);
   });
+
+  /**
+   * POST /access/invitationtoken/check — Check validity of an invitation token.
+   * Returns plain text 'true' or 'false'.
+   */
+  expressApp.post('/access/invitationtoken/check', (req, res) => {
+    const token = req.body.invitationtoken;
+    const tokens = app.config.get('invitationTokens');
+    // null/undefined config → allow all (any token is valid)
+    if (tokens == null) {
+      res.type('text/plain').send('true');
+      return;
+    }
+    // empty array → block all
+    if (Array.isArray(tokens) && tokens.length === 0) {
+      res.type('text/plain').send('false');
+      return;
+    }
+    const isValid = Array.isArray(tokens) && tokens.includes(token);
+    res.type('text/plain').send(isValid ? 'true' : 'false');
+  });
 };

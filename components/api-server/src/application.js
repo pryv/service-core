@@ -206,6 +206,7 @@ class Application {
     require('./routes/register')(this.expressApp, this);
     require('./routes/reg/access')(this.expressApp, this);
     require('./routes/reg/records')(this.expressApp, this);
+    require('./routes/reg/apps')(this.expressApp, this);
 
     // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);
