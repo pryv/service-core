@@ -2,18 +2,46 @@
 
 ## Plan 17: Merge service-register into service-core
 
+### Config & storage
 - Unified config at `service-core/config/` (merged from per-component configs)
 - Storage config restructured: `storages.{base,platform,series,file,audit}.engine` + `storages.engines.<name>`
 - PlatformDB `setUserUniqueFieldIfNotExists()` atomic method (all 4 backends)
 - rqlite engine (`storages/engines/rqlite/`) for distributed PlatformDB
-- Access authorization flow (`POST/GET /reg/access`) with in-memory TTL store
+- PlatformDB invitation token methods (SQLite + rqlite): create, get, getAll, update, delete
+
+### Registration
 - Registration pipeline simplified: `validateOnPlatform → createUser → buildResponse`
 - `Platform.js`: removed service-register HTTP client, added `validateRegistration()` with invitation tokens, reserved words, atomic unique field reservation
+- Invitation tokens now stored in PlatformDB; config `invitationTokens` seeds on first boot; tokens consumed on registration
 - Deleted `service_register.js`, `reserved-words.json` (124K words) copied to platform component
 - `repository.js`: renamed `updateUserAndForward` → `updateUser`, removed `skipFowardToRegister` parameter
 - Removed `testsSkipForwardToRegister` config key, `isDnsLess` conditionals from registration logic
 - Register routes always loaded (no `isDnsLess` guard)
-- Tests: removed all nock mocking for service-register
+
+### Multi-core
+- Core identity model: `core.id` → FQDN, self-registration in PlatformDB
+- rqlite process management in master.js (spawn, readyz wait, graceful shutdown, `-http-adv-addr`)
+- PlatformDB user-to-core mapping, core registration, load-balanced core selection
+- DNS discovery for rqlite cluster peers via `lsc.{domain}`
+
+### DNS server
+- `components/dns-server/` — dns2-based DNS server for `{username}.{domain}` resolution
+- Supports A, AAAA, CNAME, MX, NS, SOA, TXT, CAA record types
+- Master.js integration: start/stop, IPC handler for worker-driven record updates
+- `POST /reg/records` admin endpoint for runtime DNS entry updates
+
+### Legacy routes
+- `routes/reg/legacy.js` — backward-compatible service-register endpoints
+- Email→username lookup, server discovery (redirect + JSON), admin servers, admin invitations
+
+### Tests
+- 17 multi-core acceptance tests (`reg-multicore-seq.test.js`)
+- 9 two-core integration tests (`reg-2core-seq.test.js`) — real rqlite + 2 child processes + DNS
+- 19 DNS server unit tests (`dns-server.test.js`) — `dns.promises.Resolver` + raw dgram
+- 16 gap feature tests (`reg-gap-features-seq.test.js`)
+- 16 legacy route + invitation tests (`reg-legacy-seq.test.js`)
+- `core-process.js` — child process boot script for integration tests
+- Removed all nock mocking for service-register
 
 ## Plan 16: Replace GraphicsMagick with sharp
 

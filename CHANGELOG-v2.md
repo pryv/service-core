@@ -2,11 +2,43 @@
 
 ## Plan 17: Merge service-register into service-core
 
+### Registration & user management
 - **NEW**: `GET /reg/cores?username=X|email=X` — core discovery endpoint. Returns `{ core: { url } }` for the core hosting the given user. Single-instance always returns self.
 - **NEW**: `GET /system/admin/users` — list all registered users (admin-key protected). Returns `{ users: [{ username, id, email, language }] }`.
-- **NEW**: `invitationTokens` configuration key — controls registration access. `null` = allow all (default), `[]` = block all, `['token1', ...]` = require valid token.
-- **CHANGED**: Registration (`POST /users`, `POST /reg/user`) now validates locally via PlatformDB instead of forwarding to external service-register. Username uniqueness, email uniqueness, invitation tokens, and reserved usernames are all checked locally.
+- **NEW**: `POST /system/users/validate` — pre-registration validation with unique field reservation.
+- **NEW**: `PUT /system/users` — system-level user field update (indexed/unique fields in PlatformDB).
+- **NEW**: `DELETE /system/users/:username?onlyReg=true&dryRun=true` — system-level platform deletion with dry-run support.
+- **CHANGED**: Registration (`POST /users`, `POST /reg/user`) now validates locally via PlatformDB instead of forwarding to external service-register.
 - **CHANGED**: `GET /reg/:username/check_username` and `GET /reg/:email/check_email` routes are now always available (previously DNS-less only).
+
+### Multi-core deployment
+- **NEW**: `core.id` config — core identity for multi-core deployments (FQDN = `{core.id}.{dns.domain}`).
+- **NEW**: `GET /system/admin/cores` — list all cores with user counts.
+- **NEW**: `GET /reg/hostings` — regions/zones/hostings hierarchy with core availability.
+- **NEW**: `/reg/access` REDIRECTED status — auth page redirects to user's home core.
+- **NEW**: rqlite process management in master.js — auto-starts rqlited for multi-core PlatformDB.
+
+### DNS server
+- **NEW**: Optional embedded DNS server (`dns.active: true`) for resolving `{username}.{domain}` to core IPs.
+- **NEW**: `POST /reg/records` — admin endpoint for runtime DNS entry updates (e.g. ACME challenges).
+
+### Service info & apps
+- **NEW**: `GET /:username/service/infos` — backward-compatible alias for `service/info`.
+- **NEW**: `GET /apps`, `GET /apps/:appid` — config-based application listing.
+- **NEW**: `POST /access/invitationtoken/check` — check invitation token validity.
+
+### Legacy backward-compatible routes
+- **NEW**: `GET /reg/:email/username` and `GET /reg/:email/uid` — email → username lookup.
+- **NEW**: `GET /reg/:uid/server` (redirect) and `POST /reg/:uid/server` (JSON) — server discovery.
+- **NEW**: `GET /reg/admin/users/:username` — individual user details.
+- **NEW**: `GET /reg/admin/servers`, `GET /reg/admin/servers/:name/users`, `GET /reg/admin/servers/:src/rename/:dst` — core management.
+
+### Invitations
+- **NEW**: `GET /reg/admin/invitations` — list all invitation tokens.
+- **NEW**: `GET /reg/admin/invitations/post?count=N` — generate new invitation tokens.
+- **CHANGED**: Invitation tokens stored in PlatformDB instead of static config. Config `invitationTokens` seeds PlatformDB on first boot. Tokens consumed on successful registration.
+
+### Removed
 - **REMOVED**: External service-register dependency — all registration logic is self-contained in service-core.
 
 ## Plan 14: Merge service-core servers
