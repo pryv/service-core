@@ -250,6 +250,41 @@ module.exports = function (expressApp, app) {
   });
 
   // =====================================================================
+  // Admin: invitations
+  // =====================================================================
+
+  /**
+   * GET /admin/invitations — list all invitation tokens.
+   */
+  expressApp.get('/reg/admin/invitations', checkAdmin, async (req, res, next) => {
+    try {
+      const { getPlatform } = require('platform');
+      const platform = await getPlatform();
+      const invitations = await platform.getAllInvitationTokens();
+      res.json({ invitations });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * GET /admin/invitations/post — generate new invitation tokens.
+   * Query params: count (number), message (optional description).
+   */
+  expressApp.get('/reg/admin/invitations/post', checkAdmin, async (req, res, next) => {
+    try {
+      const count = parseInt(req.query.count) || 1;
+      const message = req.query.message || '';
+      const { getPlatform } = require('platform');
+      const platform = await getPlatform();
+      const data = await platform.generateInvitationTokens(count, 'admin', message);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // =====================================================================
   // Helper
   // =====================================================================
 

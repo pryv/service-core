@@ -194,6 +194,36 @@ class DB {
     const rows = this.queries.getAllWithKeyStartsWith.all('core-info/');
     return rows.map(row => JSON.parse(row.value));
   }
+
+  // --- Invitation tokens --- //
+
+  async createInvitationToken (token, info) {
+    const key = 'invitation/' + token;
+    await this.set(key, JSON.stringify(info));
+  }
+
+  async getInvitationToken (token) {
+    const key = 'invitation/' + token;
+    const val = this.getOne(key);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllInvitationTokens () {
+    const rows = this.queries.getAllWithKeyStartsWith.all('invitation/');
+    return rows.map(row => ({
+      id: row.key.slice('invitation/'.length),
+      ...JSON.parse(row.value)
+    }));
+  }
+
+  async updateInvitationToken (token, info) {
+    await this.createInvitationToken(token, info);
+  }
+
+  async deleteInvitationToken (token) {
+    const key = 'invitation/' + token;
+    await this.delete(key);
+  }
 }
 
 /**

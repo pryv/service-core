@@ -121,6 +121,13 @@ class Registration {
       delete result.redirect;
       return next();
     }
+    // Consume invitation token on successful registration
+    if (context.newUser.invitationToken) {
+      await this.platform.consumeInvitationToken(
+        context.newUser.invitationToken,
+        context.newUser.username
+      );
+    }
     result.username = context.newUser.username;
     result.apiEndpoint = ApiEndpoint.build(context.newUser.username, context.newUser.token);
     next();

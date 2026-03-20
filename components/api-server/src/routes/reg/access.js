@@ -150,20 +150,11 @@ module.exports = function (expressApp, app) {
    * POST /access/invitationtoken/check — Check validity of an invitation token.
    * Returns plain text 'true' or 'false'.
    */
-  expressApp.post('/access/invitationtoken/check', (req, res) => {
+  expressApp.post('/access/invitationtoken/check', async (req, res) => {
     const token = req.body.invitationtoken;
-    const tokens = app.config.get('invitationTokens');
-    // null/undefined config → allow all (any token is valid)
-    if (tokens == null) {
-      res.type('text/plain').send('true');
-      return;
-    }
-    // empty array → block all
-    if (Array.isArray(tokens) && tokens.length === 0) {
-      res.type('text/plain').send('false');
-      return;
-    }
-    const isValid = Array.isArray(tokens) && tokens.includes(token);
+    const { getPlatform } = require('platform');
+    const platform = await getPlatform();
+    const isValid = await platform.isInvitationTokenValid(token);
     res.type('text/plain').send(isValid ? 'true' : 'false');
   });
 };

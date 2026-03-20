@@ -225,6 +225,41 @@ class DBrqlite {
     );
     return rows.map(row => JSON.parse(row.value));
   }
+
+  // --- Invitation tokens --- //
+
+  async createInvitationToken (token, info) {
+    const key = 'invitation/' + token;
+    await this.execute(
+      'INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
+      [key, JSON.stringify(info)]
+    );
+  }
+
+  async getInvitationToken (token) {
+    const key = 'invitation/' + token;
+    const rows = await this.query('SELECT value FROM keyValue WHERE key = ?', [key]);
+    return rows.length === 0 ? null : JSON.parse(rows[0].value);
+  }
+
+  async getAllInvitationTokens () {
+    const rows = await this.query(
+      "SELECT key, value FROM keyValue WHERE key LIKE 'invitation/%'"
+    );
+    return rows.map(row => ({
+      id: row.key.slice('invitation/'.length),
+      ...JSON.parse(row.value)
+    }));
+  }
+
+  async updateInvitationToken (token, info) {
+    await this.createInvitationToken(token, info);
+  }
+
+  async deleteInvitationToken (token) {
+    const key = 'invitation/' + token;
+    await this.execute('DELETE FROM keyValue WHERE key = ?', [key]);
+  }
 }
 
 // --- Key helpers (same as SQLite engine) --- //

@@ -51,12 +51,10 @@ module.exports = function system (expressApp, app) {
       const platform = await getPlatform();
       const platformDB = require('storages').platformDB;
 
-      // 1. Check invitation token
-      const tokens = config.get('invitationTokens');
-      if (tokens != null) {
-        if (!Array.isArray(tokens) || !tokens.includes(invitationToken)) {
-          return res.status(400).json({ reservation: false, error: { id: 'invitationToken-invalid' } });
-        }
+      // 1. Check invitation token via Platform (PlatformDB + config fallback)
+      const isTokenValid = await platform.isInvitationTokenValid(invitationToken);
+      if (!isTokenValid) {
+        return res.status(400).json({ reservation: false, error: { id: 'invitationToken-invalid' } });
       }
 
       // 2. Check username uniqueness (username is in usersRepository, not PlatformDB)

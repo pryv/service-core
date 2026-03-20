@@ -46,6 +46,9 @@ class Platform {
     // Register this core in PlatformDB so other cores can discover it
     await this.registerSelf();
 
+    // Seed invitation tokens from config into PlatformDB (if not already present)
+    await this.#seedInvitationTokens();
+
     return this;
   }
 
@@ -345,7 +348,7 @@ class Platform {
    */
   async validateRegistration (username, invitationToken, uniqueFields) {
     // 1. Check invitation token
-    this.#checkInvitationToken(invitationToken);
+    await this.#checkInvitationToken(invitationToken);
 
     // 2. Check reserved usernames
     if (this.#isUsernameReserved(username)) {
@@ -396,22 +399,118 @@ class Platform {
   }
 
   /**
-   * Check invitation token against configured list.
-   * - null/undefined config → allow all (no check)
-   * - [] empty array → block all
-   * - ['enjoy', ...] → check token against list
+   * Check invitation token against PlatformDB.
+   * - No tokens in PlatformDB AND null config → allow all (no check)
+   * - Token exists and not consumed → valid
+   * - Token missing or already consumed → invalid
    */
-  #checkInvitationToken (invitationToken) {
-    const tokens = this.#config.get('invitationTokens');
-    // null/undefined → allow all registrations
-    if (tokens == null) return;
-    // empty array → block all
-    if (Array.isArray(tokens) && tokens.length === 0) {
+  async #checkInvitationToken (invitationToken) {
+    const allTokens = await this.#db.getAllInvitationTokens();
+
+    // No tokens in PlatformDB → check config fallback
+    if (allTokens.length === 0) {
+      const configTokens = this.#config.get('invitationTokens');
+      // null/undefined config → allow all registrations
+      if (configTokens == null) return;
+      // empty array → block all
+      if (Array.isArray(configTokens) && configTokens.length === 0) {
+        throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
+      }
+      // check token against static config list
+      if (!Array.isArray(configTokens) || !configTokens.includes(invitationToken)) {
+        throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
+      }
+      return;
+    }
+
+    // PlatformDB has tokens — check against them
+    const tokenInfo = await this.#db.getInvitationToken(invitationToken);
+    if (tokenInfo == null || tokenInfo.consumedBy != null) {
       throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
     }
-    // check token against list
-    if (!Array.isArray(tokens) || !tokens.includes(invitationToken)) {
-      throw errors.invalidOperation(ErrorMessages[ErrorIds.InvalidInvitationToken]);
+  }
+
+  /**
+   * Consume an invitation token (mark as used).
+   * @param {string} token
+   * @param {string} username - the user who consumed it
+   */
+  async consumeInvitationToken (token, username) {
+    const info = await this.#db.getInvitationToken(token);
+    if (info == null) return; // static config token or no tokens — nothing to consume
+    info.consumedAt = Date.now();
+    info.consumedBy = username;
+    await this.#db.updateInvitationToken(token, info);
+  }
+
+  /**
+   * Check if invitation token is valid (for /access/invitationtoken/check).
+   * @param {string} token
+   * @returns {Promise<boolean>}
+   */
+  async isInvitationTokenValid (token) {
+    const allTokens = await this.#db.getAllInvitationTokens();
+
+    // No tokens in PlatformDB → check config fallback
+    if (allTokens.length === 0) {
+      const configTokens = this.#config.get('invitationTokens');
+      if (configTokens == null) return true; // allow all
+      if (Array.isArray(configTokens) && configTokens.length === 0) return false;
+      return Array.isArray(configTokens) && configTokens.includes(token);
+    }
+
+    const tokenInfo = await this.#db.getInvitationToken(token);
+    return tokenInfo != null && tokenInfo.consumedBy == null;
+  }
+
+  /**
+   * Get all invitation tokens.
+   * @returns {Promise<Array>}
+   */
+  async getAllInvitationTokens () {
+    return this.#db.getAllInvitationTokens();
+  }
+
+  /**
+   * Generate N new invitation tokens.
+   * @param {number} count
+   * @param {string} createdBy - admin username
+   * @param {string} [description]
+   * @returns {Promise<Array>} created tokens
+   */
+  async generateInvitationTokens (count, createdBy, description) {
+    const crypto = require('node:crypto');
+    const created = [];
+    for (let i = 0; i < count; i++) {
+      const token = crypto.randomBytes(4).toString('hex');
+      const info = {
+        createdAt: Date.now(),
+        createdBy: createdBy || 'admin',
+        description: description || ''
+      };
+      await this.#db.createInvitationToken(token, info);
+      created.push({ id: token, ...info });
+    }
+    return created;
+  }
+
+  /**
+   * Seed invitation tokens from config into PlatformDB on first boot.
+   * Only seeds if PlatformDB has no tokens and config has a non-null list.
+   */
+  async #seedInvitationTokens () {
+    const configTokens = this.#config.get('invitationTokens');
+    if (configTokens == null || !Array.isArray(configTokens) || configTokens.length === 0) return;
+
+    const existing = await this.#db.getAllInvitationTokens();
+    if (existing.length > 0) return; // already seeded
+
+    for (const token of configTokens) {
+      await this.#db.createInvitationToken(token, {
+        createdAt: Date.now(),
+        createdBy: 'config-seed',
+        description: 'Seeded from invitationTokens config'
+      });
     }
   }
 
