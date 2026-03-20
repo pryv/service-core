@@ -49,12 +49,14 @@ async function start (opts) {
 
   mkdirp.sync(absDataDir);
 
+  const advAddr = (coreIp || '127.0.0.1');
   const httpAddr = `0.0.0.0:${httpPort}`;
-  const raftAddr = (coreIp || '0.0.0.0') + ':' + raftPort;
+  const raftAddr = advAddr + ':' + raftPort;
 
   const args = [
     '-node-id', coreId,
     '-http-addr', httpAddr,
+    '-http-adv-addr', advAddr + ':' + httpPort,
     '-raft-addr', raftAddr,
     '-raft-cluster-remove-shutdown' // graceful leave on shutdown
   ];
