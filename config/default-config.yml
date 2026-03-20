@@ -156,6 +156,21 @@ core:
 
 dns:
   domain: null           # primary domain (e.g. pryv.me); null = dnsLess mode
+  active: false          # start DNS server (default off)
+  port: 5353             # UDP port (5353 for dev, 53 for prod via Docker mapping)
+  ip: '0.0.0.0'         # bind address
+  ip6: null              # IPv6 bind address (null = disabled)
+  defaultTTL: 300        # TTL in seconds
+  staticEntries: {}      # subdomain → { cname: "..." } or { a: [...] } or { txt: [...] }
+  records:               # root domain records
+    root:
+      a: []
+      aaaa: []
+      ns: []
+      mx: []
+      txt: []
+      caa: []
+      soa: null
 
 # --- Hostings (regions/zones/providers) ---
 # Structure matches legacy /reg/hostings response for backward compatibility.

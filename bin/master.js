@@ -80,6 +80,25 @@ if (cluster.isPrimary) {
     await tcpPubsub.init();
     log('TCP pub/sub broker started');
 
+    // Start DNS server if configured
+    let dnsServer = null;
+    if (config.get('dns:active')) {
+      const { createDnsServer } = require('../components/dns-server/src');
+      const { getPlatform } = require('../components/platform/src');
+      const platform = await getPlatform();
+      dnsServer = createDnsServer({
+        config,
+        platform,
+        logger: getLogger('dns-server')
+      });
+      await dnsServer.start({
+        port: config.get('dns:port') || 5353,
+        ip: config.get('dns:ip') || '0.0.0.0',
+        ip6: config.get('dns:ip6') || null
+      });
+      log('DNS server started');
+    }
+
     // Track worker types for targeted restart
     const workerTypes = new Map(); // worker.id → 'api' | 'hfs' | 'previews'
     let shuttingDown = false;
@@ -149,6 +168,18 @@ if (cluster.isPrimary) {
       log(`Previews worker prev${id} started (pid ${worker.process.pid})`);
     }
 
+    // --- IPC from workers (DNS record updates) ---
+    if (dnsServer) {
+      cluster.on('message', (worker, msg) => {
+        if (msg && msg.type === 'dns:updateRecords') {
+          const { subdomain, records } = msg.data || {};
+          if (subdomain && records) {
+            dnsServer.updateStaticEntry(subdomain, records);
+          }
+        }
+      });
+    }
+
     // --- Worker lifecycle ---
     cluster.on('exit', (worker, code, signal) => {
       const type = workerTypes.get(worker.id);
@@ -170,6 +201,10 @@ if (cluster.isPrimary) {
       log(`Received ${sig}, shutting down workers...`);
       for (const id in cluster.workers) {
         cluster.workers[id].process.kill('SIGTERM');
+      }
+      // Stop DNS server
+      if (dnsServer) {
+        await dnsServer.stop();
       }
       // Stop rqlited after workers (so they can flush)
       if (rqliteProcess.isRunning()) {

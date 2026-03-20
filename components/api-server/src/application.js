@@ -205,6 +205,7 @@ class Application {
     // Register routes — always available (register functionality is built-in)
     require('./routes/register')(this.expressApp, this);
     require('./routes/reg/access')(this.expressApp, this);
+    require('./routes/reg/records')(this.expressApp, this);
 
     // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);
