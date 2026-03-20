@@ -6,7 +6,7 @@
  */
 
 const helpers = require('../../../test/helpers');
-helpers.config = helpers.getEngineConfig(require('../manifest.json'));
+helpers.config = helpers.getEngineConfig('mongodb', require('../manifest.json'));
 
 before(async function () {
   await helpers.dependencies.init();

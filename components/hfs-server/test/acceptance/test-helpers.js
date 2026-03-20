@@ -9,7 +9,7 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'hfs-server-tests',
   baseFilesDir: path.resolve(__dirname, '../../../../'),
-  baseConfigDir: path.resolve(__dirname, '../../config'),
+  baseConfigDir: path.resolve(__dirname, '../../../../config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
@@ -18,10 +18,10 @@ require('@pryv/boiler').init({
     },
     {
       scope: 'defaults-paths',
-      file: path.resolve(__dirname, '../../../api-server/config/paths-config.js')
+      file: path.resolve(__dirname, '../../../../config/plugins/paths-config.js')
     },
     {
-      plugin: require('api-server/config/components/systemStreams')
+      plugin: require('../../../../config/plugins/systemStreams')
     }
   ]
 });

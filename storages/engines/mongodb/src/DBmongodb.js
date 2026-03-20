@@ -72,6 +72,16 @@ class DB {
     return item;
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    logger.debug('setUserUniqueFieldIfNotExists', { username, field, value });
+    const existing = await this.platformUnique.findOne({ field, value });
+    if (existing != null) {
+      return existing.username === username;
+    }
+    await this.platformUnique.updateOne({ field, value }, { $set: { field, value, username } }, { upsert: true });
+    return true;
+  }
+
   async deleteUserUniqueField (field, value) {
     logger.debug('deleteUserUniqueField', { field, value });
     await this.platformUnique.deleteOne({ field, value });
@@ -127,6 +137,41 @@ class DB {
 
   async clearAll () {
     return await this.deleteAll();
+  }
+
+  // --- User-to-core mapping --- //
+
+  async setUserCore (username, coreId) {
+    await this.setUserIndexedField(username, '_core', coreId);
+  }
+
+  async getUserCore (username) {
+    return await this.getUserIndexedField(username, '_core');
+  }
+
+  async getAllUserCores () {
+    const docs = await this.platformIndexed.find({ field: '_core' }).toArray();
+    return docs.map(doc => ({
+      username: doc.username,
+      coreId: doc.value
+    }));
+  }
+
+  // --- Core registration --- //
+
+  async setCoreInfo (coreId, info) {
+    // Store as indexed field with reserved username '__cores__'
+    await this.setUserIndexedField('__cores__', coreId, JSON.stringify(info));
+  }
+
+  async getCoreInfo (coreId) {
+    const val = await this.getUserIndexedField('__cores__', coreId);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllCoreInfos () {
+    const docs = await this.platformIndexed.find({ username: '__cores__' }).toArray();
+    return docs.map(doc => JSON.parse(doc.value));
   }
 }
 

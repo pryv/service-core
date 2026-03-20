@@ -76,60 +76,16 @@ describe('[ACCO] account', function () {
   describe('[AC02] PUT /', function () {
     beforeEach(async () => { await resetUsers(); });
 
-    it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
+    it('[0PPV] must modify account details with the sent data',
       function (done) {
-        const settings = structuredClone(helpers.dependencies.settings);
-        settings.testsSkipForwardToRegister = false;
         const updatedData = {
           email: 'userzero.new@test.com',
           language: 'zh'
         };
 
-        // setup registration server mock
-        let regServerCalled = false;
-        helpers.instanceTestSetup.set(settings, {
-          context: Object.assign({}, settings.services.register, { username: user.username }),
-          execute: function () {
-            const scope = require('nock')(this.context.url);
-            scope.put('/users')
-              .matchHeader('Authorization', this.context.key)
-              .reply(200, function (uri, requestBody) {
-                this.context.testNotifier.emit('reg-server-called', requestBody);
-              }.bind(this));
-          }
-        });
-
-        // fetch service call data from server process
-        server.on('reg-server-called', function (sentData) {
-          assert.deepStrictEqual(sentData, {
-            fieldsToDelete: {},
-            user: {
-              email: [
-                {
-                  creation: false,
-                  isActive: true,
-                  isUnique: true,
-                  value: updatedData.email
-                }],
-              language: [
-                {
-                  creation: false,
-                  isActive: true,
-                  isUnique: false,
-                  value: updatedData.language
-                }
-              ]
-            },
-            username: user.username
-          });
-          regServerCalled = true;
-        });
-
         async.series([
-          server.ensureStarted.bind(server, settings),
           function update (stepDone) {
             request.put(basePath).send(updatedData).end(function (res) {
-              assert.ok(regServerCalled);
               const expected = Object.assign({}, user, updatedData);
               delete expected.id;
               delete expected.password;

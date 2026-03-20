@@ -84,7 +84,7 @@ class Deletion {
    */
   async validateUserFilepaths (context, params, result, next) {
     const dirPaths = [
-      path.join(this.config.get('eventFiles:previewsDirPath'), context.user.id)
+      path.join(this.config.get('storages:engines:filesystem:previewsDirPath'), context.user.id)
     ];
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above.
@@ -109,7 +109,7 @@ class Deletion {
    */
   async deleteUserFiles (context, params, result, next) {
     const dirPaths = [
-      this.config.get('eventFiles:previewsDirPath')
+      this.config.get('storages:engines:filesystem:previewsDirPath')
     ];
     for (const dirPath of dirPaths) {
       await fs.promises.rm(path.join(dirPath, context.user.id), { recursive: true, force: true });

@@ -120,115 +120,58 @@ function getEngineModule (engineName) {
 }
 
 /**
+ * Short config names for storage types.
+ * Config uses: storages.base.engine, storages.platform.engine, etc.
+ */
+const SHORT_NAMES = {
+  baseStorage: 'base',
+  dataStore: 'base', // shares engine with baseStorage
+  platformStorage: 'platform',
+  seriesStorage: 'series',
+  fileStorage: 'file',
+  auditStorage: 'audit'
+};
+
+/**
  * Resolve which engine handles which storageType from config.
  *
- * New format:
+ * Config format:
  *   storages:
- *     baseStorage:
+ *     base:
  *       engine: mongodb
- *     dataStore:
- *       engine: mongodb
- *     ...
+ *     platform:
+ *       engine: sqlite
+ *     series:
+ *       engine: influxdb
+ *     file:
+ *       engine: filesystem
+ *     audit:
+ *       engine: sqlite
+ *     engines:
+ *       mongodb: { host: ..., port: ..., name: ... }
+ *       postgresql: { ... }
+ *       ...
  *
- * Legacy format (backward compat):
- *   storageEngine: mongodb           # unified override
- *   database:engine: mongodb         # per-component
- *   STORAGE_ENGINE env var           # testing override
+ * For testing with a different engine, override the config values
+ * (e.g. via helpers-c.js injectTestConfig or a separate config file).
  *
  * @param {Object} config - @pryv/boiler config instance
  */
 function resolveConfig (config) {
   resolvedConfig = {};
 
-  // Check for new-format storages config
-  const hasNewFormat = config.has('storages');
-
   for (const storageType of VALID_STORAGE_TYPES) {
+    const shortName = SHORT_NAMES[storageType];
     let engineName;
 
-    // 1. New-format explicit assignment
-    if (hasNewFormat && config.has(`storages:${storageType}:engine`)) {
-      engineName = config.get(`storages:${storageType}:engine`);
-    }
-
-    // 2. Legacy resolution
-    if (!engineName) {
-      engineName = resolveLegacyEngine(config, storageType);
+    // Config: storages.<shortName>.engine
+    if (shortName && config.has(`storages:${shortName}:engine`)) {
+      engineName = config.get(`storages:${shortName}:engine`);
     }
 
     if (engineName) {
-      // Gather engine-specific config
-      let engineConfig = {};
-      if (hasNewFormat && config.has(`storages:${engineName}`)) {
-        engineConfig = config.get(`storages:${engineName}`);
-      }
-      resolvedConfig[storageType] = { engine: engineName, config: engineConfig };
+      resolvedConfig[storageType] = { engine: engineName };
     }
-  }
-}
-
-/**
- * Map legacy config keys to engine names for a given storageType.
- * @param {Object} config
- * @param {string} storageType
- * @returns {string|null}
- */
-function resolveLegacyEngine (config, storageType) {
-  // Global overrides (STORAGE_ENGINE env var or storageEngine config)
-  const globalOverride = process.env.STORAGE_ENGINE ||
-    (config.has('storageEngine') && config.get('storageEngine')) ||
-    null;
-
-  // Global override applies to database-backed types and platform;
-  // series and file types are resolved independently below.
-  if (globalOverride) {
-    switch (storageType) {
-      case 'seriesStorage':
-        if (globalOverride === 'postgresql') return 'postgresql';
-        return 'influxdb';
-      case 'fileStorage':
-        return 'filesystem';
-      case 'auditStorage':
-        return 'sqlite';
-      default:
-        return globalOverride;
-    }
-  }
-
-  // Per-component legacy keys
-  switch (storageType) {
-    case 'baseStorage':
-    case 'dataStore':
-      if (config.has('database:engine')) {
-        const e = config.get('database:engine');
-        if (e) return e;
-      }
-      return 'mongodb'; // default for database-backed types
-
-    case 'platformStorage':
-      if (config.has('storagePlatform:engine')) {
-        const e = config.get('storagePlatform:engine');
-        if (e) return e;
-      }
-      return 'sqlite'; // default for platform
-
-    case 'seriesStorage':
-      // Series engine is independent: PG handles its own series,
-      // otherwise InfluxDB is a standalone engine
-      if (config.has('database:engine')) {
-        const e = config.get('database:engine');
-        if (e === 'postgresql') return 'postgresql';
-      }
-      return 'influxdb'; // default: standalone InfluxDB engine
-
-    case 'fileStorage':
-      return 'filesystem'; // always filesystem
-
-    case 'auditStorage':
-      return 'sqlite'; // always sqlite
-
-    default:
-      return null;
   }
 }
 

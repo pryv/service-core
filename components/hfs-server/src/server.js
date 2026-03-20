@@ -15,7 +15,7 @@ const clsWrapFactory = require('./tracing/middleware/clsWrap');
 const controllerFactory = require('./web/controller');
 const getAuth = require('middleware/src/getAuth');
 const KEY_IP = 'http:ip';
-const KEY_PORT = 'http:port';
+const KEY_PORT = 'http:hfsPort';
 const { getConfig, getLogger } = require('@pryv/boiler');
 /**
  * HTTP server responsible for the REST api that the HFS server exposes.

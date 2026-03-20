@@ -12,7 +12,6 @@
     "createUserAccountStorage"
   ],
   "configuration": {
-    "configKey": "database",
     "fields": {
       "host":              { "type": "string",  "default": "127.0.0.1",  "description": "MongoDB host" },
       "port":              { "type": "number",  "default": 27017,        "description": "MongoDB port" },

@@ -36,7 +36,7 @@ async function moveAttachments () {
   const logger = getLogger('migration-1.9.0:attachments');
   const config = await getConfig();
   await userLocalDirectory.init();
-  const oldAttachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+  const oldAttachmentsDirPath = config.get('storages:engines:filesystem:attachmentsDirPath');
   const fileNames = readdirSync(oldAttachmentsDirPath);
   // for each user with existing attachments dir in old location, move the dir to new location
   for (const userId of fileNames) {

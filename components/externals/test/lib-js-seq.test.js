@@ -29,8 +29,8 @@ const SERVICE_CORE_DIR = path.resolve(__dirname, '../../../');
 const API_SERVER_BIN = path.resolve(__dirname, '../../api-server/bin/server');
 const HFS_SERVER_BIN = path.resolve(__dirname, '../../hfs-server/bin/server');
 const PROXY_BIN = path.resolve(__dirname, 'proxy.js');
-const OVERRIDE_SRC = path.resolve(__dirname, '../../api-server/config/libjs-test-config.yml');
-const OVERRIDE_DST = path.resolve(__dirname, '../../api-server/config/override-config.yml');
+const OVERRIDE_SRC = path.resolve(__dirname, '../../../config/libjs-test-config.yml');
+const OVERRIDE_DST = path.resolve(__dirname, '../../../config/override-config.yml');
 
 const PROXY_PORT = 3000; // HTTPS — what lib-js connects to
 const API_PORT = 3001; // HTTP — API server (plain, behind proxy)

@@ -29,7 +29,7 @@ let basePath;
 
 // temporarly set baseBath for tests;
 function setBasePathTestOnly (path) {
-  basePath = path || config.get('userFiles:path');
+  basePath = path || config.get('storages:engines:sqlite:path');
 }
 
 /**
@@ -39,7 +39,7 @@ function setBasePathTestOnly (path) {
 async function init () {
   if (basePath) return;
   config = await getConfig();
-  const candidateBasePath = config.get('userFiles:path');
+  const candidateBasePath = config.get('storages:engines:sqlite:path');
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;
 }

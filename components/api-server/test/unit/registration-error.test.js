@@ -5,26 +5,6 @@
  * Refer to LICENSE file
  */
 
-const { safetyCleanDuplicate } = require('platform/src/service_register');
-const assert = require('node:assert');
-
-describe('[SREG] Service Register Errors', function () {
-  it('[LPD4] Should remove not matching params from duplicate Error', (done) => {
-    const foundDuplicates = {
-      email: 'toto',
-      username: 'toto',
-      extra: 'bob'
-    };
-    const params = {
-      email: 'toto',
-      extra: 'bib',
-      username: 'toto'
-    };
-
-    const res = safetyCleanDuplicate(foundDuplicates, null, params);
-    assert.ok(res.email != null);
-    assert.ok(res.username != null);
-    assert.strictEqual(res.extra, undefined);
-    done();
-  });
-});
+// service_register.js has been removed — safetyCleanDuplicate is no longer needed.
+// Uniqueness errors are now generated directly by PlatformDB.
+// This file is kept as a placeholder; the test is retired.

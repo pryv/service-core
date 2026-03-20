@@ -13,7 +13,6 @@ module.exports = {
   getDatabasePG,
   getStorageLayer,
   getDatabaseSync,
-  getStorageEngine: require('./getStorageEngine'),
   userLocalDirectory: require('./userLocalDirectory'),
   getUsersLocalIndex,
   getUserAccountStorage,
@@ -71,7 +70,7 @@ function _ensureMongoDatabase () {
     const mongoInternals = require('storages/engines/mongodb/src/_internals');
     if (!mongoInternals.getLogger) mongoInternals.set('getLogger', getLogger);
     const Database = require('storages/engines/mongodb/src/Database');
-    _lazyDatabase = new Database(config.get('database'));
+    _lazyDatabase = new Database(config.get('storages:engines:mongodb'));
     dataBaseTracer(_lazyDatabase);
   }
   return _lazyDatabase;
@@ -115,7 +114,7 @@ async function getDatabasePG () {
       const pgInternals = require('storages/engines/postgresql/src/_internals');
       if (!pgInternals.getLogger) pgInternals.set('getLogger', getLogger);
       const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
-      _lazyDatabasePG = new DatabasePG(config.get('postgresql'));
+      _lazyDatabasePG = new DatabasePG(config.get('storages:engines:postgresql'));
     }
     db = _lazyDatabasePG;
   }

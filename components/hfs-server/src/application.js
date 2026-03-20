@@ -8,7 +8,7 @@ const path = require('path');
 const { getConfig, getLogger } = require('@pryv/boiler').init({
   appName: 'hfs-server',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../config'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
@@ -17,14 +17,10 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
     },
     {
       scope: 'defaults-paths',
-      file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+      file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
     },
     {
-      scope: 'defaults-data',
-      file: path.resolve(__dirname, '../config/default-config.yml')
-    },
-    {
-      plugin: require('api-server/config/components/systemStreams')
+      plugin: require('../../../config/plugins/systemStreams')
     }
   ]
 });

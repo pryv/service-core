@@ -31,6 +31,24 @@ class DBpostgresql {
     );
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    // Atomic: INSERT only if no row exists for (field, value), or if same username
+    const result = await this.db.query(
+      `INSERT INTO platform_unique_fields (field, value, username)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (field, value) DO NOTHING
+       RETURNING field`,
+      [field, value, username]
+    );
+    if (result.rows.length > 0) return true; // inserted
+    // Check if the existing row is for the same user
+    const existing = await this.db.query(
+      'SELECT username FROM platform_unique_fields WHERE field = $1 AND value = $2',
+      [field, value]
+    );
+    return existing.rows.length > 0 && existing.rows[0].username === username;
+  }
+
   async deleteUserUniqueField (field, value) {
     await this.db.query(
       'DELETE FROM platform_unique_fields WHERE field = $1 AND value = $2',
@@ -132,6 +150,45 @@ class DBpostgresql {
 
   async clearAll () {
     await this.deleteAll();
+  }
+
+  // --- User-to-core mapping --- //
+
+  async setUserCore (username, coreId) {
+    await this.setUserIndexedField(username, '_core', coreId);
+  }
+
+  async getUserCore (username) {
+    return await this.getUserIndexedField(username, '_core');
+  }
+
+  async getAllUserCores () {
+    const res = await this.db.query(
+      "SELECT username, value FROM platform_indexed_fields WHERE field = '_core'"
+    );
+    return res.rows.map(row => ({
+      username: row.username,
+      coreId: row.value
+    }));
+  }
+
+  // --- Core registration --- //
+
+  async setCoreInfo (coreId, info) {
+    // Store as indexed field with reserved username '__cores__'
+    await this.setUserIndexedField('__cores__', coreId, JSON.stringify(info));
+  }
+
+  async getCoreInfo (coreId) {
+    const val = await this.getUserIndexedField('__cores__', coreId);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllCoreInfos () {
+    const res = await this.db.query(
+      "SELECT value FROM platform_indexed_fields WHERE username = '__cores__'"
+    );
+    return res.rows.map(row => JSON.parse(row.value));
   }
 }
 

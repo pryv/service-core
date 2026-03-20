@@ -14,7 +14,7 @@ const { setTimeout } = require('timers/promises');
 require('@pryv/boiler').init({
   appName: 'api-server',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../config/'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [
     {
       scope: 'serviceInfo',
@@ -23,24 +23,23 @@ require('@pryv/boiler').init({
     },
     {
       scope: 'default-paths',
-      file: path.resolve(__dirname, '../config/paths-config.js')
+      file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
     },
     {
-      plugin: require('../config/components/systemStreams')
+      plugin: require('../../../config/plugins/systemStreams')
     },
     {
-      plugin: require('../config/public-url')
-    },
-    {
-      scope: 'default-audit',
-      file: path.resolve(__dirname, '../../audit/config/default-config.yml')
+      plugin: require('../../../config/plugins/public-url')
     },
     {
       scope: 'default-audit-path',
-      file: path.resolve(__dirname, '../../audit/config/default-path.js')
+      file: path.resolve(__dirname, '../../../config/plugins/default-path.js')
     },
     {
-      plugin: require('../config/config-validation')
+      plugin: require('../../../config/plugins/core-identity')
+    },
+    {
+      plugin: require('../../../config/plugins/config-validation')
     },
     {
       plugin: {
@@ -203,9 +202,12 @@ class Application {
    * @returns {Promise<void>}
    */
   async initiateRoutes () {
-    if (this.config.get('dnsLess:isActive')) {
-      require('./routes/register')(this.expressApp, this);
-    }
+    // Register routes — always available (register functionality is built-in)
+    require('./routes/register')(this.expressApp, this);
+    require('./routes/reg/access')(this.expressApp, this);
+    require('./routes/reg/records')(this.expressApp, this);
+    require('./routes/reg/apps')(this.expressApp, this);
+    require('./routes/reg/legacy')(this.expressApp, this);
 
     // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);

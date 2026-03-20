@@ -5,7 +5,6 @@
     "userLocalDirectory"
   ],
   "configuration": {
-    "configKey": "eventFiles",
     "fields": {
       "attachmentsDirPath":  { "type": "string",  "required": true,  "description": "Directory for event file attachments" },
       "previewsDirPath":     { "type": "string",  "required": true,  "description": "Directory for event file previews" }

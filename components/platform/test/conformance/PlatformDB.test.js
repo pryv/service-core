@@ -40,6 +40,41 @@ module.exports = function conformanceTests (getDB) {
       });
     });
 
+    describe('setUserUniqueFieldIfNotExists()', () => {
+      it('must set a new unique field and return true', async () => {
+        const username = 'user-' + cuid();
+        const email = 'ifne-' + cuid() + '@example.com';
+        const result = await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        assert.strictEqual(result, true);
+
+        const stored = await db.getUsersUniqueField('email', email);
+        assert.strictEqual(stored, username);
+      });
+
+      it('must return false when field already exists for different user', async () => {
+        const user1 = 'user1-' + cuid();
+        const user2 = 'user2-' + cuid();
+        const email = 'dup-' + cuid() + '@example.com';
+
+        await db.setUserUniqueFieldIfNotExists(user1, 'email', email);
+        const result = await db.setUserUniqueFieldIfNotExists(user2, 'email', email);
+        assert.strictEqual(result, false);
+
+        // Original value unchanged
+        const stored = await db.getUsersUniqueField('email', email);
+        assert.strictEqual(stored, user1);
+      });
+
+      it('must return true when re-setting for the same user', async () => {
+        const username = 'user-' + cuid();
+        const email = 'same-' + cuid() + '@example.com';
+
+        await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        const result = await db.setUserUniqueFieldIfNotExists(username, 'email', email);
+        assert.strictEqual(result, true);
+      });
+    });
+
     describe('setUserIndexedField() / getUserIndexedField()', () => {
       it('must set and retrieve an indexed field', async () => {
         const username = 'user-' + cuid();
@@ -104,6 +139,92 @@ module.exports = function conformanceTests (getDB) {
     describe('close() / isClosed()', () => {
       it('isClosed() must return false when open', () => {
         assert.strictEqual(db.isClosed(), false);
+      });
+    });
+
+    describe('setUserCore() / getUserCore()', () => {
+      it('must set and retrieve a user-to-core mapping', async () => {
+        const username = 'user-' + cuid();
+        const coreId = 'core-' + cuid().slice(0, 6);
+        await db.setUserCore(username, coreId);
+
+        const result = await db.getUserCore(username);
+        assert.strictEqual(result, coreId);
+      });
+
+      it('must return null for unknown user', async () => {
+        const result = await db.getUserCore('nonexist-' + cuid());
+        assert.strictEqual(result, null);
+      });
+
+      it('must overwrite existing mapping', async () => {
+        const username = 'user-' + cuid();
+        await db.setUserCore(username, 'core-a');
+        await db.setUserCore(username, 'core-b');
+
+        const result = await db.getUserCore(username);
+        assert.strictEqual(result, 'core-b');
+      });
+    });
+
+    describe('getAllUserCores()', () => {
+      it('must return all user-to-core mappings', async () => {
+        const u1 = 'user1-' + cuid();
+        const u2 = 'user2-' + cuid();
+        await db.setUserCore(u1, 'core-a');
+        await db.setUserCore(u2, 'core-b');
+
+        const all = await db.getAllUserCores();
+        assert.ok(Array.isArray(all));
+        assert.ok(all.length >= 2);
+        const u1Entry = all.find(e => e.username === u1);
+        assert.ok(u1Entry, 'user1 mapping found');
+        assert.strictEqual(u1Entry.coreId, 'core-a');
+        const u2Entry = all.find(e => e.username === u2);
+        assert.ok(u2Entry, 'user2 mapping found');
+        assert.strictEqual(u2Entry.coreId, 'core-b');
+      });
+
+      it('must return empty array when no mappings', async () => {
+        const all = await db.getAllUserCores();
+        assert.ok(Array.isArray(all));
+        assert.strictEqual(all.length, 0);
+      });
+    });
+
+    describe('setCoreInfo() / getCoreInfo() / getAllCoreInfos()', () => {
+      it('must set and retrieve core info', async () => {
+        const info = { id: 'core-a', ip: '1.2.3.4', hosting: 'hosting-1', available: true };
+        await db.setCoreInfo('core-a', info);
+
+        const result = await db.getCoreInfo('core-a');
+        assert.deepStrictEqual(result, info);
+      });
+
+      it('must return null for unknown core', async () => {
+        const result = await db.getCoreInfo('nonexist-' + cuid());
+        assert.strictEqual(result, null);
+      });
+
+      it('must overwrite existing core info', async () => {
+        const info1 = { id: 'core-x', available: true };
+        const info2 = { id: 'core-x', available: false };
+        await db.setCoreInfo('core-x', info1);
+        await db.setCoreInfo('core-x', info2);
+
+        const result = await db.getCoreInfo('core-x');
+        assert.strictEqual(result.available, false);
+      });
+
+      it('must return all registered cores', async () => {
+        await db.setCoreInfo('core-1', { id: 'core-1', hosting: 'h1', available: true });
+        await db.setCoreInfo('core-2', { id: 'core-2', hosting: 'h1', available: false });
+
+        const all = await db.getAllCoreInfos();
+        assert.ok(Array.isArray(all));
+        assert.ok(all.length >= 2);
+        assert.ok(all.find(c => c.id === 'core-1'));
+        assert.ok(all.find(c => c.id === 'core-2'));
       });
     });
 

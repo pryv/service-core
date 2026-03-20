@@ -48,6 +48,15 @@ function registerInternals (config, database, databasePG, storageLayer) {
  * Engines whose internals aren't satisfied (e.g. postgresql when only MongoDB is
  * configured) are silently skipped.
  */
+/**
+ * Resolve engine config from the storages:engines:<engineName> namespace.
+ * The engine name is the folder name under storages/engines/.
+ * Config structure: storages.engines.<engineName>.{...fields}
+ */
+function getEngineConfig (config, engineName) {
+  return config.get(`storages:engines:${engineName}`) || {};
+}
+
 function initEngines (config) {
   for (const engineName of pluginLoader.listEngines()) {
     const manifest = pluginLoader.getManifest(engineName);
@@ -56,9 +65,7 @@ function initEngines (config) {
     // Skip engines whose internals are not all registered
     if (!required.every(name => internals.isRegistered(name))) continue;
     const resolved = internals.resolve(required, engineName);
-    const engineConfig = manifest.configuration?.configKey
-      ? config.get(manifest.configuration.configKey) || {}
-      : {};
+    const engineConfig = getEngineConfig(config, engineName);
     const mod = pluginLoader.getEngineModule(engineName);
     if (typeof mod.init === 'function') {
       mod.init(engineConfig, getLogger, resolved);
@@ -93,15 +100,10 @@ async function init (config) {
     try {
       const engineInternals = require(`./engines/${engineName}/src/_internals`);
       engineInternals.set('getLogger', getLogger);
-      const manifest = pluginLoader.getManifest(engineName);
-      const engineConfig = manifest?.configuration?.configKey
-        ? config.get(manifest.configuration.configKey) || {}
-        : {};
-      engineInternals.set('config', engineConfig);
+      engineInternals.set('config', getEngineConfig(config, engineName));
     } catch (e) { /* engine may not have _internals.js */ }
   }
 
-  const getStorageEngine = require('storage/src/getStorageEngine');
   const StorageLayer = require('storage/src/StorageLayer');
   const { dataBaseTracer } = require('tracing');
 
@@ -111,11 +113,11 @@ async function init (config) {
   let databasePG = null;
   if (baseEngine === 'mongodb') {
     const Database = require('./engines/mongodb/src/Database');
-    database = new Database(config.get('database'));
+    database = new Database(config.get('storages:engines:mongodb'));
     dataBaseTracer(database);
   } else if (baseEngine === 'postgresql') {
     const DatabasePG = require('./engines/postgresql/src/DatabasePG');
-    databasePG = new DatabasePG(config.get('postgresql'));
+    databasePG = new DatabasePG(config.get('storages:engines:postgresql'));
   }
   const connection = database || databasePG || null;
 
@@ -134,9 +136,8 @@ async function init (config) {
   const integrityAccesses = require('business/src/integrity').accesses;
   await storageLayer.init(connection, { integrityAccesses });
 
-  // 5. UserAccountStorage
-  const uaEngine = getStorageEngine(config, 'storageUserAccount');
-  const uaModule = pluginLoader.getEngineModule(uaEngine);
+  // 5. UserAccountStorage (uses same engine as baseStorage)
+  const uaModule = pluginLoader.getEngineModule(baseEngine);
   const userAccountStorage = uaModule.getUserAccountStorage();
   await userAccountStorage.init();
 
@@ -171,18 +172,19 @@ async function init (config) {
     try { seriesModule = pluginLoader.getEngineModule(seriesEngine); } catch (e) { /* engine not installed */ }
     if (seriesModule?.createSeriesConnection) {
       const { validateSeriesConnection } = require('storages/interfaces/seriesStorage/SeriesConnection');
+      // Pass engine config from manifest + PG connection for postgresql series engine
+      const seriesConfig = getEngineConfig(config, seriesEngine);
       seriesConnection = await seriesModule.createSeriesConnection({
-        host: config.has('influxdb:host') ? config.get('influxdb:host') : undefined,
-        port: config.has('influxdb:port') ? config.get('influxdb:port') : undefined,
+        host: seriesConfig.host,
+        port: seriesConfig.port,
         databasePG // pass PG connection so engine doesn't re-enter the barrel
       });
       validateSeriesConnection(seriesConnection);
     }
   }
 
-  // 9. DataStore module (for mall)
-  const dsEngine = getStorageEngine(config, 'database');
-  const dsModule = pluginLoader.getEngineModule(dsEngine);
+  // 9. DataStore module (for mall — uses same engine as baseStorage)
+  const dsModule = pluginLoader.getEngineModule(baseEngine);
   const dataStoreModule = dsModule.getDataStoreModule();
 
   instances = {

@@ -7,7 +7,6 @@
     "createUserAccountStorage"
   ],
   "configuration": {
-    "configKey": "userFiles",
     "fields": {
       "path":  { "type": "string",  "required": true,  "description": "Base directory for user SQLite databases and index" }
     }

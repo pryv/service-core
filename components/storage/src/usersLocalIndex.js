@@ -8,10 +8,9 @@
  * Contains UserName >> UserId Mapping
  */
 
-const { getConfig, getLogger } = require('@pryv/boiler');
+const { getLogger } = require('@pryv/boiler');
 const cache = require('cache');
 const { validateUsersLocalIndexDB } = require('storages/interfaces/baseStorage/UsersLocalIndexDB');
-const getStorageEngine = require('./getStorageEngine');
 const { pluginLoader } = require('storages');
 
 const logger = getLogger('users:local-index');
@@ -31,8 +30,7 @@ class UsersLocalIndex {
     if (this.initialized) { return; }
     this.initialized = true;
 
-    const config = await getConfig();
-    const engine = getStorageEngine(config, 'storageUserIndex');
+    const engine = pluginLoader.getEngineFor('baseStorage');
     const engineModule = pluginLoader.getEngineModule(engine);
     const DBIndex = engineModule.getUsersLocalIndex();
     this.db = new DBIndex();

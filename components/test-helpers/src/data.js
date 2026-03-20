@@ -235,22 +235,22 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     exports.resetEvents,
     fs.rm.bind(null, outputFolder, { recursive: true, force: true }),
     childProcess.exec.bind(null, mongodump +
-            (settings.database.authUser
+            (settings.storages.engines.mongodb.authUser
               ? ' -u ' +
-                    settings.database.authUser +
+                    settings.storages.engines.mongodb.authUser +
                     ' -p ' +
-                    settings.database.authPassword
+                    settings.storages.engines.mongodb.authPassword
               : '') +
             ' --host ' +
-            settings.database.host +
+            settings.storages.engines.mongodb.host +
             ':' +
-            settings.database.port +
+            settings.storages.engines.mongodb.port +
             ' --db ' +
-            settings.database.name +
+            settings.storages.engines.mongodb.name +
             ' --out ' +
             getDumpDBSubfolder(outputFolder)),
     childProcess.exec.bind(null, 'tar -C ' +
-            settings.eventFiles.attachmentsDirPath +
+            settings.storages.engines.filesystem.attachmentsDirPath +
             ' -czf ' +
             getDumpFilesArchive(outputFolder) +
             ' .')
@@ -281,26 +281,26 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
     clearAllData,
     childProcess.exec.bind(null, mongorestore +
             ' --nsFrom "pryv-node.*" --nsTo "pryv-node-test.*" ' +
-            (settings.database.authUser
+            (settings.storages.engines.mongodb.authUser
               ? ' -u ' +
-                    settings.database.authUser +
+                    settings.storages.engines.mongodb.authUser +
                     ' -p ' +
-                    settings.database.authPassword
+                    settings.storages.engines.mongodb.authPassword
               : '') +
             ' --host ' +
-            settings.database.host +
+            settings.storages.engines.mongodb.host +
             ':' +
-            settings.database.port +
+            settings.storages.engines.mongodb.port +
             ' ' +
             sourceDBFolder),
     function (done) {
-      mkdirp.sync(settings.eventFiles.attachmentsDirPath);
+      mkdirp.sync(settings.storages.engines.filesystem.attachmentsDirPath);
       done();
     },
     childProcess.exec.bind(null, 'tar -xzf ' +
             sourceFilesArchive +
             ' -C ' +
-            settings.eventFiles.attachmentsDirPath)
+            settings.storages.engines.filesystem.attachmentsDirPath)
   ], function (err) {
     if (err) {
       return callback(err);

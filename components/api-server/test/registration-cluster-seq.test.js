@@ -7,8 +7,6 @@
 
 const assert = require('node:assert');
 const { promisify } = require('util');
-const _ = require('lodash');
-const nock = require('nock');
 const charlatan = require('charlatan');
 const cuid = require('cuid');
 const supertest = require('supertest');
@@ -24,13 +22,9 @@ const { databaseFixture } = require('test-helpers');
 const { produceStorageConnection } = require('./test-helpers');
 const { ApiEndpoint } = require('utils');
 
-/**
- * @returns {{ appId: string; username: any; email: any; password: string; invitationToken: string; referer: string; insurancenumber: any; }}
- */
 function defaults () {
   return {
     appId: 'pryv-test',
-    // Use cuid for unique username to avoid parallel test conflicts
     username: 'regc' + cuid.slug().toLowerCase(),
     email: charlatan.Internet.email(),
     password: 'abcdefgh',
@@ -41,26 +35,15 @@ function defaults () {
 }
 
 describe('[REGC] registration: cluster', function () {
-  let isDnsLess;
-
-  before(async function () {
-    config = await getConfig();
-    isDnsLess = config.get('dnsLess:isActive');
-    if (isDnsLess) { this.skip(); }
-  });
-
   let app;
   let request;
   let res;
   let config;
-  let regUrl;
   let userData;
-  let serviceRegisterRequests = [];
   let mongoFixtures;
   let usersRepository;
   let userAccountStorage;
 
-  // clean the database before starting all tests for registration
   before(async function () {
     mongoFixtures = databaseFixture(await produceStorageConnection());
     await mongoFixtures.context.cleanEverything();
@@ -68,11 +51,10 @@ describe('[REGC] registration: cluster', function () {
   });
 
   before(async function () {
+    config = await getConfig();
     config.injectTestConfig({
-      dnsLess: { isActive: false },
-      testsSkipForwardToRegister: false
+      dnsLess: { isActive: false }
     });
-    regUrl = config.get('services:register:url');
     app = getApplication();
     await app.initiate();
     await require('../src/methods/auth/register')(app.api);
@@ -88,97 +70,11 @@ describe('[REGC] registration: cluster', function () {
 
   const methodPath = '/users';
 
-  function buildValidationRequest (user, hasToken = true) {
-    const validationRequest = {
-      core: res.req._header.split('Host: ')[1].split('\r\n')[0],
-      username: user.username,
-      uniqueFields: {
-        username: user.username,
-        email: user.email
-      }
-    };
-    if (hasToken) {
-      validationRequest.invitationToken = user.invitationToken;
-    }
-    return validationRequest;
-  }
-
-  function buildRegistrationRequest (user, hasToken = true) {
-    const registrationRequest = {
-      host: { name: res.req._header.split('Host: ')[1].split('\r\n')[0] },
-      unique: ['username', 'email'],
-      user: {
-        username: user.username,
-        email: user.email,
-        appId: user.appId,
-        referer: user.referer,
-        insurancenumber: user.insurancenumber
-      }
-    };
-    if (hasToken) {
-      registrationRequest.user.invitationToken = user.invitationToken;
-    }
-    return registrationRequest;
-  }
-
-  function stripRegistrationRequest (request) {
-    delete request.user.language;
-    delete request.user.id;
-    return request;
-  }
-
   describe('[RC01] POST /users (create user)', function () {
-    describe('[WAUW] when a user with the same username (not email) already exists in core but not in register', () => {
-      let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest, serviceRegisterRequestsPUT;
-
+    describe('[RC01A] successful registration', () => {
       before(async () => {
         userData = defaults();
-        serviceRegisterRequests = [];
-        serviceRegisterRequestsPUT = [];
-        nock.cleanAll();
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .times(2)
-          .reply(200, { errors: [] });
-        nock(regUrl)
-          .post('/users', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .times(2)
-          .reply(200, {
-            username: 'anyusername'
-          });
-        nock(regUrl)
-          .put('/users', (body) => {
-            serviceRegisterRequestsPUT.push(body);
-            return true;
-          })
-          .times(2)
-          .reply(200, {
-            ok: true
-          });
-        nock(regUrl)
-          .delete('/users/' + userData.username + '?onlyReg=true', () => {
-            return true;
-          })
-          .times(1)
-          .reply(200, { deleted: true });
-        // first request
         res = await request.post(methodPath).send(userData);
-        firstValidationRequest = _.merge(buildValidationRequest(userData), {
-          uniqueFields: { email: userData.email }
-        });
-        firstRegistrationRequest = buildRegistrationRequest(userData);
-        firstUser = await usersRepository.getUserByUsername(userData.username);
-        // second request, same username but with another email
-        oldEmail = userData.email;
-        userData.email = charlatan.Internet.email();
-        res = await request.post(methodPath).send(userData);
-        secondUser = await usersRepository.getUserByUsername(userData.username);
       });
 
       it('[QV8Z] should respond with status 201', () => {
@@ -188,181 +84,21 @@ describe('[REGC] registration: cluster', function () {
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.strictEqual(body.username, userData.username);
-        const usersRepository = await getUsersRepository();
         const user = await usersRepository.getUserByUsername(userData.username);
         const findOneAsync = promisify((query, opts, extra, cb) => app.storageLayer.accesses.findOne(query, opts, extra, cb));
         const personalAccess = await findOneAsync({ id: user.id }, {}, null);
         const initUser = new User(userData);
         assert.strictEqual(body.apiEndpoint, ApiEndpoint.build(initUser.username, personalAccess.token));
       });
-
-      it('[7QB6] should send the right data to register', () => {
-        const firstValidationSent = serviceRegisterRequests[0];
-        assert.deepEqual(firstValidationSent, firstValidationRequest, 'first validation request is invalid');
-        let firstRegistrationSent = serviceRegisterRequests[1];
-        firstRegistrationSent = stripRegistrationRequest(firstRegistrationSent);
-        assert.deepEqual(firstRegistrationSent, firstRegistrationRequest, ' first registration request is invalid');
-        const secondValidationSent = serviceRegisterRequests[2];
-        const secondValidationRequest = buildValidationRequest(userData);
-        assert.deepEqual(secondValidationSent, secondValidationRequest, 'second validation request is invalid');
-        let secondRegistrationSent = serviceRegisterRequests[3];
-        secondRegistrationSent = stripRegistrationRequest(secondRegistrationSent);
-        const secondRegistrationRequest = buildRegistrationRequest(userData);
-        assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
-        const users = [firstUser, secondUser];
-        assert.strictEqual(serviceRegisterRequestsPUT.length, users.length, 'should have recieved 2 PUT requests');
-        for (let i = 0; i < serviceRegisterRequestsPUT.length; i++) {
-          const putRequest = serviceRegisterRequestsPUT[i];
-          assert.deepEqual(putRequest, {
-            username: users[i].username,
-            user: {
-              appId: [
-                {
-                  value: 'pryv-test',
-                  isUnique: false,
-                  isActive: true,
-                  creation: true
-                }
-              ],
-              invitationToken: [
-                {
-                  value: 'enjoy',
-                  isUnique: false,
-                  isActive: true,
-                  creation: true
-                }
-              ],
-              language: [
-                {
-                  creation: true,
-                  isActive: true,
-                  isUnique: false,
-                  value: 'en'
-                }
-              ],
-              referer: [
-                {
-                  value: 'pryv',
-                  isUnique: false,
-                  isActive: true,
-                  creation: true
-                }
-              ],
-              insurancenumber: [
-                {
-                  value: users[i].insurancenumber,
-                  isUnique: false,
-                  isActive: true,
-                  creation: true
-                }
-              ],
-              email: [
-                {
-                  value: users[i].email,
-                  isUnique: true,
-                  isActive: true,
-                  creation: true
-                }
-              ]
-            },
-            fieldsToDelete: {}
-          });
-        }
-      });
-
-      it('[A2EM] should replace first user events in the storage', () => {
-        const firstEmail = firstUser.events.filter((e) => e.type === 'email/string')[0].content;
-        const secondEmail = secondUser.events.filter((e) => e.type === 'email/string')[0].content;
-        assert.strictEqual(firstEmail, oldEmail);
-        assert.strictEqual(secondEmail, userData.email);
-      });
     });
 
-    describe('[RC02] when a user with the same username/email already exists in core but not in register', () => {
-      let firstValidationRequest;
-      let firstRegistrationRequest;
-
+    describe('[RC03] when the username already exists', () => {
       before(async () => {
-        userData = defaults();
-        serviceRegisterRequests = [];
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .times(2)
-          .reply(200, { errors: [] });
-        nock(regUrl)
-          .post('/users', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .times(2)
-          .reply(200, {
-            username: 'anyusername'
-          });
-        nock(regUrl)
-          .put('/users', (/* body */) => {
-            return true;
-          })
-          .times(2)
-          .reply(200, {
-            ok: true
-          });
-        nock(regUrl)
-          .delete('/users/' + userData.username + '?onlyReg=true', () => {
-            return true;
-          })
-          .times(1)
-          .reply(200, { deleted: true });
-        res = await request.post(methodPath).send(userData);
-        firstValidationRequest = buildValidationRequest(userData);
-        firstRegistrationRequest = buildRegistrationRequest(userData);
-        res = await request.post(methodPath).send(userData);
-      });
-
-      it('[GRAW] should respond with status 201', () => {
+        const firstUser = defaults();
+        res = await request.post(methodPath).send(firstUser);
         assert.strictEqual(res.status, 201);
-      });
-
-      it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
-        const body = res.body;
-        assert.strictEqual(body.username, userData.username);
-      });
-
-      it('[ZHYX] should send the right data to register', () => {
-        // validate validation request - first and third requests
-        // should be validation and they shuold be equal
-        // (remove core because validation and registration was done
-        // by different processes - port is different)
-        const validationSent2 = structuredClone(serviceRegisterRequests[0]);
-        delete validationSent2.core;
-        delete serviceRegisterRequests[2].core;
-        assert.deepEqual(validationSent2, serviceRegisterRequests[2]);
-        // alsl validation request should be valid
-        assert.deepEqual(serviceRegisterRequests[0], firstValidationRequest);
-        // also first registration request should be valid
-        let registrationSent = serviceRegisterRequests[1];
-        registrationSent = stripRegistrationRequest(registrationSent);
-        assert.deepEqual(registrationSent, firstRegistrationRequest);
-      });
-    });
-
-    describe('[RC03] when the username exists in register', () => {
-      before(async () => {
-        userData = _.extend({}, defaults(), { username: 'wactiv' });
-        serviceRegisterRequests = [];
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .reply(409, {
-            error: {
-              id: ErrorIds.ItemAlreadyExists,
-              data: { username: 'wactiv' }
-            }
-          });
+        userData = defaults();
+        userData.username = firstUser.username;
         res = await request.post(methodPath).send(userData);
       });
 
@@ -373,30 +109,17 @@ describe('[REGC] registration: cluster', function () {
       it('[X1IA] should respond with the correct error', () => {
         const error = res.body.error;
         assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
-        assert.strictEqual(error.data.username, userData.username);
-      });
-
-      it('[JJJY] should send the right data to register', () => {
-        const validationSent = serviceRegisterRequests[0];
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
+        assert.ok(error.data.username);
       });
     });
 
-    describe('[RC04] when the email exists in register', () => {
+    describe('[RC04] when the email already exists', () => {
       before(async () => {
-        userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
-        serviceRegisterRequests = [];
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .reply(409, {
-            error: {
-              id: ErrorIds.ItemAlreadyExists,
-              data: { email: 'wactiv@pryv.io' }
-            }
-          });
+        const firstUser = defaults();
+        res = await request.post(methodPath).send(firstUser);
+        assert.strictEqual(res.status, 201);
+        userData = defaults();
+        userData.email = firstUser.email;
         res = await request.post(methodPath).send(userData);
       });
 
@@ -407,36 +130,21 @@ describe('[REGC] registration: cluster', function () {
       it('[U0ZN] should respond with the correct error', () => {
         const error = res.body.error;
         assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
-        assert.strictEqual(error.data.email, userData.email);
-      });
-
-      it('[2UNK] should send the right data to register', () => {
-        const validationSent = serviceRegisterRequests[0];
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
+        assert.ok(error.data.email);
       });
     });
 
-    describe('[RC05] when the user and email exist in register', () => {
+    describe('[RC05] when the username and email both exist', () => {
       before(async () => {
-        userData = _.extend({}, defaults(), {
-          username: 'wactiv',
-          email: 'wactiv@pryv.io'
-        });
-        serviceRegisterRequests = [];
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .reply(409, {
-            error: {
-              id: ErrorIds.ItemAlreadyExists,
-              data: {
-                email: 'wactiv@pryv.io',
-                username: 'wactiv'
-              }
-            }
-          });
+        const user1 = defaults();
+        res = await request.post(methodPath).send(user1);
+        assert.strictEqual(res.status, 201);
+        const user2 = defaults();
+        res = await request.post(methodPath).send(user2);
+        assert.strictEqual(res.status, 201);
+        userData = defaults();
+        userData.username = user1.username;
+        userData.email = user2.email;
         res = await request.post(methodPath).send(userData);
       });
 
@@ -447,179 +155,59 @@ describe('[REGC] registration: cluster', function () {
       it('[XIN8] should respond with the correct error', () => {
         const error = res.body.error;
         assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
-        assert.strictEqual(error.data.email, userData.email);
-        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
-        assert.strictEqual(error.data.username, userData.username);
-      });
-
-      it('[OIRY] should send the right data to register', () => {
-        const validationSent = serviceRegisterRequests[0];
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
+        assert.ok(error.data.username);
+        assert.ok(error.data.email);
       });
     });
 
-    describe('[RC06] when there is a simultaneous registration', () => {
-      before(async () => {
-        userData = defaults();
-        serviceRegisterRequests = [];
-        nock(regUrl)
-          .post('/users/validate', (body) => {
-            serviceRegisterRequests.push(body);
-            return true;
-          })
-          .reply(409, {
-            error: {
-              id: ErrorIds.ItemAlreadyExists,
-              data: {
-                username: userData.username
-              }
-            }
-          });
-        res = await request.post(methodPath).send(userData);
-      });
-
-      it('[I0HG] should respond with status 409', () => {
-        assert.strictEqual(res.status, 409);
-      });
-
-      it('[QFVZ] should respond with the correct error', () => {
-        const error = res.body.error;
-        assert.strictEqual(error.id, ErrorIds.ItemAlreadyExists);
-        // we don't receive conflicting keys yet
-      });
-
-      it('[MMG9] should send the right data to register', () => {
-        const validationSent = serviceRegisterRequests[0];
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
-      });
-    });
-
-    describe('[RC07] when invitationTokens are undefined', () => {
+    describe('[RC07] when invitationTokens are undefined (null)', () => {
       describe('[RC08] and a random string is provided as "invitationToken"', () => {
         before(async () => {
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);
-          serviceRegisterRequests = [];
-          nock(regUrl)
-            .post('/users/validate', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(200, { errors: [] });
-          nock(regUrl)
-            .post('/users', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(200, {
-              username: userData.username
-            });
-          nock(regUrl)
-            .put('/users', (/* body */) => {
-              return true;
-            })
-            .reply(201, {
-              ok: true
-            });
           res = await request.post(methodPath).send(userData);
         });
 
         it('[CMOV] should respond with status 201', () => {
           assert.strictEqual(res.status, 201);
         });
-
-        it('[F0MO] should send the right data to register', () => {
-          const validationSent = serviceRegisterRequests[0];
-          assert.deepEqual(validationSent, buildValidationRequest(userData));
-          let registrationSent = serviceRegisterRequests[1];
-          registrationSent = stripRegistrationRequest(registrationSent);
-          assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
-        });
       });
 
       describe('[RC09] and "invitationToken" is missing', () => {
-        const serviceRegisterValidate = [];
-        const serviceRegisterCreateUser = [];
         before(async () => {
           userData = defaults();
           delete userData.invitationToken;
-          nock(regUrl)
-            .post('/users/validate', (body) => {
-              serviceRegisterValidate.push(body);
-              return true;
-            })
-            .reply(200, { errors: [] });
-          nock(regUrl)
-            .post('/users', (body) => {
-              serviceRegisterCreateUser.push(body);
-              return true;
-            })
-            .reply(200, {
-              username: userData.username
-            });
-          nock(regUrl)
-            .put('/users', (/* body */) => {
-              return true;
-            })
-            .reply(201, {
-              ok: true
-            });
           res = await request.post(methodPath).send(userData);
         });
 
         it('[LOIB] should respond with status 201', () => {
           assert.strictEqual(res.status, 201);
         });
-
-        it('[5O4Q] should send the right data to register', () => {
-          const validationSent = serviceRegisterValidate[0];
-          assert.deepEqual(validationSent, buildValidationRequest(userData, false));
-          let registrationSent = serviceRegisterCreateUser[0];
-          registrationSent = stripRegistrationRequest(registrationSent);
-          assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
-        });
       });
     });
 
     describe('[RC10] when invitationTokens are defined', () => {
+      before(function () {
+        config.injectTestConfig({
+          dnsLess: { isActive: false },
+          invitationTokens: ['enjoy']
+        });
+      });
+      after(function () {
+        config.injectTestConfig({
+          dnsLess: { isActive: false }
+        });
+      });
+
       describe('[RC11] when a valid one is provided', () => {
         before(async () => {
           userData = defaults();
-          serviceRegisterRequests = [];
-          nock(regUrl)
-            .post('/users/validate', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(200, { errors: [] });
-          nock(regUrl)
-            .post('/users', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(200, {
-              username: userData.username
-            });
-          nock(regUrl)
-            .put('/users', (/* body */) => {
-              return true;
-            })
-            .reply(200, {
-              ok: true
-            });
+          userData.invitationToken = 'enjoy';
           res = await request.post(methodPath).send(userData);
         });
 
         it('[Z2ZY] should respond with status 201', () => {
           assert.strictEqual(res.status, 201);
-        });
-
-        it('[DIFS] should send the right data to register', () => {
-          const validationSent = serviceRegisterRequests[0];
-          assert.deepEqual(validationSent, buildValidationRequest(userData));
-          let registrationSent = serviceRegisterRequests[1];
-          registrationSent = stripRegistrationRequest(registrationSent);
-          assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
         });
 
         it('[1BF3] should find password in password history', async () => {
@@ -631,17 +219,7 @@ describe('[REGC] registration: cluster', function () {
       describe('[RC12] when an invalid one is provided', () => {
         before(async () => {
           userData = defaults();
-          serviceRegisterRequests = [];
-          nock(regUrl)
-            .post('/users/validate', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(400, {
-              error: {
-                id: ErrorIds.InvalidInvitationToken
-              }
-            });
+          userData.invitationToken = 'wrong-token';
           res = await request.post(methodPath).send(userData);
         });
 
@@ -649,38 +227,35 @@ describe('[REGC] registration: cluster', function () {
           assert.strictEqual(res.status, 400);
         });
 
-        it('[ZBYW] should send the right data to register', () => {
-          const validationSent = serviceRegisterRequests[0];
-          assert.deepEqual(validationSent, buildValidationRequest(userData));
+        it('[P4GT] should respond with the correct error message', () => {
+          const error = res.body.error;
+          assert.strictEqual(error.id, ErrorIds.InvalidOperation);
+          assert.ok(error.message.includes(ErrorMessages[ErrorIds.InvalidInvitationToken]));
         });
       });
     });
 
     describe('[RC13] when invitationTokens are set to [] (forbidden creation)', () => {
+      before(function () {
+        config.injectTestConfig({
+          dnsLess: { isActive: false },
+          invitationTokens: []
+        });
+      });
+      after(function () {
+        config.injectTestConfig({
+          dnsLess: { isActive: false }
+        });
+      });
+
       describe('[RC14] when any string is provided', () => {
         before(async () => {
           userData = defaults();
-          serviceRegisterRequests = [];
-          nock(regUrl)
-            .post('/users/validate', (body) => {
-              serviceRegisterRequests.push(body);
-              return true;
-            })
-            .reply(400, {
-              error: {
-                id: ErrorIds.InvalidInvitationToken
-              }
-            });
           res = await request.post(methodPath).send(userData);
         });
 
         it('[CX9N] should respond with status 400', () => {
           assert.strictEqual(res.status, 400);
-        });
-
-        it('[IH6K] should send the right data to register', () => {
-          const validationSent = serviceRegisterRequests[0];
-          assert.deepEqual(validationSent, buildValidationRequest(userData));
         });
       });
     });
@@ -689,7 +264,6 @@ describe('[REGC] registration: cluster', function () {
       describe('[RC16] when email is set as required and it is not set in the request', () => {
         before(async () => {
           userData = defaults();
-          // remove email from the request
           delete userData.email;
           res = await request.post(methodPath).send(userData);
         });
@@ -714,7 +288,7 @@ describe('[REGC] registration: cluster', function () {
 
       describe('[RC17] when field does not match custom validation settings', () => {
         before(async () => {
-          userData = userData = defaults();
+          userData = defaults();
           userData.insurancenumber = 'abc';
           res = await request.post(methodPath).send(userData);
         });
@@ -742,20 +316,20 @@ describe('[REGC] registration: cluster', function () {
       const validation = helpers.validation;
 
       before(async () => {
-        config.injectTestConfig(helpers.passwordRules.settingsOverride);
+        config.injectTestConfig(Object.assign(
+          { dnsLess: { isActive: false } },
+          helpers.passwordRules.settingsOverride
+        ));
         userData = defaults();
-        nock(regUrl)
-          .post('/users/validate', () => true)
-          .reply(200, { errors: [] });
-        nock(regUrl)
-          .post('/users', () => true)
-          .reply(200, { username: userData.username });
-        nock(regUrl)
-          .put('/users', () => true)
-          .reply(200, { ok: true });
       });
 
-      it('[0OBL] must fail if the new password does not comply (smoke test; see "/change-password" in account tests)', async () => {
+      after(function () {
+        config.injectTestConfig({
+          dnsLess: { isActive: false }
+        });
+      });
+
+      it('[0OBL] must fail if the new password does not comply', async () => {
         userData.password = helpers.passwordRules.passwords.badTooShort;
         const res = await request.post(methodPath).send(userData);
         validation.checkError(res, {
@@ -764,7 +338,7 @@ describe('[REGC] registration: cluster', function () {
         });
       });
 
-      it('[5BQL] must succeed if the new password complies (smoke test; see "/change-password" in account tests)', async () => {
+      it('[5BQL] must succeed if the new password complies', async () => {
         userData.password = helpers.passwordRules.passwords.good4CharCats;
         const res = await request.post(methodPath).send(userData);
         validation.check(res, { status: 201 });

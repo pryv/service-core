@@ -14,7 +14,7 @@
  *
  * Usage in engine global.test.js:
  *   const helpers = require('../../../test/helpers');
- *   helpers.config = helpers.getEngineConfig(require('../manifest.json'));
+ *   helpers.config = helpers.getEngineConfig('mongodb', require('../manifest.json'));
  */
 
 // Initialize boiler config for test environment
@@ -33,25 +33,30 @@ module.exports.getLogger = boiler.getLogger;
 module.exports.config = null;
 
 /**
- * Build the engine config as a plain key-value object, using only fields
- * declared in the engine's manifest.json — same object the barrel passes
- * to engine.init(config, getLogger, internals).
+ * Build the engine config as a plain key-value object.
+ * Reads from storages:engines:<engineName> in the config,
+ * applying defaults from the manifest fields when available.
  *
- * @param {Object} manifest - the engine's manifest.json (require'd)
- * @returns {Object} plain config object with manifest-declared fields
+ * @param {string} engineName - engine folder name (e.g. 'mongodb', 'postgresql')
+ * @param {Object} [manifest] - optional manifest for field defaults
+ * @returns {Object} plain config object
  */
-module.exports.getEngineConfig = function getEngineConfig (manifest) {
-  const configKey = manifest.configuration?.configKey;
-  if (!configKey) return {};
+module.exports.getEngineConfig = function getEngineConfig (engineName, manifest) {
   const fullConfig = boiler.getConfigUnsafe(true);
-  const section = fullConfig.get(configKey) || {};
-  const fields = manifest.configuration.fields || {};
+  const section = fullConfig.get(`storages:engines:${engineName}`) || {};
+  const fields = manifest?.configuration?.fields || {};
   const result = {};
   for (const [key, schema] of Object.entries(fields)) {
     if (section[key] !== undefined) {
       result[key] = section[key];
     } else if (schema.default !== undefined) {
       result[key] = schema.default;
+    }
+  }
+  // Include any config keys not in the manifest fields
+  for (const [key, value] of Object.entries(section)) {
+    if (!(key in result)) {
+      result[key] = value;
     }
   }
   return result;

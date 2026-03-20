@@ -93,6 +93,16 @@ class DB {
     await this.set(key, username);
   }
 
+  async setUserUniqueFieldIfNotExists (username, field, value) {
+    const key = getUserUniqueKey(field, value);
+    const existing = this.getOne(key);
+    if (existing != null) {
+      return existing === username; // true if same user, false if collision
+    }
+    await this.set(key, username);
+    return true;
+  }
+
   async deleteUserUniqueField (field, value) {
     const key = getUserUniqueKey(field, value);
     await this.delete(key);
@@ -146,6 +156,74 @@ class DB {
   async clearAll () {
     return await this.deleteAll();
   }
+
+  // --- User-to-core mapping --- //
+
+  async setUserCore (username, coreId) {
+    const key = getUserCoreKey(username);
+    await this.set(key, coreId);
+  }
+
+  async getUserCore (username) {
+    const key = getUserCoreKey(username);
+    return this.getOne(key);
+  }
+
+  async getAllUserCores () {
+    const rows = this.queries.getAllWithKeyStartsWith.all('user-core/');
+    return rows.map(row => ({
+      username: row.key.slice('user-core/'.length),
+      coreId: row.value
+    }));
+  }
+
+  // --- Core registration --- //
+
+  async setCoreInfo (coreId, info) {
+    const key = 'core-info/' + coreId;
+    await this.set(key, JSON.stringify(info));
+  }
+
+  async getCoreInfo (coreId) {
+    const key = 'core-info/' + coreId;
+    const val = this.getOne(key);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllCoreInfos () {
+    const rows = this.queries.getAllWithKeyStartsWith.all('core-info/');
+    return rows.map(row => JSON.parse(row.value));
+  }
+
+  // --- Invitation tokens --- //
+
+  async createInvitationToken (token, info) {
+    const key = 'invitation/' + token;
+    await this.set(key, JSON.stringify(info));
+  }
+
+  async getInvitationToken (token) {
+    const key = 'invitation/' + token;
+    const val = this.getOne(key);
+    return val != null ? JSON.parse(val) : null;
+  }
+
+  async getAllInvitationTokens () {
+    const rows = this.queries.getAllWithKeyStartsWith.all('invitation/');
+    return rows.map(row => ({
+      id: row.key.slice('invitation/'.length),
+      ...JSON.parse(row.value)
+    }));
+  }
+
+  async updateInvitationToken (token, info) {
+    await this.createInvitationToken(token, info);
+  }
+
+  async deleteInvitationToken (token) {
+    const key = 'invitation/' + token;
+    await this.delete(key);
+  }
 }
 
 /**
@@ -170,6 +248,10 @@ function getUserUniqueKey (field, value) {
 }
 function getUserIndexedKey (username, field) {
   return 'user-indexed/' + field + '/' + username;
+}
+
+function getUserCoreKey (username) {
+  return 'user-core/' + username;
 }
 
 module.exports = DB;

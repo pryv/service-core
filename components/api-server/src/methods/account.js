@@ -38,7 +38,6 @@ module.exports = async function (api) {
   const emailSettings = servicesSettings.email;
   const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
-  // initialize service-register connection
   const usersRepository = await getUsersRepository();
 
   // RETRIEVAL
@@ -241,7 +240,7 @@ module.exports = async function (api) {
           isActive: true
         });
       }
-      await platform.updateUserAndForward(context.user.username, operations);
+      await platform.updateUser(context.user.username, operations);
     } catch (err) {
       return next(err);
     }

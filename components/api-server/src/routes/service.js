@@ -15,4 +15,8 @@ module.exports = function (expressApp, app) {
   expressApp.get(Paths.Service + '/info', setMethodId('service.info'), function (req, res, next) {
     api.call(req.context, req.query, methodCallback(res, next, 200));
   });
+  // Backward-compatible alias (plural)
+  expressApp.get(Paths.Service + '/infos', setMethodId('service.info'), function (req, res, next) {
+    api.call(req.context, req.query, methodCallback(res, next, 200));
+  });
 };

@@ -8,7 +8,6 @@
 const assert = require('node:assert');
 const cuid = require('cuid');
 const charlatan = require('charlatan');
-const nock = require('nock');
 const supertest = require('supertest');
 
 const { ErrorIds } = require('errors');
@@ -18,7 +17,6 @@ const { pubsub } = require('messages');
 const { addPrivatePrefixToStreamId, addCustomerPrefixToStreamId } = require('test-helpers/src/systemStreamFilters');
 
 const { getUserAccountStorage } = require('storage');
-const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
 const { produceStorageConnection } = require('api-server/test/test-helpers');
@@ -26,7 +24,6 @@ const { produceStorageConnection } = require('api-server/test/test-helpers');
 const { getMall } = require('mall');
 
 describe('[ACCO] Account with system streams', function () {
-  let helpers;
   let app;
   let request;
   let res;
@@ -34,9 +31,6 @@ describe('[ACCO] Account with system streams', function () {
   let basePath;
   let access;
   let user;
-  let serviceRegisterRequest;
-  let config;
-  let isDnsLess;
   let mall;
   let userAccountStorage;
 
@@ -84,10 +78,6 @@ describe('[ACCO] Account with system streams', function () {
   }
 
   before(async function () {
-    config = await getConfig();
-    config.injectTestConfig({ testsSkipForwardToRegister: false });
-    isDnsLess = config.get('dnsLess:isActive');
-    helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceStorageConnection());
     app = getApplication(true);
     await app.initiate();
@@ -104,25 +94,12 @@ describe('[ACCO] Account with system streams', function () {
     mall = await getMall();
   });
 
-  after(async function () {
-    config.injectTestConfig({});
-  });
-
   describe('[DA01] GET /account', () => {
     describe('[DA02] and when user has multiple events per stream and additional streams events', () => {
       let allVisibleAccountEvents;
-      let scope;
       before(async function () {
         await createUser();
         // create additional events for all editable streams
-        const settings = structuredClone(helpers.dependencies.settings);
-        scope = nock(settings.services.register.url);
-
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).times(3).reply(200, { errors: [] });
         const editableStreamsIds = ['email', 'phoneNumber', 'insurancenumber']
           .map(addCustomerPrefixToStreamId)
           .concat([addPrivatePrefixToStreamId('language')]);
@@ -233,23 +210,13 @@ describe('[ACCO] Account with system streams', function () {
       });
     });
     describe('[DA08] when updating a unique field that is already taken', () => {
-      describe('[DA09] and the field is not unique in mongodb', () => {
-        let scope;
+      describe('[DA09] and the field is not unique in PlatformDB', () => {
         let user2;
         before(async function () {
           user2 = await createUser();
           await createUser();
-          const settings = structuredClone(helpers.dependencies.settings);
-          scope = nock(settings.services.register.url);
-          scope.put('/users')
-            .reply(400, {
-              error: {
-                id: ErrorIds.ItemAlreadyExists,
-                data: { email: user2.attrs.email }
-              }
-            });
 
-          // modify account info
+          // modify account info — PlatformDB should reject the duplicate email
           res = await request.put(basePath)
             .send({ email: user2.attrs.email })
             .set('authorization', access.token);
@@ -272,17 +239,8 @@ describe('[ACCO] Account with system streams', function () {
       let emailAfter;
       let languageAfter;
 
-      let scope;
       before(async function () {
         await createUser();
-        const settings = structuredClone(helpers.dependencies.settings);
-        nock.cleanAll();
-        scope = nock(settings.services.register.url);
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).times(3).reply(200, {});
 
         emailBefore = await getAccountEvent('email', false);
         languageBefore = await getAccountEvent('language');
@@ -314,32 +272,6 @@ describe('[ACCO] Account with system streams', function () {
         assert.notEqual(languageBefore.content, languageAfter.content);
         assert.strictEqual(emailAfter.content, newEmail);
         assert.strictEqual(languageAfter.content, newLanguage);
-      });
-      it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
-        if (isDnsLess) this.skip();
-        // email is already skipped
-        assert.deepStrictEqual(serviceRegisterRequest, {
-          username: user.attrs.username,
-          user: {
-            email: [
-              {
-                creation: false,
-                isActive: true,
-                isUnique: true,
-                value: newEmail
-              }
-            ],
-            language: [
-              {
-                value: newLanguage,
-                isUnique: false,
-                isActive: true,
-                creation: false
-              }
-            ]
-          },
-          fieldsToDelete: {}
-        });
       });
     });
   });

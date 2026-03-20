@@ -9,24 +9,18 @@ const path = require('path');
 require('@pryv/boiler').init({
   appName: 'boiler-tests',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   }, {
     scope: 'defaults-paths',
-    file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
-  }, {
-    scope: 'audit-tests',
-    file: path.resolve(__dirname, '../../audit/config/test-config.yml')
-  }, {
-    scope: 'default-audit',
-    file: path.resolve(__dirname, '../../audit/config/default-config.yml')
+    file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
   }, {
     scope: 'default-audit-path',
-    file: path.resolve(__dirname, '../../audit/config/default-path.js')
+    file: path.resolve(__dirname, '../../../config/plugins/default-path.js')
   }, {
-    plugin: require('api-server/config/components/systemStreams')
+    plugin: require('../../../config/plugins/systemStreams')
   }]
 });

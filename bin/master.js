@@ -29,18 +29,38 @@ if (cluster.isPrimary) {
   require('@pryv/boiler').init({
     appName: 'master',
     baseFilesDir: path.resolve(__dirname, '../'),
-    baseConfigDir: path.resolve(__dirname, '../components/api-server/config/'),
+    baseConfigDir: path.resolve(__dirname, '../config/'),
     extraConfigs: [{
-      plugin: require('../components/api-server/config/components/systemStreams')
+      plugin: require('../config/plugins/systemStreams')
+    }, {
+      plugin: require('../config/plugins/core-identity')
     }]
   });
 
   const { getConfig, getLogger } = require('@pryv/boiler');
+  const rqliteProcess = require('../storages/engines/rqlite/src/rqliteProcess');
 
   (async () => {
     const config = await getConfig();
     const logger = getLogger('master');
     const log = (msg) => { logger.info(msg); console.log(`[master] ${msg}`); };
+
+    // Start rqlited if platform engine is rqlite
+    const platformEngine = config.get('storages:platform:engine');
+    if (platformEngine === 'rqlite') {
+      const rqliteConfig = config.get('storages:engines:rqlite') || {};
+      const httpPort = new URL(rqliteConfig.url || 'http://localhost:4001').port || 4001;
+      await rqliteProcess.start({
+        coreId: config.get('core:id') || 'single',
+        binPath: rqliteConfig.binPath || 'var-pryv/rqlite-bin/rqlited',
+        dataDir: rqliteConfig.dataDir || 'var-pryv/rqlite-data',
+        httpPort: parseInt(httpPort),
+        raftPort: rqliteConfig.raftPort || 4002,
+        dnsDomain: config.get('dns:domain') || null,
+        coreIp: config.get('core:ip') || null,
+        log
+      });
+    }
 
     // Run DB migrations before starting services (same as runit core/run)
     const runMigrations = config.get('cluster:runMigrations') ?? true;
@@ -59,6 +79,25 @@ if (cluster.isPrimary) {
     const tcpPubsub = require('../components/messages/src/tcp_pubsub');
     await tcpPubsub.init();
     log('TCP pub/sub broker started');
+
+    // Start DNS server if configured
+    let dnsServer = null;
+    if (config.get('dns:active')) {
+      const { createDnsServer } = require('../components/dns-server/src');
+      const { getPlatform } = require('../components/platform/src');
+      const platform = await getPlatform();
+      dnsServer = createDnsServer({
+        config,
+        platform,
+        logger: getLogger('dns-server')
+      });
+      await dnsServer.start({
+        port: config.get('dns:port') || 5353,
+        ip: config.get('dns:ip') || '0.0.0.0',
+        ip6: config.get('dns:ip6') || null
+      });
+      log('DNS server started');
+    }
 
     // Track worker types for targeted restart
     const workerTypes = new Map(); // worker.id → 'api' | 'hfs' | 'previews'
@@ -129,6 +168,18 @@ if (cluster.isPrimary) {
       log(`Previews worker prev${id} started (pid ${worker.process.pid})`);
     }
 
+    // --- IPC from workers (DNS record updates) ---
+    if (dnsServer) {
+      cluster.on('message', (worker, msg) => {
+        if (msg && msg.type === 'dns:updateRecords') {
+          const { subdomain, records } = msg.data || {};
+          if (subdomain && records) {
+            dnsServer.updateStaticEntry(subdomain, records);
+          }
+        }
+      });
+    }
+
     // --- Worker lifecycle ---
     cluster.on('exit', (worker, code, signal) => {
       const type = workerTypes.get(worker.id);
@@ -144,12 +195,20 @@ if (cluster.isPrimary) {
       }
     });
 
-    const shutdown = (sig) => {
+    const shutdown = async (sig) => {
       if (shuttingDown) return;
       shuttingDown = true;
       log(`Received ${sig}, shutting down workers...`);
       for (const id in cluster.workers) {
         cluster.workers[id].process.kill('SIGTERM');
+      }
+      // Stop DNS server
+      if (dnsServer) {
+        await dnsServer.stop();
+      }
+      // Stop rqlited after workers (so they can flush)
+      if (rqliteProcess.isRunning()) {
+        await rqliteProcess.stop(log);
       }
       // Force exit after timeout
       setTimeout(() => {

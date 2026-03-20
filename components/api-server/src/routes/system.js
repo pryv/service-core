@@ -35,6 +35,148 @@ module.exports = function system (expressApp, app) {
   expressApp.delete(Paths.System + '/users/:username/mfa', setMethodId('system.deactivateMfa'), function (req, res, next) {
     systemAPI.call(req.context, { username: req.params.username }, methodCallback(res, next, 204));
   });
+  // --------------------- admin user listing ----------------- //
+  expressApp.get(Paths.System + '/admin/users', setMethodId('system.listUsers'), function (req, res, next) {
+    systemAPI.call(req.context, {}, methodCallback(res, next, 200));
+  });
+  // --------------------- admin cores listing ----------------- //
+  expressApp.get(Paths.System + '/admin/cores', setMethodId('system.listCores'), function (req, res, next) {
+    systemAPI.call(req.context, {}, methodCallback(res, next, 200));
+  });
+  // --------------------- user validation (pre-registration) ----------------- //
+  expressApp.post(Paths.System + '/users/validate', contentType.json, async (req, res, next) => {
+    try {
+      const { username, invitationToken, uniqueFields = {} } = req.body;
+      const { getPlatform } = require('platform');
+      const platform = await getPlatform();
+      const platformDB = require('storages').platformDB;
+
+      // 1. Check invitation token via Platform (PlatformDB + config fallback)
+      const isTokenValid = await platform.isInvitationTokenValid(invitationToken);
+      if (!isTokenValid) {
+        return res.status(400).json({ reservation: false, error: { id: 'invitationToken-invalid' } });
+      }
+
+      // 2. Check username uniqueness (username is in usersRepository, not PlatformDB)
+      const { getUsersRepository } = require('business/src/users');
+      const usersRepository = await getUsersRepository();
+      if (await usersRepository.usernameExists(username)) {
+        return res.status(400).json({ reservation: false, error: { id: 'item-already-exists', data: { username } } });
+      }
+
+      // 3. Check unique fields
+      delete uniqueFields.username;
+      const conflicts = {};
+      for (const [field, value] of Object.entries(uniqueFields)) {
+        const existing = await platformDB.getUsersUniqueField(field, value);
+        if (existing) {
+          conflicts[field] = value;
+        }
+      }
+      if (Object.keys(conflicts).length > 0) {
+        return res.status(400).json({ reservation: false, error: { id: 'item-already-exists', data: conflicts } });
+      }
+
+      // 4. Reserve unique fields
+      uniqueFields.username = username;
+      for (const [field, value] of Object.entries(uniqueFields)) {
+        const reserved = await platformDB.setUserUniqueFieldIfNotExists(username, field, value);
+        if (!reserved) {
+          return res.status(400).json({ reservation: false, error: { id: 'item-already-exists', data: { [field]: value } } });
+        }
+      }
+
+      // 5. Set user-to-core mapping if provided
+      if (req.body.core && !platform.isSingleCore) {
+        await platformDB.setUserCore(username, req.body.core);
+      }
+
+      res.status(200).json({ reservation: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+  // --------------------- user update (system) ----------------- //
+  expressApp.put(Paths.System + '/users', contentType.json, async (req, res, next) => {
+    try {
+      const { username, user: fieldsForUpdate = {}, fieldsToDelete = {} } = req.body;
+      if (!username) {
+        return next(errors.invalidParametersFormat('Missing username'));
+      }
+      const platformDB = require('storages').platformDB;
+
+      // Prevent username change
+      delete fieldsForUpdate.username;
+      delete fieldsToDelete.username;
+
+      // Update indexed/unique fields
+      const systemStreams = require('business/src/system-streams');
+      for (const [field, value] of Object.entries(fieldsForUpdate)) {
+        if (systemStreams.uniqueFieldNames.includes(field)) {
+          await platformDB.setUserUniqueField(username, field, value);
+        }
+        if (systemStreams.indexedFieldNames.includes(field)) {
+          await platformDB.setUserIndexedField(username, field, value);
+        }
+      }
+
+      // Delete fields
+      for (const field of Object.keys(fieldsToDelete)) {
+        if (systemStreams.uniqueFieldNames.includes(field)) {
+          const currentValue = await platformDB.getUsersUniqueField(field, fieldsToDelete[field]);
+          if (currentValue === username) {
+            await platformDB.deleteUserUniqueField(field, fieldsToDelete[field]);
+          }
+        }
+        if (systemStreams.indexedFieldNames.includes(field)) {
+          await platformDB.deleteUserIndexedField(username, field);
+        }
+      }
+
+      res.status(200).json({ user: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+  // --------------------- user delete (system, with onlyReg/dryRun) ----------------- //
+  expressApp.delete(Paths.System + '/users/:username', async (req, res, next) => {
+    try {
+      const username = req.params.username;
+      const onlyReg = req.query.onlyReg === 'true';
+      const dryRun = req.query.dryRun === 'true';
+
+      if (!onlyReg) {
+        return next(errors.invalidOperation('This method needs onlyReg=true for now (query).'));
+      }
+
+      const platformDB = require('storages').platformDB;
+
+      // Check user exists via usersRepository (username is in MongoDB/PG, not PlatformDB)
+      const { getUsersRepository } = require('business/src/users');
+      const usersRepository = await getUsersRepository();
+      if (!await usersRepository.usernameExists(username)) {
+        return next(errors.unknownResource());
+      }
+
+      if (!dryRun) {
+        // Delete all platform entries for this user
+        const systemStreams = require('business/src/system-streams');
+        for (const field of systemStreams.uniqueFieldNames) {
+          const value = await platformDB.getUserIndexedField(username, field);
+          if (value != null) {
+            await platformDB.deleteUserUniqueField(field, value);
+          }
+        }
+        for (const field of systemStreams.indexedFieldNames) {
+          await platformDB.deleteUserIndexedField(username, field);
+        }
+      }
+
+      res.status(200).json({ result: { dryRun: !!dryRun, deleted: !dryRun } });
+    } catch (err) {
+      next(err);
+    }
+  });
   // --------------------- health checks ----------------- //
   expressApp.get(Paths.System + '/check-platform-integrity', setMethodId('system.checkPlatformIntegrity'), function (req, res, next) {
     systemAPI.call(req.context, {}, methodCallback(res, next, 200));

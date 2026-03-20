@@ -14,6 +14,12 @@ module.exports = async function platformCheckIntegrity (platformWideDB) {
   const allEntries = await platformWideDB.getAllWithPrefix('user');
   const platformEntryByUser = {};
   for (const entry of allEntries) {
+    // Skip internal fields (e.g. _core for multi-core mapping)
+    if (entry.field && entry.field.startsWith('_')) continue;
+    // Skip entries without a username (e.g. user-core/ prefix entries)
+    if (entry.username == null) continue;
+    // Skip reserved usernames (e.g. __cores__ for core registration)
+    if (entry.username.startsWith('__')) continue;
     if (platformEntryByUser[entry.username] == null) platformEntryByUser[entry.username] = {};
     platformEntryByUser[entry.username][entry.field] = { value: entry.value, isUnique: entry.isUnique };
   }

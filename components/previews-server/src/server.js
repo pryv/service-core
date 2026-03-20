@@ -8,12 +8,8 @@ const path = require('path');
 const { getConfig, getLogger } = require('@pryv/boiler').init({
   appName: 'previews-server',
   baseFilesDir: path.resolve(__dirname, '../../../'),
-  baseConfigDir: path.resolve(__dirname, '../../api-server/config'),
+  baseConfigDir: path.resolve(__dirname, '../../../config/'),
   extraConfigs: [
-    {
-      scope: 'defaults-previews',
-      file: path.resolve(__dirname, '../config/defaults-config.yml')
-    },
     {
       scope: 'serviceInfo',
       key: 'service',
@@ -21,10 +17,10 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
     },
     {
       scope: 'defaults-paths',
-      file: path.resolve(__dirname, '../../api-server/config/paths-config.js')
+      file: path.resolve(__dirname, '../../../config/plugins/paths-config.js')
     },
     {
-      plugin: require('api-server/config/components/systemStreams')
+      plugin: require('../../../config/plugins/systemStreams')
     }
   ]
 });
@@ -75,7 +71,7 @@ async function start () {
   const testNotifier = await testMessaging.getTestNotifier();
   await storageLayer.waitForConnection();
   const backlog = 512;
-  server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
+  server.listen(config.get('http:previewsPort'), config.get('http:ip'), backlog, function () {
     const address = server.address();
     const protocol = server.key ? 'https' : 'http';
     server.url = protocol + '://' + address.address + ':' + address.port;

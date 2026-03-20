@@ -23,7 +23,7 @@ exports.mochaHooks = {
     const config = await getConfig();
 
     // create preview directories that would normally be created in normal setup
-    const previewsDirPath = config.get('eventFiles:previewsDirPath');
+    const previewsDirPath = config.get('storages:engines:filesystem:previewsDirPath');
 
     if (!fs.existsSync(previewsDirPath)) {
       fs.mkdirSync(previewsDirPath, { recursive: true });

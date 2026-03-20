@@ -6,13 +6,11 @@
  */
 
 const cuid = require('cuid');
-const nock = require('nock');
 const path = require('path');
 const assert = require('node:assert');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('@pryv/boiler');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const { getApplication } = require('api-server/src/application');
@@ -26,7 +24,6 @@ const { produceStorageConnection } = require('api-server/test/test-helpers');
 const { getMall } = require('mall');
 
 describe('[FG5R] Events of system streams', () => {
-  let config;
   let validation;
   let app;
   let request;
@@ -35,9 +32,6 @@ describe('[FG5R] Events of system streams', () => {
   let basePath;
   let access;
   let user;
-  let serviceRegisterRequest;
-  let scope;
-  let isDnsLess;
   let mall;
   let eventData;
 
@@ -64,9 +58,6 @@ describe('[FG5R] Events of system streams', () => {
   }
 
   before(async function () {
-    config = await getConfig();
-    config.injectTestConfig({ testsSkipForwardToRegister: false });
-    isDnsLess = config.get('dnsLess:isActive');
     const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceStorageConnection());
@@ -88,10 +79,6 @@ describe('[FG5R] Events of system streams', () => {
     request = supertest(app.expressApp);
 
     mall = await getMall();
-  });
-
-  after(async function () {
-    config.injectTestConfig({});
   });
 
   describe('[ED01] GET /events', () => {
@@ -311,14 +298,6 @@ describe('[FG5R] Events of system streams', () => {
                 type: 'string/pryv'
               };
 
-              nock.cleanAll();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).reply(200, { errors: [] });
-
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
@@ -340,23 +319,6 @@ describe('[FG5R] Events of system streams', () => {
               assert.strictEqual(allEvents.length, 1);
               assert.strictEqual(allEvents[0].content, eventData.content);
               assert.deepStrictEqual(allEvents[0].streamIds, [addPrivatePrefixToStreamId('language')]);
-            });
-            it('[199D] should notify register with the new data', function () {
-              if (isDnsLess) this.skip();
-              assert.strictEqual(scope.isDone(), true);
-
-              assert.deepStrictEqual(serviceRegisterRequest, {
-                username: user.attrs.username,
-                user: {
-                  language: [{
-                    value: eventData.content,
-                    isUnique: false,
-                    isActive: true,
-                    creation: true
-                  }]
-                },
-                fieldsToDelete: {}
-              });
             });
           });
 
@@ -392,14 +354,6 @@ describe('[FG5R] Events of system streams', () => {
                 type: 'string/pryv'
               };
 
-              nock.cleanAll();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).reply(200, { errors: [] });
-
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
@@ -418,44 +372,20 @@ describe('[FG5R] Events of system streams', () => {
               assert.deepStrictEqual(allEventsInDb[0].streamIds, [streamId]);
               assert.strictEqual(allEventsInDb[0].content, eventData.content);
             });
-            it('[D316] should notify register with the new data', function () {
-              if (isDnsLess) this.skip();
-              assert.strictEqual(scope.isDone(), true);
-
-              assert.deepStrictEqual(serviceRegisterRequest, {
-                username: user.attrs.username,
-                user: {
-                  email: [{
-                    value: eventData.content,
-                    isUnique: true,
-                    isActive: true,
-                    creation: true
-                  }]
-                },
-                fieldsToDelete: {}
-              });
-            });
           });
-          describe('[ED21] whose content is already taken in register', () => {
+          describe('[ED21] whose content is already taken by another user', () => {
             before(async function () {
-              if (isDnsLess) this.skip();
+              // Create user1 with a specific email
+              const user1 = await createUser();
+              const user1Email = user1.attrs.email;
+
+              // Create user2 and try to use user1's email
               await createUser();
               eventData = {
                 streamIds: [addCustomerPrefixToStreamId('email')],
-                content: charlatan.Lorem.characters(7),
+                content: user1Email,
                 type: 'string/pryv'
               };
-
-              nock.cleanAll();
-              nock(config.get('services:register:url')).put('/users')
-                .reply(409, {
-                  error: {
-                    id: ErrorIds.ItemAlreadyExists,
-                    data: {
-                      email: eventData.content
-                    }
-                  }
-                });
 
               res = await request.post(basePath)
                 .send(eventData)
@@ -470,29 +400,23 @@ describe('[FG5R] Events of system streams', () => {
               assert.deepStrictEqual(res.body.error.data, { email: eventData.content });
             });
           });
-          describe('[6B8D] When creating an event that is already taken only on core', () => {
-            // simulating dnsLess behaviour for non-unique event error
+          describe('[6B8D] When creating an event with an email already taken by another user', () => {
             let streamId;
-            const email = charlatan.Internet.email();
+            let takenEmail;
             before(async function () {
               streamId = addCustomerPrefixToStreamId('email');
+
+              // Create user1 — their email is registered in PlatformDB via insertOne
+              const user1 = await createUser();
+              takenEmail = user1.attrs.email;
+
+              // Create user2 and try to use user1's email
               await createUser();
               eventData = {
                 streamIds: [streamId],
-                content: email,
+                content: takenEmail,
                 type: 'string/pryv'
               };
-
-              nock.cleanAll();
-              nock(config.get('services:register:url')).put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).times(2).reply(200, { errors: [] });
-
-              await request.post(basePath)
-                .send(eventData)
-                .set('authorization', access.token);
               res = await request.post(basePath)
                 .send(eventData)
                 .set('authorization', access.token);
@@ -503,7 +427,7 @@ describe('[FG5R] Events of system streams', () => {
             });
             it('[121E] should return the correct error', () => {
               assert.strictEqual(res.body.error.id, ErrorIds.ItemAlreadyExists);
-              assert.deepStrictEqual(res.body.error.data, { email });
+              assert.deepStrictEqual(res.body.error.data, { email: takenEmail });
             });
           });
         });
@@ -549,14 +473,6 @@ describe('[FG5R] Events of system streams', () => {
           }]
         });
 
-        nock.cleanAll();
-        scope = nock(config.get('services:register:url'));
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).reply(200, { errors: [] });
-
         eventData = {
           streamIds: [systemStreamId],
           content: charlatan.Lorem.characters(7),
@@ -574,22 +490,6 @@ describe('[FG5R] Events of system streams', () => {
       it('[764A] should return the created event', () => {
         assert.strictEqual(res.body.event.createdBy, sharedAccess.attrs.id);
         assert.deepStrictEqual(res.body.event.streamIds, [systemStreamId]);
-      });
-      it('[765A] should notify register with the new data', function () {
-        if (isDnsLess) this.skip();
-        assert.strictEqual(scope.isDone(), true);
-        assert.deepStrictEqual(serviceRegisterRequest, {
-          username: user.attrs.username,
-          user: {
-            [streamId]: [{
-              value: res.body.event.content,
-              isUnique: true,
-              isActive: true,
-              creation: true
-            }]
-          },
-          fieldsToDelete: {}
-        });
       });
     });
 
@@ -631,8 +531,6 @@ describe('[FG5R] Events of system streams', () => {
   describe('[ED08] PUT /events/<id>', () => {
     describe('[ED25] when using a personal access', () => {
       describe('[ED26] to update an editable system event', () => {
-        let scope;
-        let serviceRegisterRequest;
         async function editEvent (streamId, isFaulty = false) {
           eventData = {
             streamIds: [streamId],
@@ -724,9 +622,6 @@ describe('[FG5R] Events of system streams', () => {
         });
 
         describe('[ED32] which is indexed', function () {
-          before(function () {
-            if (isDnsLess) this.skip();
-          });
           describe('[ED33] as register is working', () => {
             describe('[ED34] when the new value is valid', () => {
               const streamId = 'language';
@@ -734,33 +629,10 @@ describe('[FG5R] Events of system streams', () => {
               before(async function () {
                 systemStreamId = addPrivatePrefixToStreamId(streamId);
                 await createUser();
-                nock.cleanAll();
-                scope = nock(config.get('services:register:url'));
-                scope.put('/users',
-                  (body) => {
-                    serviceRegisterRequest = body;
-                    return true;
-                  }).reply(200, { errors: [] });
                 await editEvent(systemStreamId);
               });
               it('[0RUK] should return 200', () => {
                 assert.strictEqual(res.status, 200);
-              });
-              it('[E43M] should notify register with the updated data', () => {
-                assert.strictEqual(scope.isDone(), true);
-
-                assert.deepStrictEqual(serviceRegisterRequest, {
-                  username: user.attrs.username,
-                  user: {
-                    [streamId]: [{
-                      value: eventData.content,
-                      isUnique: false,
-                      isActive: true,
-                      creation: false
-                    }]
-                  },
-                  fieldsToDelete: {}
-                });
               });
             });
             describe('[ED36] when the new value is invalid', () => {
@@ -776,41 +648,16 @@ describe('[FG5R] Events of system streams', () => {
               });
             });
           });
-          describe('[ED37] as register is out', () => {
+          describe('[ED37] without external register (PlatformDB handles all)', () => {
             const streamId = 'language';
             let systemStreamId;
             before(async function () {
               systemStreamId = addPrivatePrefixToStreamId(streamId);
               await createUser();
-              nock.cleanAll();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).replyWithError({
-                message: 'something awful happened',
-                code: '500'
-              });
               await editEvent(systemStreamId);
             });
-            it('[AA92] should return 500', () => {
-              assert.strictEqual(res.status, 500);
-            });
-            it('[645C] should notify register with the updated data', () => {
-              assert.strictEqual(scope.isDone(), true);
-              assert.deepStrictEqual(serviceRegisterRequest, {
-                username: user.attrs.username,
-                user: {
-                  [streamId]: [{
-                    value: eventData.content,
-                    isUnique: false,
-                    isActive: true,
-                    creation: false
-                  }]
-                },
-                fieldsToDelete: {}
-              });
+            it('[AA92] should return 200', () => {
+              assert.strictEqual(res.status, 200);
             });
           });
         });
@@ -822,62 +669,30 @@ describe('[FG5R] Events of system streams', () => {
             before(async function () {
               systemStreamId = addCustomerPrefixToStreamId(streamId);
               await createUser();
-              scope = nock(config.get('services:register:url'));
-              scope.put('/users',
-                (body) => {
-                  serviceRegisterRequest = body;
-                  return true;
-                }).reply(200, { errors: [] });
               await editEvent(systemStreamId);
             });
             it('[4BB1] should return 200', () => {
               assert.strictEqual(res.status, 200);
             });
-            it('[GWHU] should send a request to service-register to update the unique field', function () {
-              if (isDnsLess) this.skip();
-              assert.strictEqual(scope.isDone(), true);
-              assert.deepStrictEqual(serviceRegisterRequest, {
-                username: user.attrs.username,
-                user: {
-                  email: [{
-                    value: eventData.content,
-                    isUnique: true,
-                    isActive: true,
-                    creation: false
-                  }]
-                },
-                fieldsToDelete: {}
-              });
-            });
           });
           describe('[ED41] by updating a unique field that is already taken', () => {
-            describe('[ED42] with a field that is not unique in register', () => {
+            describe('[ED42] with a field that is already taken by another user', () => {
               let systemStreamId;
               before(async function () {
-                if (isDnsLess) this.skip();
                 const streamId = 'email';
                 systemStreamId = addCustomerPrefixToStreamId(streamId);
 
+                // Create user1 — their email is already in PlatformDB
+                const user1 = await createUser();
+                const takenEmail = user1.attrs.email;
+
+                // Create user2 and try to update their email to user1's email
                 await createUser();
                 eventData = {
                   streamIds: [systemStreamId],
-                  content: charlatan.Lorem.characters(7),
+                  content: takenEmail,
                   type: 'string/pryv'
                 };
-                nock.cleanAll();
-                scope = nock(config.get('services:register:url'));
-                scope.put('/users',
-                  (body) => {
-                    serviceRegisterRequest = body;
-                    return true;
-                  }).reply(409, {
-                  error: {
-                    id: ErrorIds.ItemAlreadyExists,
-                    data: {
-                      [streamId]: eventData.content
-                    }
-                  }
-                });
                 const initialEvent = await getOneEvent(user.attrs.id, systemStreamId);
 
                 res = await request.put(path.join(basePath, initialEvent.id))
@@ -888,23 +703,6 @@ describe('[FG5R] Events of system streams', () => {
                 assert.strictEqual(res.status, 409);
                 assert.strictEqual(res.body.error.id, ErrorIds.ItemAlreadyExists);
                 assert.deepStrictEqual(res.body.error.data, { email: eventData.content });
-              });
-              it('[5A04] should notify register with the updated data', function () {
-                if (isDnsLess) this.skip();
-                assert.strictEqual(scope.isDone(), true);
-
-                assert.deepStrictEqual(serviceRegisterRequest, {
-                  username: user.attrs.username,
-                  user: {
-                    email: [{
-                      value: eventData.content,
-                      isUnique: true,
-                      isActive: true,
-                      creation: false
-                    }]
-                  },
-                  fieldsToDelete: {}
-                });
               });
             });
             describe('[ED43] with a field that is not unique in mongodb', () => {
@@ -917,13 +715,6 @@ describe('[FG5R] Events of system streams', () => {
                   content: user1.attrs.email,
                   type: 'string/pryv'
                 };
-                nock.cleanAll();
-                scope = nock(config.get('services:register:url'));
-                scope.put('/users',
-                  (body) => {
-                    serviceRegisterRequest = body;
-                    return true;
-                  }).reply(200, { errors: [] });
                 const initialEvent = await getOneEvent(user2.attrs.id, streamId);
 
                 res = await request.put(path.join(basePath, initialEvent.id))

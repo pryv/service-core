@@ -1,0 +1,212 @@
+---
+# Unified service-core configuration
+# Merged from per-component configs into a single source of truth.
+
+dnsLess:
+  isActive: true
+
+reporting:
+  templateVersion: '1.0.0'
+
+http:
+  ip: '127.0.0.1'
+  port: 3000
+  hfsPort: 4000
+  previewsPort: 3001
+
+# --- Storage engines ---
+# Each storage type declares its engine. Mirrors storages/engines/ structure.
+storages:
+  base:
+    engine: mongodb         # baseStorage + dataStore
+  platform:
+    engine: sqlite          # platformStorage
+  series:
+    engine: influxdb        # seriesStorage
+  file:
+    engine: filesystem      # fileStorage
+  audit:
+    engine: sqlite          # auditStorage
+
+  engines:
+    mongodb:
+      authUser: ''
+      authPassword: ''
+      host: '127.0.0.1'
+      port: 27017
+      name: 'pryv-node'
+      connectTimeoutMS: 60000
+      socketTimeoutMS: 60000
+    postgresql:
+      host: '127.0.0.1'
+      port: 5432
+      database: 'pryv-node'
+      user: 'pryv'
+      password: ''
+      max: 20
+    sqlite:
+      path: 'REPLACE ME'
+    filesystem:
+      attachmentsDirPath: 'REPLACE ME'
+      previewsDirPath: 'REPLACE ME'
+    influxdb:
+      host: 127.0.0.1
+      port: 8086
+    rqlite:
+      url: http://localhost:4001
+      raftPort: 4002                  # Raft consensus port (common across all cores)
+      dataDir: var-pryv/rqlite-data   # rqlite data directory (relative to service-core root)
+      binPath: var-pryv/rqlite-bin/rqlited  # rqlited binary path
+
+eventFiles:
+  previewsCacheMaxAge: 604800000 # 1 week in ms
+  previewsCacheCleanUpCronTime: 00 00 2 * * * # every day at 2:00:00AM
+
+invitationTokens: null  # null = allow all, [] = block all, ['token1'] = check list
+
+auth:
+  filesReadTokenSecret: 'REPLACE ME'
+  passwordComplexityMinCharCategories: 0
+  passwordComplexityMinLength: 0
+  passwordAgeMaxDays: 0
+  passwordAgeMinDays: 0
+  passwordPreventReuseHistoryLength: 0
+
+customExtensions:
+  defaultFolder: 'REPLACE ME'
+  customAuthStepFn: ''
+
+testNotifications:
+  enabled: false
+
+updates:
+  ignoreProtectedFields: false
+
+tcpBroker:
+  port: 4222
+
+webhooks:
+  minIntervalMs: 5000
+  maxRetries: 5
+  runsSize: 20
+
+versioning:
+  forceKeepHistory: false
+  deletionMode: 'keep-nothing'
+
+user-account:
+  delete: # array of entities that can delete a user account
+    - 'adminToken' # enable deletion from admin Panel
+    #- 'personalToken' # enable self deletion request with a personal token
+
+custom:
+  systemStreams:
+    account:
+    - id: email
+      isIndexed: true
+      isUnique: true
+      isShown: true
+      isEditable: true
+      type: email/string
+      name: Email
+      isRequiredInValidation: true
+  dataStores: []
+
+caching:
+  isActive: true
+
+logs:
+  console:
+    active: false
+    level: info
+  file:
+    active: false
+    path: "var-pryv/logs/core.log"
+    level: info
+    rotation:
+      isActive: true
+      days: 14
+
+uploads:
+  maxSizeMb: 50
+
+trace:
+  enable: false
+
+integrity:
+  isActive:
+    attachments: true
+    events: true
+    accesses: true
+  algorithm: sha256
+
+accessTracking:
+  isActive: true
+
+# --- Core identity (multi-core) ---
+# Single-core: only core.id needed (default 'single').
+# Multi-core: each core has its own id; FQDN = {core.id}.{dns.domain}
+core:
+  id: single            # core identifier; FQDN = {id}.{dns.domain}
+  ip: null              # A record for this core (null = no DNS record)
+  ipv6: null            # AAAA record
+  cname: null            # CNAME record (used if no ip/ipv6)
+  hosting: null          # hosting key this core belongs to (null = default)
+  available: true        # false = not accepting new registrations
+
+dns:
+  domain: null           # primary domain (e.g. pryv.me); null = dnsLess mode
+  active: false          # start DNS server (default off)
+  port: 5353             # UDP port (5353 for dev, 53 for prod via Docker mapping)
+  ip: '0.0.0.0'         # bind address
+  ip6: null              # IPv6 bind address (null = disabled)
+  defaultTTL: 300        # TTL in seconds
+  staticEntries: {}      # subdomain → { cname: "..." } or { a: [...] } or { txt: [...] }
+  records:               # root domain records
+    root:
+      a: []
+      aaaa: []
+      ns: []
+      mx: []
+      txt: []
+      caa: []
+      soa: null
+
+# --- Hostings (regions/zones/providers) ---
+# Structure matches legacy /reg/hostings response for backward compatibility.
+# In single-core mode, a default hosting is auto-generated.
+hostings: null           # null = auto-generate; or { regions: { ... } }
+
+cluster:
+  apiWorkers: 2
+  hfsWorkers: 1
+  previewsWorker: true
+  runMigrations: true
+
+# --- Audit ---
+audit:
+  active: true
+  storage:
+    filter:
+      methods:
+        include: ['all']
+        exclude: []
+
+  syslog:
+    options:
+      host: localhost
+      #port: 514
+      protocol: unix
+      #path: /dev/log # set by config/default-path.js
+      localhost: ''
+      app_name: pryv-audit
+
+    formats:
+      default:
+        template: "{userid} {type} createdBy:{createdBy} {streamIds} {content}"
+        level: notice
+    filter:
+      methods:
+        include: ['all']
+        exclude: []
+
