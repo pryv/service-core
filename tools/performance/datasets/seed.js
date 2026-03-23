@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import { parseConfig } from '../lib/config.js';
+import { snapshotStorageSizes, storageDelta, formatStorageSizes } from '../lib/storage-size.js';
 
 const config = parseConfig(process.argv.slice(2));
 const TARGET = config.target.replace(/\/$/, '');
@@ -393,6 +394,10 @@ async function main () {
   console.log(`Seeding ${NUM_USERS} users with ${EVENTS_PER_USER} events each (profile: ${PROFILE})`);
   console.log(`Target: ${TARGET}`);
 
+  // capture baseline storage snapshot (empty DB after fresh start)
+  const storageBaseline = snapshotStorageSizes();
+  console.log('Storage baseline captured');
+
   const streams = PROFILE === 'iot' ? iotStreams() : manualStreams();
   const eventGen = PROFILE === 'iot' ? iotEventGenerator(streams) : manualEventGenerator(streams);
 
@@ -575,6 +580,19 @@ async function main () {
       eventsCreated: createdCount
     });
   }
+
+  // capture post-seed storage snapshot
+  const storageAfterSeed = snapshotStorageSizes();
+  const seedStorageDelta = storageDelta(storageBaseline, storageAfterSeed);
+
+  seedResult.storage = {
+    baseline: storageBaseline,
+    afterSeed: storageAfterSeed,
+    seedDelta: seedStorageDelta
+  };
+
+  console.log('\nSeed storage cost:');
+  console.log(formatStorageSizes(seedStorageDelta));
 
   // write result
   const outPath = new URL('seed-result.json', import.meta.url).pathname;

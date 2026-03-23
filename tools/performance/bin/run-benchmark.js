@@ -85,6 +85,7 @@ async function main () {
 async function runAll (config, seedData, available) {
   console.log(`Running all ${available.length} scenarios...\n`);
 
+  const baseline = seedData.storage?.baseline;
   const sizeBefore = snapshotStorageSizes();
   const allScenarios = [];
 
@@ -118,23 +119,31 @@ async function runAll (config, seedData, available) {
 
   const sizeAfter = snapshotStorageSizes();
   const totalStorage = storageDelta(sizeBefore, sizeAfter);
+  const totalFromBaseline = baseline ? storageDelta(baseline, sizeAfter) : null;
 
   // write combined result
-  const paths = writeFullResult(config, allScenarios, totalStorage);
+  const paths = writeFullResult(config, allScenarios, totalStorage, totalFromBaseline);
   printFullSummary(allScenarios);
-  console.log('\n  Total storage:\n' + formatStorageSizes(totalStorage));
+  console.log('\n  Storage (this run):\n' + formatStorageSizes(totalStorage));
+  if (totalFromBaseline) {
+    console.log('  Storage (from clean baseline):\n' + formatStorageSizes(totalFromBaseline));
+  }
   console.log(`\n  Saved: ${paths.jsonPath}`);
   console.log(`         ${paths.mdPath}`);
   console.log('\nDone.');
 }
 
 async function runSingle (config, seedData, scenarioModule) {
+  const baseline = seedData.storage?.baseline;
   const sizeBefore = snapshotStorageSizes();
   const monitors = startMonitors();
   const results = await scenarioModule.run(config, seedData);
   const resources = aggregateResources(monitors);
   const sizeAfter = snapshotStorageSizes();
+  // delta vs benchmark start
   const storage = storageDelta(sizeBefore, sizeAfter);
+  // delta vs clean baseline (if available from seed)
+  const storageFromBaseline = baseline ? storageDelta(baseline, sizeAfter) : null;
 
   const rawRuns = Array.isArray(results) ? results : [results];
   const entries = rawRuns.map(run => ({
@@ -144,13 +153,16 @@ async function runSingle (config, seedData, scenarioModule) {
   }));
 
   printScenarioSummary(config.scenario, entries);
-  const paths = writeScenarioResult(config, config.scenario, entries, resources, storage);
+  const paths = writeScenarioResult(config, config.scenario, entries, resources, storage, storageFromBaseline);
   console.log(`\n  Saved: ${paths.jsonPath}`);
   console.log(`         ${paths.mdPath}`);
   if (resources?.peak) {
     console.log(`  Resources: peak RSS=${resources.peak.rssMb}MB, peak CPU=${resources.peak.cpuPercent}%`);
   }
-  console.log('  Storage:\n' + formatStorageSizes(storage));
+  console.log('  Storage (this run):\n' + formatStorageSizes(storage));
+  if (storageFromBaseline) {
+    console.log('  Storage (from clean baseline):\n' + formatStorageSizes(storageFromBaseline));
+  }
   console.log('\nDone.');
 }
 

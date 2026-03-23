@@ -60,7 +60,7 @@ function summarizeErrors (failed) {
  * Write a single combined result file (JSON + markdown) for an entire scenario run.
  * `entries` is an array of { subScenario, stats, extra }.
  */
-export function writeScenarioResult (config, scenario, entries, resources, storage) {
+export function writeScenarioResult (config, scenario, entries, resources, storage, storageFromBaseline) {
   const system = getSystemInfo();
   const ts = new Date().toISOString();
   const label = config.label || `c${config.concurrency}-d${config.duration}`;
@@ -85,7 +85,8 @@ export function writeScenarioResult (config, scenario, entries, resources, stora
       results: e.stats
     })),
     resources: resources || null,
-    storage: storage || null
+    storage: storage || null,
+    storageFromBaseline: storageFromBaseline || null
   };
 
   const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
@@ -192,9 +193,25 @@ function toSummaryMarkdown (result) {
     lines.push('');
   }
 
-  // Storage section
+  // Storage section — from clean baseline (if available)
+  if (result.storageFromBaseline) {
+    lines.push('## Storage (from clean baseline)');
+    lines.push('');
+    lines.push('| Engine | Clean DB | After run | Total growth |');
+    lines.push('|--------|----------|-----------|-------------|');
+    for (const [key, val] of Object.entries(result.storageFromBaseline)) {
+      if (key === 'syslogLines') {
+        lines.push(`| ${key} | ${val.before} | ${val.after} | +${val.delta} |`);
+      } else {
+        lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Storage section — this run only
   if (result.storage) {
-    lines.push('## Storage');
+    lines.push('## Storage (this run)');
     lines.push('');
     lines.push('| Engine | Before | After | Delta |');
     lines.push('|--------|--------|-------|-------|');
@@ -374,7 +391,7 @@ export function printSweepSummary (scenario, sweepResults) {
  * Write a full run result — all scenarios in one file.
  * `allScenarios` is an array of { scenario, entries, resources }.
  */
-export function writeFullResult (config, allScenarios, totalStorage) {
+export function writeFullResult (config, allScenarios, totalStorage, totalFromBaseline) {
   const system = getSystemInfo();
   const ts = new Date().toISOString();
   const label = config.label || `full-c${config.concurrency}-d${config.duration}`;
@@ -404,7 +421,8 @@ export function writeFullResult (config, allScenarios, totalStorage) {
         results: e.stats
       }))
     })),
-    totalStorage: totalStorage || null
+    totalStorage: totalStorage || null,
+    totalStorageFromBaseline: totalFromBaseline || null
   };
 
   const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
@@ -477,14 +495,34 @@ function toFullMarkdown (result) {
     lines.push('');
   }
 
-  // Total storage
+  // Storage from clean baseline
+  if (result.totalStorageFromBaseline) {
+    lines.push('## Storage (from clean baseline)');
+    lines.push('');
+    lines.push('| Engine | Clean DB | After all | Total growth |');
+    lines.push('|--------|----------|-----------|-------------|');
+    for (const [key, val] of Object.entries(result.totalStorageFromBaseline)) {
+      if (key === 'syslogLines') {
+        lines.push(`| ${key} | ${val.before} | ${val.after} | +${val.delta} |`);
+      } else {
+        lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Storage this run
   if (result.totalStorage) {
-    lines.push('## Storage (total)');
+    lines.push('## Storage (benchmark run only)');
     lines.push('');
     lines.push('| Engine | Before | After | Delta |');
     lines.push('|--------|--------|-------|-------|');
     for (const [key, val] of Object.entries(result.totalStorage)) {
-      lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
+      if (key === 'syslogLines') {
+        lines.push(`| ${key} | ${val.before} | ${val.after} | +${val.delta} |`);
+      } else {
+        lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
+      }
     }
     lines.push('');
   }
