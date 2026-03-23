@@ -207,3 +207,134 @@ export function printScenarioSummary (scenario, entries) {
     console.log('  ' + row);
   }
 }
+
+/**
+ * Write a sweep result — one scenario at multiple concurrency levels.
+ */
+export function writeSweepResult (config, scenario, sweepResults) {
+  const system = getSystemInfo();
+  const ts = new Date().toISOString();
+  const levels = sweepResults.map(s => s.concurrency);
+  const label = config.label || `sweep-${levels.join('-')}-d${config.duration}`;
+
+  const result = {
+    meta: {
+      timestamp: ts,
+      scenario,
+      label,
+      type: 'sweep',
+      duration: config.duration,
+      concurrencyLevels: levels
+    },
+    system,
+    config: {
+      target: config.target,
+      profile: config.profile || null,
+      ...config.serverConfig
+    },
+    sweep: sweepResults.map(sr => ({
+      concurrency: sr.concurrency,
+      resources: sr.resources,
+      runs: sr.entries.map(e => ({
+        subScenario: e.subScenario,
+        ...e.extra,
+        results: e.stats
+      }))
+    }))
+  };
+
+  const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
+  const name = `${tsSlug}-${scenario}-${slugify(label)}`;
+  const jsonPath = path.join(resultsDir, name + '.json');
+  const mdPath = path.join(resultsDir, name + '.md');
+
+  fs.mkdirSync(resultsDir, { recursive: true });
+  fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2) + '\n');
+  fs.writeFileSync(mdPath, toSweepMarkdown(result) + '\n');
+
+  return { jsonPath, mdPath };
+}
+
+function toSweepMarkdown (result) {
+  const { meta, system, sweep } = result;
+  const lines = [];
+
+  lines.push(`# Concurrency Sweep: ${meta.scenario}`);
+  lines.push('');
+  lines.push(`**Date:** ${meta.timestamp}  `);
+  lines.push(`**Duration:** ${meta.duration}s per level  `);
+  lines.push(`**Levels:** ${meta.concurrencyLevels.join(', ')}  `);
+  lines.push(`**Target:** ${result.config.target} | **Profile:** ${result.config.profile || 'n/a'}`);
+  lines.push('');
+
+  // Server config
+  const cfg = result.config;
+  lines.push('## Server Config');
+  if (cfg.engines) {
+    lines.push(`- **Base storage:** ${cfg.engines.base || 'n/a'}`);
+    lines.push(`- **Platform storage:** ${cfg.engines.platform || 'n/a'}`);
+  }
+  if (cfg.audit != null) lines.push(`- **Audit:** ${cfg.audit ? 'ON' : 'OFF'}`);
+  if (cfg.integrity != null) lines.push(`- **Integrity:** ${JSON.stringify(cfg.integrity)}`);
+  if (cfg.clusterWorkers != null) lines.push(`- **API workers:** ${cfg.clusterWorkers}`);
+  lines.push('');
+
+  lines.push('## System');
+  lines.push(`- **CPU:** ${system.cpuModel} (${system.cpuCores} cores)`);
+  lines.push(`- **Memory:** ${system.memoryTotal}`);
+  lines.push(`- **Node:** ${system.nodeVersion} | **Version:** ${system.version} (${system.gitCommit})`);
+  lines.push('');
+
+  // Collect all unique sub-scenarios
+  const subScenarios = [...new Set(sweep.flatMap(s => s.runs.map(r => r.subScenario)))];
+
+  // One table per sub-scenario showing concurrency vs throughput/latency
+  for (const sub of subScenarios) {
+    lines.push(`## ${sub}`);
+    lines.push('');
+    lines.push('| Concurrency | Req/s | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) | RSS peak (MB) | Fail |');
+    lines.push('|---:|---:|---:|---:|---:|---:|---:|---:|');
+
+    for (const level of sweep) {
+      const run = level.runs.find(r => r.subScenario === sub);
+      if (!run) continue;
+      const s = run.results;
+      const lat = s.latency;
+      const rss = level.resources?.peak?.rssMb ?? '-';
+      lines.push(`| ${level.concurrency} | ${s.requestsPerSecond} | ${lat?.p50 ?? '-'} | ${lat?.p95 ?? '-'} | ${lat?.p99 ?? '-'} | ${lat?.max ?? '-'} | ${rss} | ${s.failedRequests} |`);
+    }
+    lines.push('');
+  }
+
+  lines.push('## Notes');
+  lines.push('');
+  lines.push('_Add observations here._');
+
+  return lines.join('\n');
+}
+
+/**
+ * Print sweep summary to console — throughput vs concurrency.
+ */
+export function printSweepSummary (scenario, sweepResults) {
+  const subScenarios = [...new Set(sweepResults.flatMap(s => s.entries.map(e => e.subScenario)))];
+
+  console.log(`\n╔══ Sweep Summary: ${scenario} ══╗`);
+  for (const sub of subScenarios) {
+    console.log(`\n  ${sub}:`);
+    console.log('  Concurrency  Req/s    p50    p95    max');
+    console.log('  ' + '─'.repeat(45));
+    for (const level of sweepResults) {
+      const entry = level.entries.find(e => e.subScenario === sub);
+      if (!entry) continue;
+      const s = entry.stats;
+      const lat = s.latency;
+      const row = String(level.concurrency).padStart(11) +
+        String(s.requestsPerSecond).padStart(7) +
+        (lat ? String(lat.p50).padStart(7) : '      -') +
+        (lat ? String(lat.p95).padStart(7) : '      -') +
+        (lat ? String(lat.max).padStart(7) : '      -');
+      console.log('  ' + row);
+    }
+  }
+}

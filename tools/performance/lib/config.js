@@ -19,7 +19,8 @@ const defaults = {
   matrix: false,
   seedFile: null, // path to seed-result.json
   clean: false, // cleanup mode: delete seeded users via API
-  adminKey: 'CHANGE_ME_WITH_SOMETHING' // auth:adminAccessKey for system API
+  adminKey: 'CHANGE_ME_WITH_SOMETHING', // auth:adminAccessKey for system API
+  sweep: null // concurrency sweep: comma-separated levels e.g. "1,5,10,25,50"
 };
 
 const argSpec = {
@@ -36,6 +37,7 @@ const argSpec = {
   'seed-file': { type: 'string', short: 'f' },
   clean: { type: 'boolean' },
   'admin-key': { type: 'string' },
+  sweep: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -61,6 +63,7 @@ export function parseConfig (argv) {
   if (values['seed-file']) config.seedFile = values['seed-file'];
   if (values.clean) config.clean = true;
   if (values['admin-key']) config.adminKey = values['admin-key'];
+  if (values.sweep) config.sweep = values.sweep.split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean);
 
   // env overrides
   if (process.env.BENCH_TARGET) config.target = process.env.BENCH_TARGET;
@@ -99,6 +102,7 @@ Seed options (for datasets/seed.js):
   -p, --profile <type>     Data profile: manual or iot (default: manual)
       --clean              Delete previously seeded users (reads seed-result.json)
       --admin-key <key>    System admin key (default: dev config value)
+      --sweep <levels>     Concurrency sweep: comma-separated (e.g. "1,5,10,25,50,100")
 
 Environment variables:
   BENCH_TARGET             Override --target

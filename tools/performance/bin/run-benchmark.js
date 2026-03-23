@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseConfig } from '../lib/config.js';
-import { computeStats, writeScenarioResult, printScenarioSummary } from '../lib/reporter.js';
+import { computeStats, writeScenarioResult, printScenarioSummary, writeSweepResult, printSweepSummary } from '../lib/reporter.js';
 import { getSystemInfo } from '../lib/system-info.js';
 import { readServerConfig } from '../lib/server-config.js';
 import { ResourceMonitor } from '../lib/monitor.js';
@@ -69,48 +69,84 @@ async function main () {
   console.log(`Audit: ${serverConfig.audit ?? 'n/a'} | Integrity: ${JSON.stringify(serverConfig.integrity) || 'n/a'}`);
   console.log('');
 
-  // start resource monitors for master + worker processes
-  const monitors = [];
-  const serverPids = findServerPids();
-  if (serverPids.length > 0) {
-    for (const pid of serverPids) {
-      const m = new ResourceMonitor(pid);
-      m.start();
-      monitors.push(m);
-    }
-    console.log(`Monitoring ${serverPids.length} processes (PIDs: ${serverPids.join(', ')})`);
-  }
-
-  // import and run scenario
+  // import scenario module
   const scenarioModule = await import(path.join(scenariosDir, config.scenario + '.js'));
-  const results = await scenarioModule.run(config, seedData);
 
-  // stop monitors and aggregate
+  if (config.sweep) {
+    await runSweep(config, seedData, scenarioModule);
+  } else {
+    await runSingle(config, seedData, scenarioModule);
+  }
+}
+
+async function runSingle (config, seedData, scenarioModule) {
+  const monitors = startMonitors();
+  const results = await scenarioModule.run(config, seedData);
   const resources = aggregateResources(monitors);
 
-  // results can be an array of sub-scenario results or a single result
   const rawRuns = Array.isArray(results) ? results : [results];
-
-  // compute stats for each sub-scenario
   const entries = rawRuns.map(run => ({
     subScenario: run.subScenario || config.scenario,
     stats: computeStats(run.results, config.duration * 1000),
     extra: run.extra || {}
   }));
 
-  // print console summary
   printScenarioSummary(config.scenario, entries);
-
-  // write single combined JSON + markdown
   const paths = writeScenarioResult(config, config.scenario, entries, resources);
   console.log(`\n  Saved: ${paths.jsonPath}`);
   console.log(`         ${paths.mdPath}`);
-
   if (resources?.peak) {
     console.log(`  Resources: peak RSS=${resources.peak.rssMb}MB, peak CPU=${resources.peak.cpuPercent}%`);
   }
-
   console.log('\nDone.');
+}
+
+async function runSweep (config, seedData, scenarioModule) {
+  const levels = config.sweep;
+  console.log(`Concurrency sweep: ${levels.join(', ')}`);
+  console.log('');
+
+  const sweepResults = [];
+
+  for (const concurrency of levels) {
+    console.log(`── Concurrency: ${concurrency} ──`);
+    const runConfig = { ...config, concurrency };
+
+    const monitors = startMonitors();
+    const results = await scenarioModule.run(runConfig, seedData);
+    const resources = aggregateResources(monitors);
+
+    const rawRuns = Array.isArray(results) ? results : [results];
+    const entries = rawRuns.map(run => ({
+      subScenario: run.subScenario || config.scenario,
+      stats: computeStats(run.results, config.duration * 1000),
+      extra: run.extra || {}
+    }));
+
+    printScenarioSummary(`c=${concurrency}`, entries);
+    sweepResults.push({ concurrency, entries, resources });
+  }
+
+  // write combined sweep result
+  const paths = writeSweepResult(config, config.scenario, sweepResults);
+  printSweepSummary(config.scenario, sweepResults);
+  console.log(`\n  Saved: ${paths.jsonPath}`);
+  console.log(`         ${paths.mdPath}`);
+  console.log('\nDone.');
+}
+
+function startMonitors () {
+  const monitors = [];
+  const serverPids = findServerPids();
+  for (const pid of serverPids) {
+    const m = new ResourceMonitor(pid);
+    m.start();
+    monitors.push(m);
+  }
+  if (monitors.length > 0) {
+    console.log(`Monitoring ${serverPids.length} processes`);
+  }
+  return monitors;
 }
 
 function aggregateResources (monitors) {
