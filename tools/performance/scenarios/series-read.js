@@ -8,34 +8,56 @@ import { Client, runConcurrent } from '../lib/client.js';
 
 /**
  * Benchmark: HF series read
- * GET /{username}/events/{eventId}/series with time ranges.
+ * GET /{username}/events/{eventId}/series with varying time ranges.
+ * Seeded with 100K points at 1-second intervals.
+ * Real-world devices can output at 41kHz — test with larger datasets when needed.
  */
 export async function run (config, seedData) {
-  console.log('  Running series-read...');
+  const runs = [];
 
-  const results = await runConcurrent(
-    async (idx) => {
-      const user = seedData.users[idx % seedData.users.length];
-      const client = new Client(config.hfsTarget, user.masterToken);
+  // sub-scenarios: read different sized ranges from the 100K seeded points
+  // points are at 1-second intervals, so range in seconds = number of points
+  const ranges = [
+    { name: '1k-points', seconds: 1000 },
+    { name: '10k-points', seconds: 10000 },
+    { name: '100k-points', seconds: 100000 }
+  ];
 
-      if (!user.seriesEventIds || user.seriesEventIds.length === 0) {
-        return { elapsed: 0, error: 'no series events seeded' };
-      }
+  for (const range of ranges) {
+    console.log(`  Running series-read [${range.name}]...`);
 
-      const eventId = user.seriesEventIds[idx % user.seriesEventIds.length];
+    const results = await runConcurrent(
+      async (idx) => {
+        const user = seedData.users[idx % seedData.users.length];
+        const client = new Client(config.hfsTarget, user.masterToken);
 
-      // query full range
-      const res = await client.get(
-        `/${user.username}/events/${eventId}/series?fromDeltaTime=0&toDeltaTime=${Date.now() / 1000}`
-      );
+        if (!user.seriesEventIds || user.seriesEventIds.length === 0) {
+          return { elapsed: 0, error: 'no series events seeded' };
+        }
 
-      return {
-        elapsed: res.elapsed,
-        error: res.ok ? null : `HTTP ${res.status}: ${res.body?.error?.message || 'unknown'}`
-      };
-    },
-    { concurrency: config.concurrency, durationMs: config.duration * 1000 }
-  );
+        const eventId = user.seriesEventIds[idx % user.seriesEventIds.length];
+        const now = Math.floor(Date.now() / 1000);
+        const from = now - range.seconds;
 
-  return { subScenario: 'series-read', results };
+        const res = await client.get(
+          `/${user.username}/events/${eventId}/series?fromDeltaTime=${from}&toDeltaTime=${now}`
+        );
+
+        return {
+          elapsed: res.elapsed,
+          error: res.ok ? null : `HTTP ${res.status}: ${res.body?.error?.message || 'unknown'}`,
+          pointCount: res.body?.points?.length || 0
+        };
+      },
+      { concurrency: config.concurrency, durationMs: config.duration * 1000 }
+    );
+
+    runs.push({
+      subScenario: `series-read-${range.name}`,
+      results,
+      extra: { range: range.name, rangeSeconds: range.seconds }
+    });
+  }
+
+  return runs;
 }

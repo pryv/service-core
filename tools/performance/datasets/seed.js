@@ -525,26 +525,38 @@ async function main () {
     }
     // seed initial data points into series (for read benchmarks)
     const hfsTarget = config.hfsTarget.replace(/\/$/, '');
-    const SEED_POINTS = 1000;
+    const SEED_POINTS = 100000;
+    const HFS_BATCH = 5000; // points per POST (keep requests reasonable)
     for (const eventId of seriesEventIds) {
-      try {
-        const baseTime = Math.floor(Date.now() / 1000) - SEED_POINTS;
+      const baseTime = Math.floor(Date.now() / 1000) - SEED_POINTS;
+      let seeded = 0;
+      for (let offset = 0; offset < SEED_POINTS; offset += HFS_BATCH) {
+        const batchSize = Math.min(HFS_BATCH, SEED_POINTS - offset);
         const points = [];
-        for (let i = 0; i < SEED_POINTS; i++) {
-          points.push([baseTime + i, +(Math.random() * 100).toFixed(2)]);
+        for (let i = 0; i < batchSize; i++) {
+          points.push([baseTime + offset + i, +(Math.random() * 100).toFixed(2)]);
         }
-        const hfsOpts = {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', authorization: masterToken },
-          body: JSON.stringify({ format: 'flatJSON', fields: ['deltaTime', 'value'], points })
-        };
-        const hfsRes = await fetch(`${hfsTarget}/${username}/events/${eventId}/series`, hfsOpts);
-        if (!hfsRes.ok) {
-          const hfsBody = await hfsRes.json();
-          console.error(`  HFS seed error: ${hfsBody?.error?.message || hfsRes.status}`);
+        try {
+          const hfsOpts = {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: masterToken },
+            body: JSON.stringify({ format: 'flatJSON', fields: ['deltaTime', 'value'], points })
+          };
+          const hfsRes = await fetch(`${hfsTarget}/${username}/events/${eventId}/series`, hfsOpts);
+          if (hfsRes.ok) {
+            seeded += batchSize;
+          } else {
+            const hfsBody = await hfsRes.json();
+            console.error(`  HFS seed error: ${hfsBody?.error?.message || hfsRes.status}`);
+            break;
+          }
+        } catch {
+          // HFS not available — skip remaining
+          break;
         }
-      } catch {
-        // HFS not available — skip
+      }
+      if (seeded > 0 && seeded < SEED_POINTS) {
+        console.log(`  Series ${eventId}: ${seeded}/${SEED_POINTS} points (partial)`);
       }
     }
     if (seriesEventIds.length > 0) {
