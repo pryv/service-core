@@ -60,7 +60,7 @@ function summarizeErrors (failed) {
  * Write a single combined result file (JSON + markdown) for an entire scenario run.
  * `entries` is an array of { subScenario, stats, extra }.
  */
-export function writeScenarioResult (config, scenario, entries, resources) {
+export function writeScenarioResult (config, scenario, entries, resources, storage) {
   const system = getSystemInfo();
   const ts = new Date().toISOString();
   const label = config.label || `c${config.concurrency}-d${config.duration}`;
@@ -84,7 +84,8 @@ export function writeScenarioResult (config, scenario, entries, resources) {
       ...e.extra,
       results: e.stats
     })),
-    resources: resources || null
+    resources: resources || null,
+    storage: storage || null
   };
 
   const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
@@ -97,6 +98,20 @@ export function writeScenarioResult (config, scenario, entries, resources) {
   fs.writeFileSync(mdPath, toSummaryMarkdown(result) + '\n');
 
   return { jsonPath, mdPath };
+}
+
+function fmtBytes (bytes) {
+  if (bytes === 0) return '0B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let val = Math.abs(bytes);
+  let i = 0;
+  while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+  return `${val.toFixed(1)}${units[i]}`;
+}
+
+function fmtBytesDelta (bytes) {
+  const sign = bytes >= 0 ? '+' : '-';
+  return sign + fmtBytes(Math.abs(bytes));
 }
 
 function slugify (s) {
@@ -174,6 +189,22 @@ function toSummaryMarkdown (result) {
     lines.push(`| RSS (MB) | ${r.peak.rssMb} | ${r.avg.rssMb} |`);
     lines.push(`| CPU (%) | ${r.peak.cpuPercent} | ${r.avg.cpuPercent} |`);
     lines.push(`| Samples | ${r.samples.length} | |`);
+    lines.push('');
+  }
+
+  // Storage section
+  if (result.storage) {
+    lines.push('## Storage');
+    lines.push('');
+    lines.push('| Engine | Before | After | Delta |');
+    lines.push('|--------|--------|-------|-------|');
+    for (const [key, val] of Object.entries(result.storage)) {
+      if (key === 'syslogLines') {
+        lines.push(`| ${key} | ${val.before} | ${val.after} | +${val.delta} |`);
+      } else {
+        lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
+      }
+    }
     lines.push('');
   }
 
@@ -343,7 +374,7 @@ export function printSweepSummary (scenario, sweepResults) {
  * Write a full run result — all scenarios in one file.
  * `allScenarios` is an array of { scenario, entries, resources }.
  */
-export function writeFullResult (config, allScenarios) {
+export function writeFullResult (config, allScenarios, totalStorage) {
   const system = getSystemInfo();
   const ts = new Date().toISOString();
   const label = config.label || `full-c${config.concurrency}-d${config.duration}`;
@@ -366,12 +397,14 @@ export function writeFullResult (config, allScenarios) {
     scenarios: allScenarios.map(sc => ({
       scenario: sc.scenario,
       resources: sc.resources,
+      storage: sc.storage || null,
       runs: sc.entries.map(e => ({
         subScenario: e.subScenario,
         ...e.extra,
         results: e.stats
       }))
-    }))
+    })),
+    totalStorage: totalStorage || null
   };
 
   const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
@@ -440,6 +473,18 @@ function toFullMarkdown (result) {
     }
     if (sc.resources?.peak) {
       lines.push(`\nResources: peak RSS=${sc.resources.peak.rssMb}MB, peak CPU=${sc.resources.peak.cpuPercent}%`);
+    }
+    lines.push('');
+  }
+
+  // Total storage
+  if (result.totalStorage) {
+    lines.push('## Storage (total)');
+    lines.push('');
+    lines.push('| Engine | Before | After | Delta |');
+    lines.push('|--------|--------|-------|-------|');
+    for (const [key, val] of Object.entries(result.totalStorage)) {
+      lines.push(`| ${key} | ${fmtBytes(val.before)} | ${fmtBytes(val.after)} | ${fmtBytesDelta(val.delta)} |`);
     }
     lines.push('');
   }

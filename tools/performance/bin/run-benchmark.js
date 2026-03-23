@@ -13,6 +13,7 @@ import { computeStats, writeScenarioResult, printScenarioSummary, writeSweepResu
 import { getSystemInfo } from '../lib/system-info.js';
 import { readServerConfig } from '../lib/server-config.js';
 import { ResourceMonitor } from '../lib/monitor.js';
+import { snapshotStorageSizes, storageDelta, formatStorageSizes } from '../lib/storage-size.js';
 import { execSync } from 'node:child_process';
 
 const scenariosDir = new URL('../scenarios/', import.meta.url).pathname;
@@ -84,6 +85,7 @@ async function main () {
 async function runAll (config, seedData, available) {
   console.log(`Running all ${available.length} scenarios...\n`);
 
+  const sizeBefore = snapshotStorageSizes();
   const allScenarios = [];
 
   for (const scenarioName of available) {
@@ -91,10 +93,12 @@ async function runAll (config, seedData, available) {
     console.log(`  Scenario: ${scenarioName}`);
     console.log('────────────────────────────────────────');
 
+    const scSizeBefore = snapshotStorageSizes();
     const scenarioModule = await import(path.join(scenariosDir, scenarioName + '.js'));
     const monitors = startMonitors();
     const results = await scenarioModule.run(config, seedData);
     const resources = aggregateResources(monitors);
+    const scSizeAfter = snapshotStorageSizes();
 
     const rawRuns = Array.isArray(results) ? results : [results];
     const entries = rawRuns.map(run => ({
@@ -104,21 +108,33 @@ async function runAll (config, seedData, available) {
     }));
 
     printScenarioSummary(scenarioName, entries);
-    allScenarios.push({ scenario: scenarioName, entries, resources });
+    allScenarios.push({
+      scenario: scenarioName,
+      entries,
+      resources,
+      storage: storageDelta(scSizeBefore, scSizeAfter)
+    });
   }
 
+  const sizeAfter = snapshotStorageSizes();
+  const totalStorage = storageDelta(sizeBefore, sizeAfter);
+
   // write combined result
-  const paths = writeFullResult(config, allScenarios);
+  const paths = writeFullResult(config, allScenarios, totalStorage);
   printFullSummary(allScenarios);
+  console.log('\n  Total storage:\n' + formatStorageSizes(totalStorage));
   console.log(`\n  Saved: ${paths.jsonPath}`);
   console.log(`         ${paths.mdPath}`);
   console.log('\nDone.');
 }
 
 async function runSingle (config, seedData, scenarioModule) {
+  const sizeBefore = snapshotStorageSizes();
   const monitors = startMonitors();
   const results = await scenarioModule.run(config, seedData);
   const resources = aggregateResources(monitors);
+  const sizeAfter = snapshotStorageSizes();
+  const storage = storageDelta(sizeBefore, sizeAfter);
 
   const rawRuns = Array.isArray(results) ? results : [results];
   const entries = rawRuns.map(run => ({
@@ -128,12 +144,13 @@ async function runSingle (config, seedData, scenarioModule) {
   }));
 
   printScenarioSummary(config.scenario, entries);
-  const paths = writeScenarioResult(config, config.scenario, entries, resources);
+  const paths = writeScenarioResult(config, config.scenario, entries, resources, storage);
   console.log(`\n  Saved: ${paths.jsonPath}`);
   console.log(`         ${paths.mdPath}`);
   if (resources?.peak) {
     console.log(`  Resources: peak RSS=${resources.peak.rssMb}MB, peak CPU=${resources.peak.cpuPercent}%`);
   }
+  console.log('  Storage:\n' + formatStorageSizes(storage));
   console.log('\nDone.');
 }
 
