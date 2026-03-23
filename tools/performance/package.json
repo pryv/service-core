@@ -9,7 +9,8 @@
   "type": "module",
   "scripts": {
     "benchmark": "node bin/run-benchmark.js",
-    "seed": "node datasets/seed.js"
+    "seed": "node datasets/seed.js",
+    "compare": "node bin/compare.js"
   },
   "engines": {
     "node": ">=22"
