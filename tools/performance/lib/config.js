@@ -20,7 +20,8 @@ const defaults = {
   seedFile: null, // path to seed-result.json
   clean: false, // cleanup mode: delete seeded users via API
   adminKey: 'CHANGE_ME_WITH_SOMETHING', // auth:adminAccessKey for system API
-  sweep: null // concurrency sweep: comma-separated levels e.g. "1,5,10,25,50"
+  sweep: null, // concurrency sweep: comma-separated levels e.g. "1,5,10,25,50"
+  all: false // run all scenarios in one combined result
 };
 
 const argSpec = {
@@ -38,6 +39,7 @@ const argSpec = {
   clean: { type: 'boolean' },
   'admin-key': { type: 'string' },
   sweep: { type: 'string' },
+  all: { type: 'boolean', short: 'a' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -64,6 +66,7 @@ export function parseConfig (argv) {
   if (values.clean) config.clean = true;
   if (values['admin-key']) config.adminKey = values['admin-key'];
   if (values.sweep) config.sweep = values.sweep.split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean);
+  if (values.all) config.all = true;
 
   // env overrides
   if (process.env.BENCH_TARGET) config.target = process.env.BENCH_TARGET;
@@ -103,6 +106,7 @@ Seed options (for datasets/seed.js):
       --clean              Delete previously seeded users (reads seed-result.json)
       --admin-key <key>    System admin key (default: dev config value)
       --sweep <levels>     Concurrency sweep: comma-separated (e.g. "1,5,10,25,50,100")
+  -a, --all                Run all scenarios, produce one combined result file
 
 Environment variables:
   BENCH_TARGET             Override --target

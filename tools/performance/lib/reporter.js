@@ -338,3 +338,136 @@ export function printSweepSummary (scenario, sweepResults) {
     }
   }
 }
+
+/**
+ * Write a full run result — all scenarios in one file.
+ * `allScenarios` is an array of { scenario, entries, resources }.
+ */
+export function writeFullResult (config, allScenarios) {
+  const system = getSystemInfo();
+  const ts = new Date().toISOString();
+  const label = config.label || `full-c${config.concurrency}-d${config.duration}`;
+
+  const result = {
+    meta: {
+      timestamp: ts,
+      type: 'full',
+      label,
+      duration: config.duration,
+      concurrency: config.concurrency,
+      scenarios: allScenarios.map(s => s.scenario)
+    },
+    system,
+    config: {
+      target: config.target,
+      profile: config.profile || null,
+      ...config.serverConfig
+    },
+    scenarios: allScenarios.map(sc => ({
+      scenario: sc.scenario,
+      resources: sc.resources,
+      runs: sc.entries.map(e => ({
+        subScenario: e.subScenario,
+        ...e.extra,
+        results: e.stats
+      }))
+    }))
+  };
+
+  const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
+  const name = `${tsSlug}-full-${slugify(label)}`;
+  const jsonPath = path.join(resultsDir, name + '.json');
+  const mdPath = path.join(resultsDir, name + '.md');
+
+  fs.mkdirSync(resultsDir, { recursive: true });
+  fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2) + '\n');
+  fs.writeFileSync(mdPath, toFullMarkdown(result) + '\n');
+
+  return { jsonPath, mdPath };
+}
+
+function toFullMarkdown (result) {
+  const { meta, system } = result;
+  const lines = [];
+
+  lines.push('# Full Benchmark Run');
+  lines.push('');
+  lines.push(`**Date:** ${meta.timestamp}  `);
+  lines.push(`**Duration:** ${meta.duration}s per scenario | **Concurrency:** ${meta.concurrency}  `);
+  lines.push(`**Target:** ${result.config.target} | **Profile:** ${result.config.profile || 'n/a'}`);
+  lines.push('');
+
+  // Server config
+  const cfg = result.config;
+  lines.push('## Server Config');
+  if (cfg.engines) {
+    lines.push(`- **Base storage:** ${cfg.engines.base || 'n/a'} | **Platform:** ${cfg.engines.platform || 'n/a'} | **Series:** ${cfg.engines.series || 'n/a'}`);
+  }
+  if (cfg.audit != null) lines.push(`- **Audit:** ${cfg.audit ? 'ON' : 'OFF'} | **Integrity:** ${JSON.stringify(cfg.integrity) || 'n/a'}`);
+  if (cfg.clusterWorkers != null) lines.push(`- **API workers:** ${cfg.clusterWorkers}`);
+  lines.push('');
+
+  lines.push('## System');
+  lines.push(`- **CPU:** ${system.cpuModel} (${system.cpuCores} cores) | **Memory:** ${system.memoryTotal}`);
+  lines.push(`- **Node:** ${system.nodeVersion} | **Version:** ${system.version} (${system.gitCommit})`);
+  lines.push('');
+
+  // Grand summary table — one row per sub-scenario across all scenarios
+  lines.push('## Summary');
+  lines.push('');
+  lines.push('| Scenario | Sub-scenario | Req/s | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) | OK | Fail |');
+  lines.push('|---|---|---:|---:|---:|---:|---:|---:|---:|');
+
+  for (const sc of result.scenarios) {
+    for (const run of sc.runs) {
+      const s = run.results;
+      const lat = s.latency;
+      lines.push(`| ${sc.scenario} | ${run.subScenario} | ${s.requestsPerSecond} | ${lat?.p50 ?? '-'} | ${lat?.p95 ?? '-'} | ${lat?.p99 ?? '-'} | ${lat?.max ?? '-'} | ${s.successfulRequests} | ${s.failedRequests} |`);
+    }
+  }
+  lines.push('');
+
+  // Per-scenario detail sections
+  for (const sc of result.scenarios) {
+    lines.push(`## ${sc.scenario}`);
+    lines.push('');
+    lines.push('| Sub-scenario | Req/s | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) | OK | Fail |');
+    lines.push('|---|---:|---:|---:|---:|---:|---:|---:|');
+    for (const run of sc.runs) {
+      const s = run.results;
+      const lat = s.latency;
+      lines.push(`| ${run.subScenario} | ${s.requestsPerSecond} | ${lat?.p50 ?? '-'} | ${lat?.p95 ?? '-'} | ${lat?.p99 ?? '-'} | ${lat?.max ?? '-'} | ${s.successfulRequests} | ${s.failedRequests} |`);
+    }
+    if (sc.resources?.peak) {
+      lines.push(`\nResources: peak RSS=${sc.resources.peak.rssMb}MB, peak CPU=${sc.resources.peak.cpuPercent}%`);
+    }
+    lines.push('');
+  }
+
+  lines.push('## Notes');
+  lines.push('');
+  lines.push('_Add observations here._');
+
+  return lines.join('\n');
+}
+
+/**
+ * Print full run summary to console.
+ */
+export function printFullSummary (allScenarios) {
+  console.log('\n╔══════════════════════════════════════════════╗');
+  console.log('║            Full Run Summary                  ║');
+  console.log('╠══════════════════════════════════════════════╣');
+  for (const sc of allScenarios) {
+    for (const e of sc.entries) {
+      const s = e.stats;
+      const lat = s.latency;
+      const name = `${sc.scenario}/${e.subScenario}`;
+      const rps = String(s.requestsPerSecond).padStart(7);
+      const p50 = lat ? String(lat.p50).padStart(7) : '      -';
+      const p95 = lat ? String(lat.p95).padStart(7) : '      -';
+      console.log(`  ${name.padEnd(45)} ${rps} req/s  p50=${p50}  p95=${p95}`);
+    }
+  }
+  console.log('╚══════════════════════════════════════════════╝');
+}

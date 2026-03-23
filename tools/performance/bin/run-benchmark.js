@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseConfig } from '../lib/config.js';
-import { computeStats, writeScenarioResult, printScenarioSummary, writeSweepResult, printSweepSummary } from '../lib/reporter.js';
+import { computeStats, writeScenarioResult, printScenarioSummary, writeSweepResult, printSweepSummary, writeFullResult, printFullSummary } from '../lib/reporter.js';
 import { getSystemInfo } from '../lib/system-info.js';
 import { readServerConfig } from '../lib/server-config.js';
 import { ResourceMonitor } from '../lib/monitor.js';
@@ -25,13 +25,13 @@ async function main () {
     .filter(f => f.endsWith('.js'))
     .map(f => f.replace('.js', ''));
 
-  if (!config.scenario) {
+  if (!config.scenario && !config.all) {
     console.log('Available scenarios:', available.join(', '));
-    console.log('Use --scenario <name> to run one, or --matrix to run all.');
+    console.log('Use --scenario <name> to run one, or --all to run everything.');
     process.exit(1);
   }
 
-  if (!available.includes(config.scenario)) {
+  if (config.scenario && !available.includes(config.scenario)) {
     console.error(`Unknown scenario: ${config.scenario}`);
     console.error('Available:', available.join(', '));
     process.exit(1);
@@ -69,14 +69,50 @@ async function main () {
   console.log(`Audit: ${serverConfig.audit ?? 'n/a'} | Integrity: ${JSON.stringify(serverConfig.integrity) || 'n/a'}`);
   console.log('');
 
-  // import scenario module
-  const scenarioModule = await import(path.join(scenariosDir, config.scenario + '.js'));
-
-  if (config.sweep) {
-    await runSweep(config, seedData, scenarioModule);
+  if (config.all) {
+    await runAll(config, seedData, available);
   } else {
-    await runSingle(config, seedData, scenarioModule);
+    const scenarioModule = await import(path.join(scenariosDir, config.scenario + '.js'));
+    if (config.sweep) {
+      await runSweep(config, seedData, scenarioModule);
+    } else {
+      await runSingle(config, seedData, scenarioModule);
+    }
   }
+}
+
+async function runAll (config, seedData, available) {
+  console.log(`Running all ${available.length} scenarios...\n`);
+
+  const allScenarios = [];
+
+  for (const scenarioName of available) {
+    console.log('────────────────────────────────────────');
+    console.log(`  Scenario: ${scenarioName}`);
+    console.log('────────────────────────────────────────');
+
+    const scenarioModule = await import(path.join(scenariosDir, scenarioName + '.js'));
+    const monitors = startMonitors();
+    const results = await scenarioModule.run(config, seedData);
+    const resources = aggregateResources(monitors);
+
+    const rawRuns = Array.isArray(results) ? results : [results];
+    const entries = rawRuns.map(run => ({
+      subScenario: run.subScenario || scenarioName,
+      stats: computeStats(run.results, config.duration * 1000),
+      extra: run.extra || {}
+    }));
+
+    printScenarioSummary(scenarioName, entries);
+    allScenarios.push({ scenario: scenarioName, entries, resources });
+  }
+
+  // write combined result
+  const paths = writeFullResult(config, allScenarios);
+  printFullSummary(allScenarios);
+  console.log(`\n  Saved: ${paths.jsonPath}`);
+  console.log(`         ${paths.mdPath}`);
+  console.log('\nDone.');
 }
 
 async function runSingle (config, seedData, scenarioModule) {
