@@ -208,6 +208,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_stream_sibling
   ON streams(user_id, name, parent_id) WHERE deleted IS NULL;
 CREATE INDEX IF NOT EXISTS idx_stream_parent
   ON streams(user_id, parent_id);
+CREATE INDEX IF NOT EXISTS idx_stream_trashed
+  ON streams(user_id, trashed);
 
 CREATE TABLE IF NOT EXISTS events (
   user_id TEXT NOT NULL,
@@ -235,6 +237,10 @@ CREATE INDEX IF NOT EXISTS idx_event_time ON events(user_id, time);
 CREATE INDEX IF NOT EXISTS idx_event_type ON events(user_id, type);
 CREATE INDEX IF NOT EXISTS idx_event_deleted
   ON events(user_id, deleted) WHERE deleted IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_event_trashed ON events(user_id, trashed);
+CREATE INDEX IF NOT EXISTS idx_event_modified ON events(user_id, modified);
+CREATE INDEX IF NOT EXISTS idx_event_head_id ON events(user_id, head_id);
+CREATE INDEX IF NOT EXISTS idx_event_endtime ON events(user_id, end_time);
 
 CREATE TABLE IF NOT EXISTS event_streams (
   user_id TEXT NOT NULL,
