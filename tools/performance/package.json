@@ -1,0 +1,14 @@
+{
+  "name": "pryv-performance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Performance benchmarks for Pryv service-core",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "benchmark": "node bin/run-benchmark.js",
+    "seed": "node datasets/seed.js"
+  }
+}
