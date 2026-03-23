@@ -16,9 +16,12 @@ describe('[RGLG] Legacy register routes + invitations', () => {
   let adminAccessKey;
   let testUser;
   let testEmail;
+  let savedIntegrityCheck;
 
   before(async function () {
     this.timeout(30000);
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     await initTests();
     await initCore();
     adminAccessKey = config.get('auth:adminAccessKey');
@@ -36,6 +39,17 @@ describe('[RGLG] Legacy register routes + invitations', () => {
     });
     assert.ok(regRes.status === 201 || regRes.status === 200,
       `Registration failed: ${regRes.status} ${JSON.stringify(regRes.body)}`);
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   // --- Email → username lookups ---

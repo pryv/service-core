@@ -28,6 +28,7 @@ describe('[SYSS] System streams', function () {
   let basePath;
   let access;
   let user;
+  let savedIntegrityCheck;
 
   async function createUser () {
     // Use cuid for unique username to avoid parallel test conflicts
@@ -46,6 +47,8 @@ describe('[SYSS] System streams', function () {
   }
 
   before(async function () {
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     mongoFixtures = databaseFixture(await produceStorageConnection());
 
     app = getApplication(true);
@@ -62,6 +65,17 @@ describe('[SYSS] System streams', function () {
     require('api-server/src/methods/streams')(app.api);
 
     request = supertest(app.expressApp);
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   describe('[SS01] GET /streams', () => {

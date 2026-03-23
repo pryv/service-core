@@ -34,6 +34,7 @@ describe('[FG5R] Events of system streams', () => {
   let user;
   let mall;
   let eventData;
+  let savedIntegrityCheck;
 
   async function getOneEvent (userId, streamId) {
     const events = await mall.events.get(userId, { streams: [{ any: [streamId] }] });
@@ -58,6 +59,8 @@ describe('[FG5R] Events of system streams', () => {
   }
 
   before(async function () {
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceStorageConnection());
@@ -79,6 +82,17 @@ describe('[FG5R] Events of system streams', () => {
     request = supertest(app.expressApp);
 
     mall = await getMall();
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   describe('[ED01] GET /events', () => {

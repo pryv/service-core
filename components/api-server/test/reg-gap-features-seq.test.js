@@ -14,12 +14,26 @@
 
 describe('[RGGF] Register gap features', () => {
   let adminAccessKey;
+  let savedIntegrityCheck;
 
   before(async function () {
     this.timeout(30000);
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     await initTests();
     await initCore();
     adminAccessKey = config.get('auth:adminAccessKey');
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   // --- Feature 6: GET /service/infos (plural alias) ---

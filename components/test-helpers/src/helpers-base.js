@@ -209,16 +209,16 @@ function getMochaHooks (isParallelMode = false) {
         fs.mkdirSync(previewsDirPath, { recursive: true });
       }
     },
-    // CALUDE: We will need to fix this in a next phase
-    // Integrity checks disabled in parallel mode (no transport between workers)
-    // and for PostgreSQL (system stream events not yet fully wired in PG backend).
-    ...(isParallelMode || process.env.STORAGE_ENGINE === 'postgresql'
+    // Integrity checks disabled in parallel mode (no transport between workers).
+    ...(isParallelMode
       ? {}
       : {
           async beforeEach () {
+            if (process.env.DISABLE_INTEGRITY_CHECK === '1') return;
             await checkIndexAndPlatformIntegrity('BEFORE ' + this.currentTest.title);
           },
           async afterEach () {
+            if (process.env.DISABLE_INTEGRITY_CHECK === '1') return;
             await checkIndexAndPlatformIntegrity('AFTER ' + this.currentTest.title);
           }
         })

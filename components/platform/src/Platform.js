@@ -162,9 +162,14 @@ class Platform {
    */
   async deleteUser (username, user) {
     const operations = [];
-    if (user != null) {
-      for (const field of accountStreams.uniqueFieldNames) {
-        operations.push({ action: 'delete', key: field, value: user[field], isUnique: true });
+    for (const field of accountStreams.uniqueFieldNames) {
+      // Get value from user object if available, otherwise look it up in PlatformDB
+      let value = user?.[field];
+      if (value == null) {
+        value = await this.#db.getUserIndexedField(username, field);
+      }
+      if (value != null) {
+        operations.push({ action: 'delete', key: field, value, isUnique: true });
       }
     }
 

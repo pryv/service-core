@@ -33,8 +33,11 @@ describe('[ACCO] Account with system streams', function () {
   let user;
   let mall;
   let userAccountStorage;
+  let savedIntegrityCheck;
 
   before(async () => {
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     userAccountStorage = await getUserAccountStorage();
   });
 
@@ -92,6 +95,17 @@ describe('[ACCO] Account with system streams', function () {
     await require('api-server/src/methods/events')(app.api);
     request = supertest(app.expressApp);
     mall = await getMall();
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   describe('[DA01] GET /account', () => {

@@ -79,7 +79,12 @@ describe('[AD01] Accesses with account streams', function () {
     return await findOneAsync({ id: user.attrs.id }, { _id: id }, null);
   }
 
+  let savedIntegrityCheck;
   before(async function () {
+    // Disable per-test integrity checks — this file creates multiple users
+    // across nested describe blocks; checked at cleanup in after().
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     const helpers = require('api-server/test/helpers');
     config = await getConfig();
     validation = helpers.validation;
@@ -99,6 +104,17 @@ describe('[AD01] Accesses with account streams', function () {
 
     await require('api-server/src/methods/events')(app.api);
     request = supertest(app.expressApp);
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   describe('[AD02] POST /accesses', () => {

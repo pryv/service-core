@@ -20,8 +20,12 @@ describe('[AUDI] Audit logs events (Pattern C)', () => {
   let auditToken, actionsToken, personalToken;
   let streamId;
   let basePath;
+  let fixtures;
+  let savedIntegrityCheck;
 
   before(async function () {
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     await initTests();
     config = await getConfig();
 
@@ -33,7 +37,7 @@ describe('[AUDI] Audit logs events (Pattern C)', () => {
 
     await initCore();
 
-    const fixtures = getNewFixture();
+    fixtures = getNewFixture();
 
     username = cuid();
     basePath = '/' + username;
@@ -80,6 +84,17 @@ describe('[AUDI] Audit logs events (Pattern C)', () => {
       .get(basePath + '/events')
       .set('Authorization', actionsToken)
       .query({ trashed: false });
+  });
+
+  after(async function () {
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   describe('[AU01] GET /events', () => {

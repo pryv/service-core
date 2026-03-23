@@ -115,10 +115,15 @@ describe('[RG2C] Two-core integration tests', function () {
   let coreA, coreB;
   let dnsServer, dnsPort, resolver;
   let platformDB;
+  let savedIntegrityCheck;
 
   // --- Setup: rqlite + DNS + two cores ---
 
   before(async function () {
+    // Disable integrity checks — child cores use rqlite PlatformDB
+    // which the parent's SQLite-based check cannot see.
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     // Check rqlite binary exists
     const fs = require('node:fs');
     if (!fs.existsSync(RQLITE_BIN)) {
@@ -216,6 +221,16 @@ describe('[RG2C] Two-core integration tests', function () {
     // Clean up rqlite data
     const fs = require('node:fs');
     fs.rmSync('/tmp/rqlite-2core-test', { recursive: true, force: true });
+    // Clean up users created by child cores in shared MongoDB + PlatformDB
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
+    // Restore integrity check setting
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   // --- Helper: seed core info in PlatformDB ---

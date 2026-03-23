@@ -40,6 +40,7 @@ describe('[RGMC] register: multi-core', function () {
   this.timeout(60000);
 
   let config;
+  let savedIntegrityCheck;
 
   function getPlatformDB () {
     return require('storages').platformDB;
@@ -48,6 +49,8 @@ describe('[RGMC] register: multi-core', function () {
   let savedPlatformData;
 
   before(async function () {
+    savedIntegrityCheck = process.env.DISABLE_INTEGRITY_CHECK;
+    process.env.DISABLE_INTEGRITY_CHECK = '1';
     config = await getConfig();
     // Ensure storages are initialized
     const app = getApplication(true);
@@ -65,6 +68,10 @@ describe('[RGMC] register: multi-core', function () {
   });
 
   after(async function () {
+    // Clean up users created during multi-core tests
+    const { getUsersRepository } = require('business/src/users');
+    const usersRepository = await getUsersRepository();
+    await usersRepository.deleteAll();
     // Restore PlatformDB to pre-test state (user entries only, no core entries)
     await getPlatformDB().clearAll();
     if (savedPlatformData && savedPlatformData.length > 0) {
@@ -74,6 +81,12 @@ describe('[RGMC] register: multi-core', function () {
     restoreSingleCore();
     await platform.registerSelf();
     accessState.clear();
+    // Restore integrity check
+    if (savedIntegrityCheck != null) {
+      process.env.DISABLE_INTEGRITY_CHECK = savedIntegrityCheck;
+    } else {
+      delete process.env.DISABLE_INTEGRITY_CHECK;
+    }
   });
 
   /**
