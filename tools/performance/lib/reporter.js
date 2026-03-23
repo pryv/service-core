@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { getSystemInfo } from './system-info.js';
@@ -54,7 +60,7 @@ function summarizeErrors (failed) {
  * Write a single combined result file (JSON + markdown) for an entire scenario run.
  * `entries` is an array of { subScenario, stats, extra }.
  */
-export function writeScenarioResult (config, scenario, entries) {
+export function writeScenarioResult (config, scenario, entries, resources) {
   const system = getSystemInfo();
   const ts = new Date().toISOString();
   const label = config.label || `c${config.concurrency}-d${config.duration}`;
@@ -77,7 +83,8 @@ export function writeScenarioResult (config, scenario, entries) {
       subScenario: e.subScenario,
       ...e.extra,
       results: e.stats
-    }))
+    })),
+    resources: resources || null
   };
 
   const tsSlug = ts.replace(/[:.]/g, '-').slice(0, 19);
@@ -155,6 +162,19 @@ function toSummaryMarkdown (result) {
       }
       lines.push('');
     }
+  }
+
+  // Resources section
+  if (result.resources?.peak) {
+    const r = result.resources;
+    lines.push(`## Resources (${r.processCount || 'n/a'} processes)`);
+    lines.push('');
+    lines.push('| Metric | Peak | Avg |');
+    lines.push('|--------|------|-----|');
+    lines.push(`| RSS (MB) | ${r.peak.rssMb} | ${r.avg.rssMb} |`);
+    lines.push(`| CPU (%) | ${r.peak.cpuPercent} | ${r.avg.cpuPercent} |`);
+    lines.push(`| Samples | ${r.samples.length} | |`);
+    lines.push('');
   }
 
   lines.push('## Notes');

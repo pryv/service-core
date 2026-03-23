@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @license
+ * Copyright (C) Pryv https://pryv.com
+ * This file is part of Pryv.io and released under BSD-Clause-3 License
+ * Refer to LICENSE file
+ */
 
 /**
  * Seed script — creates test user accounts with realistic data.
@@ -500,6 +506,27 @@ async function main () {
       }
     }
 
+    // create series events for HF benchmarks
+    const seriesEventIds = [];
+    const seriesTypes = ['series:mass/kg', 'series:temperature/c'];
+    for (const seriesType of seriesTypes) {
+      try {
+        const seriesStreamId = leafStreamIds[0];
+        const res = await apiCall('POST', `/${username}/events`, {
+          type: seriesType,
+          streamIds: [seriesStreamId]
+        }, masterToken);
+        if (res.event?.id) {
+          seriesEventIds.push(res.event.id);
+        }
+      } catch {
+        // HFS/InfluxDB may not be available — skip silently
+      }
+    }
+    if (seriesEventIds.length > 0) {
+      console.log(`  Created ${seriesEventIds.length} series events`);
+    }
+
     seedResult.users.push({
       username,
       masterToken,
@@ -507,7 +534,7 @@ async function main () {
       restrictedStreams,
       streams: leafStreamIds,
       parentStreams: parentStreamIds,
-      seriesEventIds: [], // TODO: create series events in Phase 3e
+      seriesEventIds,
       seedTime: Date.now() / 1000,
       eventsCreated: createdCount
     });
