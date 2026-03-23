@@ -28,18 +28,19 @@ export async function run (config, seedData) {
         }
 
         const eventId = user.seriesEventIds[idx % user.seriesEventIds.length];
-        const baseTime = Date.now() / 1000 + idx * batchSize;
+        const baseTime = Math.floor(Date.now() / 1000) + idx * batchSize;
 
-        // generate data points
-        const data = [];
+        // generate flatJSON data points
+        const points = [];
         for (let i = 0; i < batchSize; i++) {
-          data.push({
-            deltaTime: baseTime + i,
-            content: [+(Math.random() * 100).toFixed(2)]
-          });
+          points.push([baseTime + i, +(Math.random() * 100).toFixed(2)]);
         }
 
-        const res = await client.post(`/${user.username}/events/${eventId}/series`, { data });
+        const res = await client.post(`/${user.username}/events/${eventId}/series`, {
+          format: 'flatJSON',
+          fields: ['deltaTime', 'value'],
+          points
+        });
 
         return {
           elapsed: res.elapsed,

@@ -523,8 +523,32 @@ async function main () {
         // HFS/InfluxDB may not be available — skip silently
       }
     }
+    // seed initial data points into series (for read benchmarks)
+    const hfsTarget = config.hfsTarget.replace(/\/$/, '');
+    const SEED_POINTS = 1000;
+    for (const eventId of seriesEventIds) {
+      try {
+        const baseTime = Math.floor(Date.now() / 1000) - SEED_POINTS;
+        const points = [];
+        for (let i = 0; i < SEED_POINTS; i++) {
+          points.push([baseTime + i, +(Math.random() * 100).toFixed(2)]);
+        }
+        const hfsOpts = {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: masterToken },
+          body: JSON.stringify({ format: 'flatJSON', fields: ['deltaTime', 'value'], points })
+        };
+        const hfsRes = await fetch(`${hfsTarget}/${username}/events/${eventId}/series`, hfsOpts);
+        if (!hfsRes.ok) {
+          const hfsBody = await hfsRes.json();
+          console.error(`  HFS seed error: ${hfsBody?.error?.message || hfsRes.status}`);
+        }
+      } catch {
+        // HFS not available — skip
+      }
+    }
     if (seriesEventIds.length > 0) {
-      console.log(`  Created ${seriesEventIds.length} series events`);
+      console.log(`  Created ${seriesEventIds.length} series events (${SEED_POINTS} points each)`);
     }
 
     seedResult.users.push({
