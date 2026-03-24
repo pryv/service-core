@@ -277,7 +277,7 @@ function parseInfluxSelect (query) {
  * Each row is [user_id, event_id, point_time, delta_time, fields_json].
  * Chunks into batches of BATCH_SIZE to stay within PG parameter limits.
  */
-const BATCH_SIZE = 500; // 500 rows × 5 params = 2500 (PG limit ~65535)
+const BATCH_SIZE = 5000; // 5000 rows × 5 params = 25000 (PG limit ~65535)
 
 async function batchUpsert (db, rows) {
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
