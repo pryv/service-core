@@ -36,6 +36,7 @@ class TcpBroker {
       this.server.once('error', reject);
       this.server.listen(port, '127.0.0.1', () => {
         this.server.removeListener('error', reject);
+        this.server.unref(); // don't keep process alive
         logger.debug('broker listening on port', port);
         resolve();
       });

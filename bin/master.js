@@ -75,6 +75,9 @@ if (cluster.isPrimary) {
       log('Storage migrations complete');
     }
 
+    // Keep master alive while workers run (tcp_pubsub sockets are unref'd)
+    const keepAlive = setInterval(() => {}, 60000);
+
     // Start TCP pub/sub broker in master (workers connect as clients)
     const tcpPubsub = require('../components/messages/src/tcp_pubsub');
     await tcpPubsub.init();
@@ -199,6 +202,7 @@ if (cluster.isPrimary) {
       if (shuttingDown) return;
       shuttingDown = true;
       log(`Received ${sig}, shutting down workers...`);
+      clearInterval(keepAlive);
       for (const id in cluster.workers) {
         cluster.workers[id].process.kill('SIGTERM');
       }
