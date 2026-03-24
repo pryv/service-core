@@ -99,6 +99,14 @@ async function createSeriesConnection (config) {
   return new PGSeriesConnection(pgDb);
 }
 
+// -- AuditStorage (PostgreSQL) ------------------------------------------
+
+function createAuditStorage () {
+  const AuditStoragePG = require('./AuditStoragePG');
+  const db = _internals.databasePG;
+  return new AuditStoragePG(db);
+}
+
 module.exports = {
   init,
   initStorageLayer,
@@ -106,5 +114,6 @@ module.exports = {
   getUsersLocalIndex,
   getDataStoreModule,
   createPlatformDB,
-  createSeriesConnection
+  createSeriesConnection,
+  createAuditStorage
 };

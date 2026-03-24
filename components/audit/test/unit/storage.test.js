@@ -39,7 +39,7 @@ describe('[ASTO] Audit Storage', () => {
 
     it('[KA8B] should have written the action in the user\'s database', async () => {
       const event = await sendAndWait({});
-      const entries = userStrorage.getEvents({ query: [{ type: 'equal', content: { field: 'createdBy', value: createdBy } }] });
+      const entries = await userStrorage.getEvents({ query: [{ type: 'equal', content: { field: 'createdBy', value: createdBy } }] });
       assert.equal(entries.length, 1);
       assert.equal(entries[0].createdBy, createdBy);
       assert.deepEqual(entries[0].content, event.content);
@@ -49,8 +49,8 @@ describe('[ASTO] Audit Storage', () => {
       await sendAndWait({ streamIds: ['access-toto', 'action-events.get'] });
       await sendAndWait({ streamIds: ['access-titi', 'action-events.create'] });
       await sendAndWait({ streamIds: ['access-titi', 'action-events.get'] });
-      const actions = userStrorage.getAllActions();
-      const accesses = userStrorage.getAllAccesses();
+      const actions = await userStrorage.getAllActions();
+      const accesses = await userStrorage.getAllAccesses();
       assert.equal(actions.length, 2);
       assert.equal(accesses.length, 2);
     });

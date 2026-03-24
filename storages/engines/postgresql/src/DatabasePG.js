@@ -393,6 +393,35 @@ CREATE TABLE IF NOT EXISTS series_data (
 );
 CREATE INDEX IF NOT EXISTS idx_series_time
   ON series_data(user_id, event_id, delta_time);
+
+-- Audit events (replaces per-user SQLite audit databases)
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  user_id TEXT NOT NULL,
+  eventid TEXT NOT NULL,
+  head_id TEXT,
+  stream_ids TEXT,
+  time DOUBLE PRECISION,
+  deleted DOUBLE PRECISION,
+  end_time DOUBLE PRECISION,
+  type TEXT,
+  content JSONB,
+  description TEXT,
+  client_data JSONB,
+  integrity TEXT,
+  attachments JSONB,
+  trashed BOOLEAN DEFAULT false,
+  created DOUBLE PRECISION,
+  created_by TEXT,
+  modified DOUBLE PRECISION,
+  modified_by TEXT,
+  PRIMARY KEY (user_id, eventid)
+);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_events(user_id, time);
+CREATE INDEX IF NOT EXISTS idx_audit_type ON audit_events(user_id, type);
+CREATE INDEX IF NOT EXISTS idx_audit_deleted ON audit_events(user_id, deleted) WHERE deleted IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_audit_head_id ON audit_events(user_id, head_id) WHERE head_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_audit_created_by ON audit_events(user_id, created_by);
 `;
 
 module.exports = DatabasePG;

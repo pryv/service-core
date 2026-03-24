@@ -48,7 +48,7 @@ module.exports = ds.createUserStreams({
     // list accesses
     if (streamId === accessesStream.id) {
       const userStorage = await audit.storage.forUser(userId);
-      const accesses = userStorage.getAllAccesses();
+      const accesses = await userStorage.getAllAccesses();
       if (accesses == null) return null;
       const res = accesses.map((access) => {
         return {
@@ -67,7 +67,7 @@ module.exports = ds.createUserStreams({
     // list actions
     if (streamId === actionsStream.id) {
       const userStorage = await audit.storage.forUser(userId);
-      const actions = userStorage.getAllActions();
+      const actions = await userStorage.getAllActions();
       if (actions == null) return null;
       const res = actions.map((action) => {
         return {

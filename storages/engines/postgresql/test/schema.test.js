@@ -28,6 +28,7 @@ describe('[PGSC] PostgreSQL schema', function () {
     assert(tables.includes('event_streams'), 'missing event_streams table');
     assert(tables.includes('accesses'), 'missing accesses table');
     assert(tables.includes('series_data'), 'missing series_data table');
+    assert(tables.includes('audit_events'), 'missing audit_events table');
   });
 
   it('[PG02] should have required indexes on events', async function () {

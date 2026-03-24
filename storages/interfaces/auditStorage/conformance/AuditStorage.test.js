@@ -58,8 +58,8 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
         validateUserAuditDatabase(userDb);
       });
 
-      it('[SQ06] countEvents() must return 0 initially', () => {
-        const count = userDb.countEvents();
+      it('[SQ06] countEvents() must return 0 initially', async () => {
+        const count = await userDb.countEvents();
         assert.strictEqual(count, 0);
       });
 
@@ -76,19 +76,19 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
 
       it('[SQ07] createEvent() must insert an event', async () => {
         await userDb.createEvent(testEvent);
-        const count = userDb.countEvents();
+        const count = await userDb.countEvents();
         assert.strictEqual(count, 1);
       });
 
-      it('[SQ08] getOneEvent() must return the inserted event', () => {
-        const event = userDb.getOneEvent('sq-test-event-1');
+      it('[SQ08] getOneEvent() must return the inserted event', async () => {
+        const event = await userDb.getOneEvent('sq-test-event-1');
         assert.ok(event);
         assert.strictEqual(event.id, 'sq-test-event-1');
         assert.strictEqual(event.type, 'test/test');
       });
 
-      it('[SQ09] getEvents() must return matching events', () => {
-        const events = userDb.getEvents({
+      it('[SQ09] getEvents() must return matching events', async () => {
+        const events = await userDb.getEvents({
           query: [
             { type: 'equal', content: { field: 'type', value: 'test/test' } }
           ]
@@ -104,23 +104,23 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
           modifiedBy: 'test-update'
         });
         assert.ok(updated);
-        const event = userDb.getOneEvent('sq-test-event-1');
+        const event = await userDb.getOneEvent('sq-test-event-1');
         assert.strictEqual(event.type, 'test/updated');
       });
 
-      it('[SQ11] getAllActions() must return an array', () => {
-        const actions = userDb.getAllActions();
+      it('[SQ11] getAllActions() must return an array', async () => {
+        const actions = await userDb.getAllActions();
         assert.ok(Array.isArray(actions));
       });
 
-      it('[SQ12] getAllAccesses() must return an array', () => {
-        const accesses = userDb.getAllAccesses();
+      it('[SQ12] getAllAccesses() must return an array', async () => {
+        const accesses = await userDb.getAllAccesses();
         assert.ok(Array.isArray(accesses));
       });
 
       describe('migration methods', () => {
-        it('[SQ13] exportAllEvents() must return all raw rows', () => {
-          const rows = userDb.exportAllEvents();
+        it('[SQ13] exportAllEvents() must return all raw rows', async () => {
+          const rows = await userDb.exportAllEvents();
           assert.ok(Array.isArray(rows));
           assert.ok(rows.length >= 1);
           // Raw rows use 'eventid' not 'id'
@@ -128,18 +128,18 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
         });
 
         it('[SQ14] importAllEvents() must insert raw rows', async () => {
-          const rows = userDb.exportAllEvents();
+          const rows = await userDb.exportAllEvents();
           // Modify eventid to avoid UNIQUE constraint
           const importRow = Object.assign({}, rows[0], { eventid: 'sq-imported-1' });
           await userDb.importAllEvents([importRow]);
-          const count = userDb.countEvents();
+          const count = await userDb.countEvents();
           assert.ok(count >= 2);
         });
 
         it('[SQ15] importAllEvents() with empty array must be a no-op', async () => {
-          const countBefore = userDb.countEvents();
+          const countBefore = await userDb.countEvents();
           await userDb.importAllEvents([]);
-          const countAfter = userDb.countEvents();
+          const countAfter = await userDb.countEvents();
           assert.strictEqual(countAfter, countBefore);
         });
       });
@@ -160,7 +160,7 @@ module.exports = function conformanceTests (getStorage, getUserId, cleanupFn) {
         await storage.deleteUser(deleteUserId);
         // After deletion, forUser should return a fresh empty database
         const freshDb = await storage.forUser(deleteUserId);
-        assert.strictEqual(freshDb.countEvents(), 0);
+        assert.strictEqual(await freshDb.countEvents(), 0);
         await storage.deleteUser(deleteUserId);
       });
     });

@@ -31,7 +31,7 @@ if (process.env.STORAGE_ENGINE) {
     platform: { engine: eng },
     series: { engine: eng === 'postgresql' ? 'postgresql' : 'influxdb' },
     file: { engine: 'filesystem' },
-    audit: { engine: 'sqlite' }
+    audit: { engine: eng === 'postgresql' ? 'postgresql' : 'sqlite' }
   };
 }
 
