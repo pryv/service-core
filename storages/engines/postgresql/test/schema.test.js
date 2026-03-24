@@ -6,13 +6,16 @@
  */
 
 const helpers = require('../../../test/helpers');
+const DatabasePG = require('../src/DatabasePG');
 
 describe('[PGSC] PostgreSQL schema', function () {
   let db;
 
   before(async function () {
+    if (process.env.STORAGE_ENGINE !== 'postgresql') return this.skip();
     await helpers.dependencies.init();
-    db = require('../src/_internals').databasePG;
+    db = new DatabasePG(helpers.config);
+    await db.waitForConnection();
   });
 
   it('[PG01] should have all required tables', async function () {

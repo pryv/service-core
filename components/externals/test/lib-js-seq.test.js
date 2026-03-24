@@ -58,8 +58,8 @@ if (!libJsAvailable()) {
     this.timeout(30000);
     fs.copyFileSync(OVERRIDE_SRC, OVERRIDE_DST);
 
-    // Kill any leftover servers on our ports
-    for (const port of [PROXY_PORT, API_PORT, HFS_PORT]) {
+    // Kill any leftover servers on our ports (including tcp_pubsub broker)
+    for (const port of [PROXY_PORT, API_PORT, HFS_PORT, 4222]) {
       try { execSync('fuser -k ' + port + '/tcp 2>/dev/null || true', { stdio: 'ignore' }); } catch (e) { /* */ }
     }
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -84,6 +84,8 @@ if (!libJsAvailable()) {
       stdio: 'ignore'
     }));
 
+    // Wait for API server to be ready (plain HTTP, no SSL)
+    await waitForServer('http://127.0.0.1:' + API_PORT + '/', 20000);
     // Wait for proxy to be ready (it sits in front of everything)
     await waitForServer(SERVER_URL + 'reg/service/info', 30000);
   });
@@ -150,12 +152,12 @@ function loadTestFiles (component) {
 }
 
 function waitForServer (url, timeoutMs) {
-  const https = require('node:https');
+  const mod = url.startsWith('https') ? require('node:https') : require('node:http');
   const deadline = Date.now() + timeoutMs;
   return new Promise((resolve, reject) => {
     (function attempt () {
       if (Date.now() > deadline) return reject(new Error('Server not ready after ' + timeoutMs + 'ms'));
-      const req = https.get(url, { rejectUnauthorized: false }, (res) => {
+      const req = mod.get(url, { rejectUnauthorized: false }, (res) => {
         res.on('data', () => {});
         res.on('end', () => res.statusCode === 200 ? resolve() : setTimeout(attempt, 500));
       });

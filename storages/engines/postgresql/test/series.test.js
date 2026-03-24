@@ -6,6 +6,7 @@
  */
 
 const helpers = require('../../../test/helpers');
+const DatabasePG = require('../src/DatabasePG');
 const PGSeriesConnection = require('../src/pg_connection');
 
 describe('[PGSR] PostgreSQL series', function () {
@@ -14,8 +15,10 @@ describe('[PGSR] PostgreSQL series', function () {
   const eventId = 'series-evt-' + Date.now();
 
   before(async function () {
+    if (process.env.STORAGE_ENGINE !== 'postgresql') return this.skip();
     await helpers.dependencies.init();
-    const db = require('../src/_internals').databasePG;
+    const db = new DatabasePG(helpers.config);
+    await db.waitForConnection();
     conn = new PGSeriesConnection(db);
   });
 

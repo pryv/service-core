@@ -8,7 +8,10 @@
 const helpers = require('../../../test/helpers');
 const conformanceTests = require('platform/test/conformance/PlatformDB.test');
 
-describe('[PGPF] PostgreSQL PlatformDB conformance', () => {
+describe('[PGPF] PostgreSQL PlatformDB conformance', function () {
+  before(function () {
+    if (process.env.STORAGE_ENGINE !== 'postgresql') return this.skip();
+  });
   conformanceTests(async () => {
     await helpers.dependencies.init();
     const storages = require('storages');
