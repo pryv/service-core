@@ -66,7 +66,7 @@ async function main () {
   // read server config (engines, audit, integrity)
   const serverConfig = readServerConfig();
   config.serverConfig = serverConfig;
-  console.log(`Engines: base=${serverConfig.engines.base}, platform=${serverConfig.engines.platform}`);
+  console.log(`Engines: base=${serverConfig.engines.base}, platform=${serverConfig.engines.platform}, series=${serverConfig.engines.series}, audit=${serverConfig.engines.audit}`);
   console.log(`Audit: ${serverConfig.audit ?? 'n/a'} | Integrity: ${JSON.stringify(serverConfig.integrity) || 'n/a'}`);
   console.log('');
 

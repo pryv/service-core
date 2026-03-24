@@ -452,9 +452,9 @@ function toFullMarkdown (result) {
   const cfg = result.config;
   lines.push('## Server Config');
   if (cfg.engines) {
-    lines.push(`- **Base storage:** ${cfg.engines.base || 'n/a'} | **Platform:** ${cfg.engines.platform || 'n/a'} | **Series:** ${cfg.engines.series || 'n/a'}`);
+    lines.push(`- **Base storage:** ${cfg.engines.base || 'n/a'} | **Platform:** ${cfg.engines.platform || 'n/a'} | **Series:** ${cfg.engines.series || 'n/a'} | **Audit:** ${cfg.engines.audit || 'n/a'}`);
   }
-  if (cfg.audit != null) lines.push(`- **Audit:** ${cfg.audit ? 'ON' : 'OFF'} | **Integrity:** ${JSON.stringify(cfg.integrity) || 'n/a'}`);
+  if (cfg.audit != null) lines.push(`- **Audit active:** ${cfg.audit ? 'ON' : 'OFF'} | **Integrity:** ${JSON.stringify(cfg.integrity) || 'n/a'}`);
   if (cfg.clusterWorkers != null) lines.push(`- **API workers:** ${cfg.clusterWorkers}`);
   lines.push('');
 
