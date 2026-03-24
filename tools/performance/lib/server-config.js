@@ -48,6 +48,16 @@ export function readServerConfig () {
     const workersMatch = defaultYml.match(/cluster:\s*\n\s+apiWorkers:\s*(\d+)/);
     if (workersMatch) result.clusterWorkers = parseInt(workersMatch[1], 10);
 
+    // override-config.yml (highest priority, like @pryv/boiler)
+    const overridePath = path.join(scRoot, 'config/override-config.yml');
+    if (fs.existsSync(overridePath)) {
+      const overrideYml = fs.readFileSync(overridePath, 'utf8');
+      for (const key of ['base', 'platform', 'series', 'file', 'audit']) {
+        const val = yamlValue(overrideYml, new RegExp(`${key}:\\s*\\n\\s+engine:\\s*(\\S+)`));
+        if (val !== 'unknown') result.engines[key] = val;
+      }
+    }
+
     // env overrides
     if (process.env.STORAGE_ENGINE) {
       result.engines.base = process.env.STORAGE_ENGINE;

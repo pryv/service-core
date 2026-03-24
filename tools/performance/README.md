@@ -196,3 +196,8 @@ The following features are not yet implemented:
 - **SSH remote resource monitoring** — track RSS/CPU of a remote server during benchmarks via SSH. Currently resource monitoring is local-only.
 - **Multi-core topology testing** — benchmark against multi-core deployments (multiple core instances with rqlite). Needs a multi-core deployment setup.
 - **41kHz device simulation** — series scenarios seed 100K points; real devices can output at 41kHz producing millions of points per series. Future work: add a `--series-points` flag for larger datasets.
+
+
+# License
+
+[BSD-3-Clause](LICENSE)
