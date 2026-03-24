@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS event_streams (
 CREATE INDEX IF NOT EXISTS idx_es_path
   ON event_streams(user_id, stream_path text_pattern_ops);
 CREATE INDEX IF NOT EXISTS idx_es_stream
-  ON event_streams(user_id, stream_id);
+  ON event_streams(user_id, stream_id, event_id);
 
 CREATE TABLE IF NOT EXISTS accesses (
   user_id TEXT NOT NULL,

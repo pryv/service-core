@@ -60,19 +60,11 @@ class PGSeriesConnection {
 
     if (points.length === 0) return;
 
-    for (const point of points) {
+    await batchUpsert(this.db, points.map(point => {
       const deltaTime = point.timestamp;
-      // point_time is just the delta_time as float for the PK
       const pointTime = typeof deltaTime === 'number' ? deltaTime : Number(deltaTime);
-
-      await this.db.query(
-        `INSERT INTO series_data (user_id, event_id, point_time, delta_time, fields)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (user_id, event_id, point_time)
-         DO UPDATE SET delta_time = $4, fields = $5`,
-        [userId, name, pointTime, deltaTime, JSON.stringify(point.fields)]
-      );
-    }
+      return [userId, name, pointTime, deltaTime, JSON.stringify(point.fields)];
+    }));
   }
 
   /**
@@ -86,18 +78,11 @@ class PGSeriesConnection {
 
     if (points.length === 0) return;
 
-    for (const point of points) {
+    await batchUpsert(this.db, points.map(point => {
       const deltaTime = point.timestamp;
       const pointTime = typeof deltaTime === 'number' ? deltaTime : Number(deltaTime);
-
-      await this.db.query(
-        `INSERT INTO series_data (user_id, event_id, point_time, delta_time, fields)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (user_id, event_id, point_time)
-         DO UPDATE SET delta_time = $4, fields = $5`,
-        [userId, point.measurement, pointTime, deltaTime, JSON.stringify(point.fields)]
-      );
-    }
+      return [userId, point.measurement, pointTime, deltaTime, JSON.stringify(point.fields)];
+    }));
   }
 
   /**
@@ -233,7 +218,7 @@ class PGSeriesConnection {
     for (const { measurement, points } of data.measurements) {
       if (!points || points.length === 0) continue;
 
-      for (const p of points) {
+      const rows = points.map(p => {
         const fields = {};
         const tags = {};
         for (const [key, value] of Object.entries(p)) {
@@ -244,20 +229,12 @@ class PGSeriesConnection {
             fields[key] = value;
           }
         }
-        // Merge tags into fields for PG storage
         const allFields = Object.assign({}, fields, tags);
-        // Convert milliseconds back to nanoseconds for storage
         const deltaTime = typeof p.time === 'number' ? p.time * 1e6 : Number(p.time) * 1e6;
-        const pointTime = deltaTime;
+        return [name, measurement, deltaTime, deltaTime, JSON.stringify(allFields)];
+      });
 
-        await this.db.query(
-          `INSERT INTO series_data (user_id, event_id, point_time, delta_time, fields)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (user_id, event_id, point_time)
-           DO UPDATE SET delta_time = $4, fields = $5`,
-          [name, measurement, pointTime, deltaTime, JSON.stringify(allFields)]
-        );
-      }
+      await batchUpsert(this.db, rows);
     }
   }
 }
@@ -293,6 +270,33 @@ function parseInfluxSelect (query) {
   }
 
   return { measurement, conditions };
+}
+
+/**
+ * Batch upsert rows into series_data using multi-row VALUES.
+ * Each row is [user_id, event_id, point_time, delta_time, fields_json].
+ * Chunks into batches of BATCH_SIZE to stay within PG parameter limits.
+ */
+const BATCH_SIZE = 500; // 500 rows × 5 params = 2500 (PG limit ~65535)
+
+async function batchUpsert (db, rows) {
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const chunk = rows.slice(i, i + BATCH_SIZE);
+    const params = [];
+    const valueClauses = [];
+    for (let j = 0; j < chunk.length; j++) {
+      const base = j * 5;
+      valueClauses.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`);
+      params.push(...chunk[j]);
+    }
+    await db.query(
+      `INSERT INTO series_data (user_id, event_id, point_time, delta_time, fields)
+       VALUES ${valueClauses.join(', ')}
+       ON CONFLICT (user_id, event_id, point_time)
+       DO UPDATE SET delta_time = EXCLUDED.delta_time, fields = EXCLUDED.fields`,
+      params
+    );
+  }
 }
 
 module.exports = PGSeriesConnection;
