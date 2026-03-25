@@ -45,14 +45,31 @@ class DatabasePG {
     };
     this.pool = null;
     this.connected = false;
+    /** @type {Promise<void>|null} Serialization guard for connect + schema init */
+    this._connectingPromise = null;
+    this._schemaReady = false;
   }
 
   /**
    * Ensure the pool is created and a test query succeeds.
+   * Serialized: concurrent callers share the same connection promise.
    * @returns {Promise<void>}
    */
   async ensureConnect () {
     if (this.connected) return;
+    // Serialize: if another caller is already connecting, await same promise
+    if (this._connectingPromise) return this._connectingPromise;
+    this._connectingPromise = this._doConnect();
+    try {
+      await this._connectingPromise;
+    } finally {
+      this._connectingPromise = null;
+    }
+  }
+
+  /** @private */
+  async _doConnect () {
+    if (this.connected) return; // re-check after acquiring serialization
 
     if (!this.pool) {
       this.pool = new Pool(this.poolConfig);
@@ -65,14 +82,14 @@ class DatabasePG {
     const client = await this.pool.connect();
     try {
       await client.query('SELECT 1');
-      this.connected = true;
       this.logger.debug(`Connected to PostgreSQL at ${this.poolConfig.host}:${this.poolConfig.port}/${this.poolConfig.database}`);
     } finally {
       client.release();
     }
 
-    // Auto-initialize schema on first connection (idempotent)
-    await this.initSchema();
+    // Auto-initialize schema on first connection (idempotent, runs once)
+    await this._initSchemaOnce();
+    this.connected = true;
   }
 
   /**
@@ -136,12 +153,23 @@ class DatabasePG {
 
   /**
    * Initialize the database schema (create tables if not exist).
-   * Called once after first connection.
+   * Public entry point — ensures connection then runs DDL.
    * @returns {Promise<void>}
    */
   async initSchema () {
     await this.ensureConnect();
-    await this.query(SCHEMA_SQL);
+    await this._initSchemaOnce();
+  }
+
+  /**
+   * Run schema DDL once. Called internally by _doConnect and initSchema.
+   * Safe to call multiple times — only the first invocation runs DDL.
+   * @private
+   */
+  async _initSchemaOnce () {
+    if (this._schemaReady) return;
+    await this.pool.query(SCHEMA_SQL);
+    this._schemaReady = true;
     this.logger.info('PostgreSQL schema initialized');
   }
 
@@ -154,6 +182,8 @@ class DatabasePG {
       await this.pool.end();
       this.pool = null;
       this.connected = false;
+      this._connectingPromise = null;
+      this._schemaReady = false;
     }
   }
 

@@ -63,6 +63,8 @@ class AuditStoragePG {
   close () {
     this.checkInitialized();
     this.userDBsCache.clear();
+    // Close the dedicated audit pool
+    if (this.db) this.db.close().catch(() => {});
   }
 }
 

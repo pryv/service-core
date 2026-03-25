@@ -78,12 +78,12 @@ test component *params:
 
 # Same as `test` but using PostgreSQL storage engine
 test-pg component *params:
-    STORAGE_ENGINE=postgresql NODE_ENV=test DISABLE_INTEGRITY_CHECK=1 COMPONENT={{component}} scripts/components-run \
+    STORAGE_ENGINE=postgresql NODE_ENV=test COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
 # Same as `test-parallel` but using PostgreSQL storage engine
 test-pg-parallel component *params:
-    STORAGE_ENGINE=postgresql NODE_ENV=test DISABLE_INTEGRITY_CHECK=1 MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
+    STORAGE_ENGINE=postgresql NODE_ENV=test MOCHA_PARALLEL=1 COMPONENT={{component}} scripts/components-run \
         npx mocha -- {{params}}
 
 # Same as `test` but using SQLite PoC storage

@@ -103,8 +103,19 @@ async function createSeriesConnection (config) {
 
 function createAuditStorage () {
   const AuditStoragePG = require('./AuditStoragePG');
-  const db = _internals.databasePG;
-  return new AuditStoragePG(db);
+  const DatabasePG = require('./DatabasePG');
+  // Dedicated pool for audit: same DB, smaller pool size to avoid
+  // contending with event/stream queries on the main pool.
+  const pgConfig = _internals.config;
+  const auditDb = new DatabasePG({
+    host: pgConfig.host,
+    port: pgConfig.port,
+    database: pgConfig.database,
+    user: pgConfig.user,
+    password: pgConfig.password,
+    max: pgConfig.auditPoolSize || 5
+  });
+  return new AuditStoragePG(auditDb);
 }
 
 module.exports = {
