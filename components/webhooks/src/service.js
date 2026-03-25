@@ -154,7 +154,15 @@ class WebhooksService {
    */
   async activateWebhook (username, webhook) {
     const userWebhooks = this.webhooks.get(username);
+    if (userWebhooks == null) {
+      this.logger.warn(`Could not retrieve webhooks for ${username} to activate ${webhook.id}.`);
+      return;
+    }
     const stoppedWebhook = userWebhooks.filter((w) => w.id === webhook.id)[0];
+    if (stoppedWebhook == null) {
+      this.logger.warn(`Webhook ${webhook.id} not found for ${username}.`);
+      return;
+    }
     stoppedWebhook.state = 'active';
     this.logger.info(`Reactivated webhook ${stoppedWebhook.id} for ${username}`);
   }

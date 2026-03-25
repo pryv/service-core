@@ -133,18 +133,20 @@ test-profile component *params:
     tick-processor > profiling-output.txt && \
     open profiling-output.txt
 
-# Run tests and generate HTML coverage report
+# Run tests and generate HTML coverage report for a single component
 test-cover component *params:
-    NODE_ENV=test COMPONENT={{component}} nyc --reporter=html --report-dir=./coverage \
+    NODE_ENV=test COMPONENT={{component}} nyc \
         scripts/components-run npx mocha -- {{params}}
 
-# Run all possible tests (with both Mongo and SQLite storage) and generate HTML coverage report
+# Run all tests across all engines (MongoDB + PG + SQLite) and generate coverage report
 test-cover-all:
-    NODE_ENV=test nyc --reporter=html --report-dir=./coverage scripts/coverage
+    scripts/coverage
+    npx nyc report
 
-# Run all possible tests (with both Mongo and SQLite storage) and generate LCOV coverage report
+# Run all tests with LCOV output (for CI)
 test-cover-lcov:
-    NODE_ENV=test nyc --reporter=lcov scripts/coverage
+    scripts/coverage
+    npx nyc report --reporter=lcov
 
 # Set up test results report generation
 test-results-init-repo:
