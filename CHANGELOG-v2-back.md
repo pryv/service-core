@@ -1,5 +1,45 @@
 # Changelog - Internal (no API impact)
 
+## Plan 19: Full PostgreSQL
+
+### PG as complete single-core engine
+- PostgreSQL now implements all 5 storage types: baseStorage, dataStore, platformStorage, seriesStorage, auditStorage
+- Series storage on PG replaces InfluxDB with batch INSERT optimization (up to 5000 rows per statement)
+- Audit storage on PG replaces SQLite (optional — SQLite recommended for performance)
+- PG integrity checking works out of the box — `DISABLE_INTEGRITY_CHECK` removed from test recipes
+
+### Performance
+- PG +8.7% avg throughput vs MongoDB+InfluxDB (12/18 benchmarks faster)
+- Batch INSERT for series writes: single-row INSERT → multi-row VALUES (batch10: 2x faster than InfluxDB)
+- Composite index on `event_streams(user_id, stream_id, event_id)` for stream-parent queries
+- 5 new PG indexes: events (trashed, modified, head_id, end_time), streams (trashed)
+
+### Reliability
+- Serialized `DatabasePG.ensureConnect()` with promise guard — fixes `pg_type_typname_nsp_index` race condition when multiple callers initialize concurrently
+- Schema DDL runs exactly once via `_initSchemaOnce()` with `_schemaReady` flag
+- `connected` flag set only after schema is ready (prevents queries against missing tables)
+- Dedicated audit connection pool (default 5 connections) — no longer contends with main pool (default 20)
+
+### Engine tests
+- 49 PG engine tests: schema conformance, series CRUD, PlatformDB, audit conformance
+- lib-js integration tests pass in PG mode (169 passing)
+
+### Config
+- `storages.engines.postgresql.auditPoolSize` — configurable audit pool size (default 5)
+- `justfile`: removed `DISABLE_INTEGRITY_CHECK=1` from `test-pg` and `test-pg-parallel` recipes
+
+## Plan 18: Performance Tracking
+
+### Benchmark tool (`tools/performance/`)
+- Reusable performance test suite for service-core — measures throughput, latency, resource usage
+- 7 scenarios: events-create, events-get (no-filter/stream-parent/time-range × master/restricted auth), streams-create (flat+nested), streams-update, series-write (batch 10/100/1000), series-read (1K/10K points), mixed-workload
+- Two seed profiles based on real accounts: "manual" (perki.pryv.me, 100 streams) and "iot" (demo.datasafe.dev, 50 streams)
+- Resource monitoring: tracks master + worker PIDs, aggregated RSS/CPU in results
+- Concurrency sweep mode: `--sweep 1,5,10,25,50` produces comparison tables
+- Results stored as JSON + markdown with system info, server config, latency percentiles (p50/p95/p99)
+- Helper scripts: `perf-clean`, `perf-seed`, `perf-run`, `perf-full`
+- Comparison tool: `bin/compare.js` for side-by-side result analysis
+
 ## Plan 17: Merge service-register into service-core
 
 ### Config & storage
