@@ -30,8 +30,9 @@ run_component() {
     env_prefix="$env_prefix $extra_env"
   fi
 
+  local abs_tmpdir="$(cd "$(dirname "$0")/.." && pwd)/$tmpdir"
   env $env_prefix NODE_ENV=test COMPONENT="$component" \
-    npx nyc --silent --no-clean --temp-dir "$tmpdir" \
+    npx nyc --silent --no-clean --temp-dir "$abs_tmpdir" \
     scripts/components-run npx mocha -- || true
 }
 
@@ -43,11 +44,9 @@ run_component "" "all"
 just clean-data &
 run_component "postgresql" "all"
 
-# SQLite — relevant components
+# SQLite — all components
 just clean-data &
-run_component "" "api-server" "database__engine=sqlite"
-run_component "" "storage" "database__engine=sqlite"
-run_component "" "mall" "database__engine=sqlite"
+run_component "" "all" "database__engine=sqlite"
 
 # Merge all temp dirs into main output
 echo "=== Merging coverage data ==="

@@ -1,4 +1,5 @@
 {
+  "cwd": ".",
   "include": [
     "components/*/src/**/*.js",
     "storages/**/*.js"
