@@ -143,13 +143,6 @@ class MallUserEvents {
   }
 
   /**
-   * @returns {Promise<any>}
-   */
-  async getStreamed (userId, params) {
-    return await this.getStreamedWithParamsByStore(userId, eventsQueryUtils.getParamsByStore(params));
-  }
-
-  /**
    * Specific to Mall, allow query with a prepared query by store
    * @returns {Promise<any>}
    */

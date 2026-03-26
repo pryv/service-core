@@ -36,19 +36,5 @@ class LocalTransaction {
   async exec (func) {
     await this.transactionSession.withTransaction(func, this.transactionOptions);
   }
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async commit () {
-    throw new Error('not implemented');
-  }
-
-  /**
-   * @returns {Promise<void>}
-   */
-  async rollback () {
-    throw new Error('not implemented');
-  }
 }
 module.exports = LocalTransaction;

@@ -26,15 +26,17 @@ const Cache = require('./cache');
 const errorHandling = require('errors').errorHandling;
 
 const logger = getLogger('previews-cache-worker');
-const settings = getConfigUnsafe(true).get('eventFiles');
+const config = getConfigUnsafe(true);
+const previewsDirPath = config.get('storages:engines:filesystem:previewsDirPath');
+const previewsCacheMaxAge = config.get('eventFiles:previewsCacheMaxAge') || 604800000; // 1 week in ms
 
 const cache = new Cache({
-  rootPath: settings.previewsDirPath,
-  maxAge: (settings.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000, // 1w
+  rootPath: previewsDirPath,
+  maxAge: previewsCacheMaxAge / 1000, // convert ms to seconds
   logger
 });
 
-logger.info('Starting clean-up in ' + settings.previewsDirPath);
+logger.info('Starting clean-up in ' + previewsDirPath);
 cache.cleanUp()
   .then(() => {
     logger.info('Clean-up successful.');

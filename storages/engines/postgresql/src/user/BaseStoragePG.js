@@ -740,14 +740,6 @@ class BaseStoragePG {
     callback(null, []);
   }
 
-  findStreamed (user, query, options, callback) {
-    callback(new Error('findStreamed not implemented for PG'));
-  }
-
-  findDeletionsStreamed (user, deletedSince, options, callback) {
-    callback(new Error('findDeletionsStreamed not implemented for PG'));
-  }
-
   findAndUpdateIfNeeded (userOrUserId, query, options, updateIfNeededCallback, callback) {
     const userId = this.getUserIdFromUserOrUserId(userOrUserId);
     const where = this.buildWhere(userId, query);

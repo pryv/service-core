@@ -6,9 +6,7 @@
  */
 const _ = require('lodash');
 const cuid = require('cuid');
-const timestamp = require('unix-timestamp');
 const accountStreams = require('business/src/system-streams');
-const UserRepositoryOptions = require('./UserRepositoryOptions');
 
 class User {
   // User properties that exists by default (email could not exist with specific config)
@@ -50,15 +48,6 @@ class User {
   }
 
   /**
-   * Get list of events from account data
-   * @returns {any[]}
-   */
-  async getEvents () {
-    if (this.events == null) { this.events = await buildEventsFromAccount(this); }
-    return this.events;
-  }
-
-  /**
    * Get only readable account information
    * @returns {{}}
    */
@@ -92,14 +81,6 @@ class User {
       .filter((x) => x !== 'dbDocuments' && x !== 'attachedFiles'));
     res.username = this.username;
     return res;
-  }
-
-  /**
-   * Get account unique fields
-   * @returns {any}
-   */
-  getUniqueFields () {
-    return _.pick(this, this.uniqueAccountFields);
   }
 }
 /**
@@ -138,52 +119,6 @@ function loadAccountData (user, params) {
   if (params.id) {
     user.id = params.id;
   }
-}
-/**
- * @param {User} user
- * @returns {Promise<any[]>}
- */
-async function buildEventsFromAccount (user) {
-  const accountLeavesMap = accountStreams.accountLeavesMap;
-  // convert to events
-  const account = user.getFullAccount();
-  const events = [];
-  for (const [streamId, stream] of Object.entries(accountLeavesMap)) {
-    const streamIdWithoutPrefix = accountStreams.toFieldName(streamId);
-    const content = account[streamIdWithoutPrefix]
-      ? account[streamIdWithoutPrefix]
-      : stream.default;
-    if (content != null) {
-      const event = createEvent(streamId, stream.type, stream.isUnique, content, user.accessId
-        ? user.accessId
-        : UserRepositoryOptions.SYSTEM_USER_ACCESS_ID);
-      events.push(event);
-    }
-  }
-  return events;
-}
-/**
- * @param {string} streamId
- * @param {string} type
- * @param {boolean} isUnique
- * @param {string} content
- * @param {string} accessId
- * @returns {any}
- */
-function createEvent (streamId, type, isUnique, content, accessId) {
-  return {
-    id: cuid(),
-    streamIds: [streamId],
-    type,
-    content,
-    created: timestamp.now(),
-    modified: timestamp.now(),
-    time: timestamp.now(),
-    createdBy: accessId,
-    modifiedBy: accessId,
-    attachments: [],
-    tags: []
-  };
 }
 /**
  * Assign events data to user account fields

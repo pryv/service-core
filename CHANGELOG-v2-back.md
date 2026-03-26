@@ -1,5 +1,24 @@
 # Changelog - Internal (no API impact)
 
+## Plan 20: Test Coverage & Dead Code
+
+### Coverage tooling (`tools/coverage/`)
+- V8-native coverage via `NODE_V8_COVERAGE` + `c8 report` (replaces NYC)
+- `collect.js`: bypasses `components-run`, runs mocha from project root via `node` directly
+- `pg-early-init.js`: fixes barrel init race — injects PG config before `global.test.js` locks to MongoDB
+- `run.sh`: orchestrates 3-engine coverage (MongoDB + PG + SQLite), merged HTML report
+- Coverage baseline: 80% statements, 83% branches, 77% functions
+
+### Bug fixes
+- Previews-server: `DynamicInstanceManager` (random port), fixed cache cleanup config key, async `getFiles()`, test assertion fix — 15/0 (was process crash)
+- WebhooksService: null guard in `activateWebhook()` for PG mode
+- Consolidated duplicate `encryption.js` — engines now use `require('utils').encryption`
+
+### Dead code removed
+- 6 dead files: JSDoc-only barrels, unused Transform stream, old DeletionModesFields location, serializer shim
+- 17 dead test data files: followedSlices, migrated data (0.3.0–0.5.0), structure versions (0.7.1–1.7.0)
+- Dead functions: `findStreamed`/`findDeletionsStreamed` stubs (MongoDB + PG), `stateToDB`, `LocalTransaction.commit/rollback`, `Database.findStreamed`, `hasStreamPermissions`, `User.getEvents/getUniqueFields`, `MallUserEvents.getStreamed`, `storage.getDatabase/getDatabasePG`, `pluginLoader.getConfigFor`
+
 ## Plan 19: Full PostgreSQL
 
 ### PG as complete single-core engine

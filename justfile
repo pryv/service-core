@@ -143,6 +143,10 @@ test-cover-all:
     scripts/coverage
     npx nyc report
 
+# Full coverage: runs mocha from project root so storages/engines/ files are instrumented
+test-cover-full *engines:
+    tools/coverage/run.sh {{engines}}
+
 # Run all tests with LCOV output (for CI)
 test-cover-lcov:
     scripts/coverage

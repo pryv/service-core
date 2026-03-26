@@ -28,19 +28,6 @@ exports.getRenamePropertyFn = function (oldName, newName) {
   };
 };
 
-/**
- * Converts the item's state to DB storage.
- * In our exposed API, items supporting state can carry a 'trashed' boolean field (true or false;
- * considered false if missing);
- * in the database, though, for optimization we only retain the 'trashed' field when it is true.
- */
-exports.stateToDB = function (item) {
-  if (item.trashed !== true) {
-    delete item.trashed;
-  }
-  return item;
-};
-
 exports.stateUpdate = function (update) {
   if (update.$set.trashed != null && !update.$set.trashed) {
     update.$unset.trashed = 1;

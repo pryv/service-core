@@ -9,8 +9,6 @@ const StorageLayer = require('./StorageLayer');
 module.exports = {
   Size: require('./Size'),
   StorageLayer,
-  getDatabase,
-  getDatabasePG,
   getStorageLayer,
   getDatabaseSync,
   userLocalDirectory: require('./userLocalDirectory'),
@@ -83,41 +81,4 @@ function _ensureMongoDatabase () {
  */
 function getDatabaseSync () {
   return require('storages').database || _ensureMongoDatabase();
-}
-
-/**
- * Get the MongoDB database connection.
- * @returns {Promise<Object>}
- */
-async function getDatabase () {
-  await ensureBarrel();
-  const db = require('storages').database || _ensureMongoDatabase();
-  await db.ensureConnect();
-  return db;
-}
-
-// Lazy-created PG database — used when barrel was initialized for a
-// different engine (e.g. mongodb) and caller still needs a PG connection.
-let _lazyDatabasePG;
-
-/**
- * Get the PostgreSQL database connection.
- * @returns {Promise<Object|null>}
- */
-async function getDatabasePG () {
-  await ensureBarrel();
-  let db = require('storages').databasePG;
-  if (!db) {
-    if (!_lazyDatabasePG) {
-      const { getConfig, getLogger } = require('@pryv/boiler');
-      const config = await getConfig();
-      const pgInternals = require('storages/engines/postgresql/src/_internals');
-      if (!pgInternals.getLogger) pgInternals.set('getLogger', getLogger);
-      const DatabasePG = require('storages/engines/postgresql/src/DatabasePG');
-      _lazyDatabasePG = new DatabasePG(config.get('storages:engines:postgresql'));
-    }
-    db = _lazyDatabasePG;
-  }
-  await db.ensureConnect();
-  return db;
 }

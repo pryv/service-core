@@ -436,10 +436,6 @@ class AccessLogic {
     if (this.featurePermissionsMap.selfRevoke == null) return true; // default allow
     return this.featurePermissionsMap.selfRevoke.setting !== 'forbidden';
   }
-
-  hasStreamPermissions () {
-    return Object.keys(this._streamByStorePermissionsMap).length > 0;
-  }
 }
 
 module.exports = AccessLogic;

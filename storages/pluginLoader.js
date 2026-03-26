@@ -201,19 +201,6 @@ function getEngineFor (storageType) {
 }
 
 /**
- * Get the engine-specific config for a storageType.
- * @param {string} storageType
- * @returns {Object} Engine config or empty object
- */
-function getConfigFor (storageType) {
-  if (!resolvedConfig) {
-    throw new Error('pluginLoader not initialized. Call init(config) first.');
-  }
-  const entry = resolvedConfig[storageType];
-  return entry ? entry.config : {};
-}
-
-/**
  * List all discovered engine names.
  * @returns {string[]}
  */
@@ -246,7 +233,6 @@ module.exports = {
   init,
   discover,
   getEngineFor,
-  getConfigFor,
   getEngineModule,
   listEngines,
   getManifest,

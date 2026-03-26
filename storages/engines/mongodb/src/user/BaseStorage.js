@@ -183,14 +183,6 @@ BaseStorage.prototype.findAndUpdateIfNeeded = function (userOrUserId, query, opt
     });
 };
 
-/**
- * Same as find(), but returns a readable stream
- */
-BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
-  callback(new Error('Not implemented (user: ' + user + ')'));
-  // Implemented for Events only.
-};
-
 BaseStorage.prototype.findDeletions = function (
   userOrUserId,
   deletedSince,
@@ -210,19 +202,6 @@ BaseStorage.prototype.findDeletions = function (
       callback(null, this.applyItemsFromDB(dbItems));
     }.bind(this)
   );
-};
-
-/**
- * Same as findDeletions(), but returns a readable stream
- */
-BaseStorage.prototype.findDeletionsStreamed = function (
-  user,
-  deletedSince,
-  options,
-  callback
-) {
-  callback(new Error('Not implemented (user: ' + user + ')'));
-  // Implemented for Events only.
 };
 
 BaseStorage.prototype.findOne = function (userOrUserId, query, options, callback) {

@@ -14,6 +14,8 @@ proxy/nginx.conf
 service-core.iml
 /out
 .nyc_output/
+.v8-coverage/
+.c8_output/
 build_tag
 build/core/release.tar
 build/hfs/release.tar
@@ -24,7 +26,7 @@ build/test/pryv/*/data
 build/test/pryv/*/log
 security-assessment
 /test-results/
-coverage/
+/coverage/
 var-pryv*
 *.log
 learn-config

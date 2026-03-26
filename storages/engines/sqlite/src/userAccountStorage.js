@@ -17,7 +17,7 @@ const SQLite3 = require('better-sqlite3');
 const LRU = require('lru-cache');
 const timestamp = require('unix-timestamp');
 const _internals = require('./_internals');
-const encryption = require('../../../shared/encryption');
+const encryption = require('utils').encryption;
 
 const CACHE_SIZE = 100;
 const VERSION = '1.0.0';

@@ -7,7 +7,7 @@
 
 const timestamp = require('unix-timestamp');
 const _internals = require('./_internals');
-const encryption = require('../../../shared/encryption');
+const encryption = require('utils').encryption;
 
 let db;
 

@@ -282,7 +282,9 @@ describe('[EP01] event previews', function () {
         async function cleanupCache () {
           const res = await new Promise((resolve) => request.post(basePath, token).end((res) => resolve(res)));
           assert.strictEqual(res.statusCode, 200);
-          await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
+          // Old preview (2 weeks ago) should have been deleted
+          assert.ok(!fs.existsSync(aCachedPath), 'Old preview should be deleted');
+          // Recent preview should still exist
           const lastAccessed = await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
           assert.ok(lastAccessed);
         }

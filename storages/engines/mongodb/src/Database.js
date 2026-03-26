@@ -334,13 +334,6 @@ class Database {
    * @param {DatabaseCallback} callback  undefined
    * @returns {void}
    */
-  findStreamed (collectionInfo, query, options, callback) {
-    this.findCursor(collectionInfo, query, options, (err, cursor) => {
-      if (err) { return callback(err); }
-      callback(null, cursor.stream());
-    });
-  }
-
   /**
    * Finds the first document matching the given query.
    *
