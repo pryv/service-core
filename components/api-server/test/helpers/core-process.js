@@ -27,6 +27,9 @@ require('@pryv/boiler').init({
   baseFilesDir: path.resolve(__dirname, '../../../../'),
   baseConfigDir: path.resolve(__dirname, '../../../../config/'),
   extraConfigs: [{
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../../../config/plugins/paths-config.js')
+  }, {
     plugin: require('../../../../config/plugins/systemStreams')
   }, {
     plugin: require('../../../../config/plugins/core-identity')

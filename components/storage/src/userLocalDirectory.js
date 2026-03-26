@@ -40,6 +40,9 @@ async function init () {
   if (basePath) return;
   config = await getConfig();
   const candidateBasePath = config.get('storages:engines:sqlite:path');
+  if (!candidateBasePath || candidateBasePath === 'REPLACE ME') {
+    throw new Error('storages:engines:sqlite:path is not configured (still "REPLACE ME"). Load the paths-config plugin or set an explicit path.');
+  }
   mkdirp.sync(candidateBasePath);
   basePath = candidateBasePath;
 }
