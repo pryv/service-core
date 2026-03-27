@@ -30,6 +30,21 @@ function Profile (database) {
 }
 util.inherits(Profile, BaseStorage);
 
+/**
+ * Override importAll: convert canonical backup format `id` → MongoDB `profileId`.
+ */
+Profile.prototype.importAll = function (userOrUserId, items, callback) {
+  const mapped = items.map(item => {
+    const doc = Object.assign({}, item);
+    if (doc.id != null && doc.profileId == null) {
+      doc.profileId = doc.id;
+      delete doc.id;
+    }
+    return doc;
+  });
+  Profile.super_.prototype.importAll.call(this, userOrUserId, mapped, callback);
+};
+
 Profile.prototype.getCollectionInfo = function (userOrUserId) {
   const userId = this.getUserIdFromUserOrUserId(userOrUserId);
   return {

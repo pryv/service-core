@@ -97,6 +97,21 @@ Streams.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };
 
+/**
+ * Override importAll: convert canonical backup format `id` → MongoDB `streamId`.
+ */
+Streams.prototype.importAll = function (userOrUserId, items, callback) {
+  const mapped = items.map(item => {
+    const doc = Object.assign({}, item);
+    if (doc.id != null && doc.streamId == null) {
+      doc.streamId = doc.id;
+      delete doc.id;
+    }
+    return doc;
+  });
+  Streams.super_.prototype.importAll.call(this, userOrUserId, mapped, callback);
+};
+
 Streams.prototype.insertOne = function (user, stream, callback) {
   _internals.cache.unsetUserData(user.id);
   Streams.super_.prototype.insertOne.call(this, user, stream, callback);
