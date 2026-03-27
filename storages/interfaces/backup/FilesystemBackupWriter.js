@@ -11,13 +11,13 @@ const zlib = require('zlib');
 const { pipeline } = require('stream/promises');
 const { createBackupWriter, createUserBackupWriter } = require('./BackupWriter');
 
-const DEFAULT_MAX_CHUNK_SIZE = 50 * 1024 * 1024; // 50 MB (uncompressed)
+const DEFAULT_MAX_CHUNK_SIZE = 50 * 1024 * 1024; // 50 MB (output file size)
 
 /**
  * Create a FilesystemBackupWriter.
  * @param {string} outputPath - root directory for the backup
  * @param {Object} [options]
- * @param {number} [options.maxChunkSize=52428800] - max uncompressed bytes per chunk file
+ * @param {number} [options.maxChunkSize=52428800] - max output file size in bytes (compressed when compression is on)
  * @param {boolean} [options.compress=true] - gzip JSONL/CSV files
  * @returns {BackupWriter}
  */
@@ -175,7 +175,10 @@ async function writeJsonlFile (filePath, items, compress) {
 }
 
 /**
- * Write items to chunked JSONL files, splitting when uncompressed size exceeds maxChunkSize.
+ * Write items to chunked JSONL files, targeting maxChunkSize per output file.
+ * When compression is enabled, the target applies to the compressed (gzip) output size.
+ * When compression is off, the target applies to the raw file size.
+ * Files may exceed the target by ~10% — this is a soft limit.
  * @param {string} dir - directory for chunk files
  * @param {string} baseName - e.g. 'events', 'audit'
  * @param {AsyncIterable|Array} items
@@ -184,39 +187,52 @@ async function writeJsonlFile (filePath, items, compress) {
  */
 async function writeChunkedJsonlFiles (dir, baseName, items, opts) {
   let chunkIndex = 1;
-  let currentSize = 0;
   let currentLines = [];
   let totalCount = 0;
   const chunkFiles = [];
 
-  async function flushChunk () {
+  function flushChunk () {
     if (currentLines.length === 0) return;
     const chunkName = `${baseName}-${String(chunkIndex).padStart(4, '0')}`;
     const fileName = jsonlFileName(chunkName, opts.compress);
     const filePath = path.join(dir, fileName);
     const content = currentLines.join('\n') + '\n';
-    const buffer = Buffer.from(content, 'utf8');
-    if (opts.compress) {
-      fs.writeFileSync(filePath, zlib.gzipSync(buffer));
-    } else {
-      fs.writeFileSync(filePath, buffer);
-    }
+    const raw = Buffer.from(content, 'utf8');
+    const output = opts.compress ? zlib.gzipSync(raw) : raw;
+    fs.writeFileSync(filePath, output);
     chunkFiles.push(fileName);
     chunkIndex++;
     currentLines = [];
-    currentSize = 0;
   }
+
+  // Track uncompressed size as a proxy — check actual output size every N items
+  let rawSize = 0;
+  const CHECK_INTERVAL = 100;
 
   for await (const item of items) {
     const line = JSON.stringify(item);
-    const lineSize = Buffer.byteLength(line, 'utf8') + 1; // +1 for newline
-    if (currentSize + lineSize > opts.maxChunkSize && currentLines.length > 0) {
-      await flushChunk();
-    }
     currentLines.push(line);
-    currentSize += lineSize;
+    rawSize += Buffer.byteLength(line, 'utf8') + 1;
     totalCount++;
+
+    // For uncompressed mode, rawSize is the actual file size — check directly
+    if (!opts.compress && rawSize >= opts.maxChunkSize) {
+      flushChunk();
+      rawSize = 0;
+      continue;
+    }
+
+    // For compressed mode, check actual output size periodically
+    if (opts.compress && currentLines.length % CHECK_INTERVAL === 0) {
+      const content = currentLines.join('\n') + '\n';
+      const compressed = zlib.gzipSync(Buffer.from(content, 'utf8'));
+      if (compressed.length >= opts.maxChunkSize) {
+        flushChunk();
+        rawSize = 0;
+      }
+    }
   }
-  await flushChunk();
+
+  flushChunk();
   return { totalCount, chunkFiles };
 }

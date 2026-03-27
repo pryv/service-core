@@ -301,6 +301,7 @@ function parseArgs (argv) {
         args.compress = false;
         break;
       case '--max-chunk-size':
+      case '--target-file-size':
         args.maxChunkSize = parseInt(argv[++i], 10);
         break;
       case '--include-ephemeral':
@@ -351,7 +352,7 @@ Backup:
   --output, -o <path>       Output directory for backup
   --user, -u <userId>       Backup a single user (default: all users)
   --no-compress             Disable gzip compression (for debugging)
-  --max-chunk-size <MB>     Max chunk size in MB (default: 50)
+  --max-chunk-size <MB>     Max output file size in MB, compressed (default: 50)
   --include-ephemeral       Include sessions and password-reset-requests
   --incremental             Only export changes since previous backup (auto-detects per-user)
 

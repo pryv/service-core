@@ -1,5 +1,12 @@
 # Changelog - Internal (no API impact)
 
+## Plan 23: Migration Toolkit v1→v2
+
+### Backup writer: target file size on compressed output
+- `FilesystemBackupWriter` `maxChunkSize` now applies to the **compressed** output size (was uncompressed)
+- `bin/backup.js` accepts `--target-file-size <MB>` as alias for `--max-chunk-size`
+- Soft limit (~10% overshoot acceptable) — checks compressed size every 100 items
+
 ## Plan 21: Backup, Restore & Integrity
 
 ### Backup/restore system (`storages/interfaces/backup/`)
