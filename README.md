@@ -200,6 +200,69 @@ server {
 | Clustering | Built-in (cluster module) | Same — cluster runs behind nginx |
 
 
+## Backup, Restore & Integrity
+
+### Backup
+
+Export all user data (events, streams, accesses, profile, webhooks, account, audit, attachments) and platform data to a portable JSONL+gzip archive.
+
+```bash
+# Full backup (compressed by default)
+node bin/backup.js --output /path/to/backup
+
+# Single user
+node bin/backup.js --output /path/to/backup --user <userId>
+
+# Uncompressed (for debugging / human inspection)
+node bin/backup.js --output /path/to/backup --no-compress
+
+# Incremental (only changes since previous backup, auto-detected per user)
+node bin/backup.js --output /path/to/backup --incremental
+```
+
+Output is engine-agnostic: the same backup can be restored into MongoDB, PostgreSQL, or SQLite.
+
+Backups use **snapshot consistency**: a timestamp is recorded at start, and only items modified before that timestamp are exported. Concurrent writes during backup are excluded and will be captured by the next incremental run. No system interruption or user freeze required.
+
+### Restore
+
+```bash
+# Full restore
+node bin/backup.js --restore /path/to/backup
+
+# Overwrite existing data
+node bin/backup.js --restore /path/to/backup --overwrite
+
+# Single user
+node bin/backup.js --restore /path/to/backup --user <userId>
+
+# Skip conflicting users + cleanup
+node bin/backup.js --restore /path/to/backup --skip-conflicts --move-on-success /path/to/done
+
+# Verify integrity after restore (rolls back on failure)
+node bin/backup.js --restore /path/to/backup --overwrite --verify-integrity
+```
+
+When `--verify-integrity` is set, integrity hashes are recomputed on every restored event and access. If any mismatch is found, the affected user's data is rolled back (cleared).
+
+### Integrity Check
+
+Standalone per-user integrity verification for health data compliance. Recomputes hashes on events and accesses and compares against stored values.
+
+```bash
+# Check all users
+node bin/integrity-check.js
+
+# Check a single user
+node bin/integrity-check.js --user <userId>
+
+# JSON output (for automation)
+node bin/integrity-check.js --json
+```
+
+Exit code 0 = all checks passed, 1 = integrity errors found.
+
+
 ## Testing
 
 ```bash
@@ -222,7 +285,9 @@ Environment variables: `LOGS=<level>` (show server output), `DEBUG="*"` (debug i
 ```
 service-core/
 ├── bin/                    # Entry points
-│   └── master.js           # Cluster master (N API workers)
+│   ├── master.js           # Cluster master (N API workers)
+│   ├── backup.js           # Backup/restore CLI
+│   └── integrity-check.js  # Data integrity verification CLI
 ├── components/             # Application components (npm workspaces)
 │   ├── api-server/         # Main API server
 │   ├── hfs-server/         # High-frequency series server
@@ -239,6 +304,7 @@ service-core/
 ├── storages/               # Plugin system (npm workspace)
 │   ├── engines/            # mongodb, postgresql, sqlite, filesystem, influxdb
 │   └── interfaces/         # Formal contracts per storage type
+│       └── backup/         # Backup/restore writer/reader interfaces
 ├── build/                  # Docker + deployment
 └── justfile                # Development commands
 ```
