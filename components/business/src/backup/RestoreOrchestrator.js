@@ -349,7 +349,7 @@ class RestoreOrchestrator {
 
       // Check if userId already exists with a different username
       try {
-        const existingUsername = this.usersLocalIndex.getUsername(userId);
+        const existingUsername = await this.usersLocalIndex.getUsername(userId);
         if (existingUsername && existingUsername !== username) {
           conflicts.push({
             userId,
