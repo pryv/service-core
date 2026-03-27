@@ -1,5 +1,30 @@
 # Changelog - Internal (no API impact)
 
+## Plan 21: Backup, Restore & Integrity
+
+### Backup/restore system (`storages/interfaces/backup/`)
+- Engine-agnostic backup: JSONL+gzip format, chunked events/audit, flat attachments by fileId
+- `BackupWriter`/`BackupReader` interfaces with filesystem implementation
+- Data sanitization: strips `_id`/`__v`/`userId`, promotes `_id` to `id` (except streams)
+- `BackupOrchestrator`: snapshot consistency (`snapshotBefore`), `--incremental` mode (auto-detects per-user timestamps)
+- `RestoreOrchestrator`: conflict detection, `--skip-conflicts`, `--overwrite`, `--verify-integrity` with rollback
+- Series data export/import via engine `exportDatabase()`/`importDatabase()`
+- Overwrite protection on backup (requires `--incremental` to write to existing path)
+
+### Integrity verification (`components/business/src/integrity/IntegrityCheck.js`)
+- Per-user integrity checking: recomputes hashes on events and accesses
+- Reusable from CLI and from restore (`--verify-integrity`)
+
+### CLI tools
+- `bin/backup.js`: full backup/restore CLI (all-users, single-user, incremental, compressed)
+- `bin/integrity-check.js`: standalone per-user integrity verification (`--user`, `--json`, exit code 0/1)
+
+### pryv-datastore v1.0.2
+- Added `exportAll`, `importAll`, `clearAll` to `UserStreams` and `UserEvents` interfaces
+
+### Tests
+- 22 unit tests: sanitize, filesystem round-trip, chunking, attachments (single/multi/1MB binary), multi-user, unicode
+
 ## Plan 20: Test Coverage & Dead Code
 
 ### Coverage tooling (`tools/coverage/`)

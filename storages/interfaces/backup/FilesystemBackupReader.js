@@ -81,10 +81,9 @@ function createFilesystemUserBackupReader (userDir, manifest) {
 
     async readSeries () {
       const seriesDir = path.join(userDir, 'series');
-      const ext = compressed ? '.csv.gz' : '.csv';
-      const filePath = path.join(seriesDir, 'series' + ext);
+      const filePath = path.join(seriesDir, jsonlFileName('series', compressed));
       if (!fs.existsSync(filePath)) return emptyIterator();
-      return readCsvFile(filePath, compressed);
+      return readJsonlFile(filePath, compressed);
     },
 
     async readAttachments () {
@@ -157,72 +156,6 @@ async function * readChunkedJsonl (dir, baseName, compressed) {
   for (const file of files) {
     yield * readJsonlFile(path.join(dir, file), compressed);
   }
-}
-
-/**
- * Read a CSV file (optionally gzip-compressed) and yield parsed objects.
- * First line is the header row.
- * @param {string} filePath
- * @param {boolean} compressed
- * @returns {AsyncIterable<Object>}
- */
-async function * readCsvFile (filePath, compressed) {
-  let buffer = fs.readFileSync(filePath);
-  if (compressed) {
-    buffer = zlib.gunzipSync(buffer);
-  }
-  const content = buffer.toString('utf8');
-  const lines = content.split('\n');
-  if (lines.length === 0) return;
-
-  const header = parseCsvLine(lines[0]);
-  for (let i = 1; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (trimmed.length === 0) continue;
-    const values = parseCsvLine(trimmed);
-    const obj = {};
-    for (let j = 0; j < header.length; j++) {
-      obj[header[j]] = values[j] ?? '';
-    }
-    yield obj;
-  }
-}
-
-/**
- * Parse a single CSV line, handling quoted fields.
- * @param {string} line
- * @returns {string[]}
- */
-function parseCsvLine (line) {
-  const fields = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ',') {
-        fields.push(current);
-        current = '';
-      } else {
-        current += ch;
-      }
-    }
-  }
-  fields.push(current);
-  return fields;
 }
 
 /**

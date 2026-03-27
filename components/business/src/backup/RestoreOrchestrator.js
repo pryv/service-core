@@ -33,6 +33,7 @@ class RestoreOrchestrator {
     this.eventFiles = await getEventFiles();
     this.platformDB = storages.platformDB;
     this.auditStorage = storages.auditStorage;
+    this.seriesConnection = storages.seriesConnection;
     const { getLogger } = require('@pryv/boiler');
     this.logger = getLogger('restore');
     return this;
@@ -252,7 +253,20 @@ class RestoreOrchestrator {
       }
     }
 
-    // Series — TODO: implement when series restore format is finalized
+    // Series (optional — skip if no series engine configured)
+    if (this.seriesConnection) {
+      try {
+        const seriesMeasurements = [];
+        for await (const item of await userReader.readSeries()) {
+          seriesMeasurements.push(item);
+        }
+        if (seriesMeasurements.length > 0) {
+          await this.seriesConnection.importDatabase(targetUserId, { measurements: seriesMeasurements });
+        }
+      } catch (e) {
+        this.logger.warn(`Series import failed for user ${targetUserId}: ${e.message}`);
+      }
+    }
 
     this.logger.info(`User restored: ${username} (${targetUserId})`);
   }
@@ -303,6 +317,15 @@ class RestoreOrchestrator {
         await this.auditStorage.deleteUser(userId);
       } catch (e) {
         this.logger.warn(`Audit clear failed for user ${userId}: ${e.message}`);
+      }
+    }
+
+    // Clear series
+    if (this.seriesConnection) {
+      try {
+        await this.seriesConnection.dropDatabase(userId);
+      } catch (e) {
+        this.logger.warn(`Series clear failed for user ${userId}: ${e.message}`);
       }
     }
   }

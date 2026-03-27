@@ -106,9 +106,8 @@ function createFilesystemUserBackupWriter (userDir, userId, username, opts) {
     async writeSeries (items) {
       const seriesDir = path.join(userDir, 'series');
       fs.mkdirSync(seriesDir, { recursive: true });
-      const ext = opts.compress ? '.csv.gz' : '.csv';
-      const filePath = path.join(seriesDir, 'series' + ext);
-      stats.series = await writeCsvFile(filePath, items, opts.compress);
+      const filePath = path.join(seriesDir, jsonlFileName('series', opts.compress));
+      stats.series = await writeJsonlFile(filePath, items, opts.compress);
     },
 
     async writeAttachment (eventId, fileId, readStream) {
@@ -220,47 +219,4 @@ async function writeChunkedJsonlFiles (dir, baseName, items, opts) {
   }
   await flushChunk();
   return { totalCount, chunkFiles };
-}
-
-/**
- * Write items to a CSV file (optionally gzip-compressed).
- * Items should have consistent keys. First item's keys become the header row.
- * @param {string} filePath
- * @param {AsyncIterable|Array} items
- * @param {boolean} compress
- * @returns {Promise<number>} count of items written
- */
-async function writeCsvFile (filePath, items, compress) {
-  let count = 0;
-  let header = null;
-  const lines = [];
-
-  for await (const item of items) {
-    if (header == null) {
-      header = Object.keys(item);
-      lines.push(header.join(','));
-    }
-    lines.push(header.map(k => csvEscape(item[k])).join(','));
-    count++;
-  }
-
-  if (lines.length === 0) return 0;
-
-  const content = lines.join('\n') + '\n';
-  const buffer = Buffer.from(content, 'utf8');
-  if (compress) {
-    fs.writeFileSync(filePath, zlib.gzipSync(buffer));
-  } else {
-    fs.writeFileSync(filePath, buffer);
-  }
-  return count;
-}
-
-function csvEscape (value) {
-  if (value == null) return '';
-  const str = String(value);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return '"' + str.replace(/"/g, '""') + '"';
-  }
-  return str;
 }

@@ -53,6 +53,7 @@ class BackupOrchestrator {
     this.eventFiles = await getEventFiles();
     this.platformDB = storages.platformDB;
     this.auditStorage = storages.auditStorage;
+    this.seriesConnection = storages.seriesConnection;
     const { getLogger } = require('@pryv/boiler');
     this.logger = getLogger('backup');
     return this;
@@ -231,8 +232,17 @@ class BackupOrchestrator {
       }
     }
 
-    // Series (optional — skip if no series engine)
-    // TODO: implement series export when series backup format is finalized
+    // Series (optional — skip if no series engine configured)
+    if (this.seriesConnection) {
+      try {
+        const seriesData = await this.seriesConnection.exportDatabase(userId);
+        if (seriesData.measurements && seriesData.measurements.length > 0) {
+          await userWriter.writeSeries(seriesData.measurements);
+        }
+      } catch (e) {
+        this.logger.warn(`Series export failed for user ${userId}: ${e.message}`);
+      }
+    }
 
     return await userWriter.close();
   }
