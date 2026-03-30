@@ -11,9 +11,10 @@ RUN apt-get update && \
 COPY . .
 
 # Install with workspaces (links components/* and storages into node_modules)
-# --ignore-scripts avoids backloop.dev postinstall cert fetch failing in Docker
+# --ignore-scripts avoids backloop.dev postinstall cert fetch failing in Docker;
+# npm rebuild re-compiles all native addons (better-sqlite3, unix-dgram, etc.)
 RUN npm install --omit=dev --omit=optional --ignore-scripts && \
-    npm rebuild better-sqlite3
+    npm rebuild
 
 # Clean up build deps
 RUN apt-get -y --purge autoremove python3 build-essential && \
