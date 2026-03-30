@@ -5,14 +5,17 @@
  * Refer to LICENSE file
  */
 const Syslog = require('./Syslog');
+const { getConfig } = require('@pryv/boiler');
 
 let syslog;
 
 /**
- *@returns {Syslog}
+ *@returns {Syslog|null}
  */
 async function getSyslog () {
   if (!syslog) {
+    const config = await getConfig();
+    if (config.get('audit:syslog:active') === false) return null;
     syslog = new Syslog();
     await syslog.init();
   }
