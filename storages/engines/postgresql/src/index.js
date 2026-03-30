@@ -51,6 +51,76 @@ function initStorageLayer (storageLayer, connection, options) {
   storageLayer.streams = new StreamsPG(connection);
   storageLayer.webhooks = new WebhooksPG(connection);
 
+  // Events import/clear for backup restore (not used in normal operation —
+  // normal event CRUD goes through the DataStore/Mall layer).
+  storageLayer.events = {
+    importAll (userOrUserId, items, callback) {
+      const userId = typeof userOrUserId === 'string' ? userOrUserId : userOrUserId.id;
+      if (!items || items.length === 0) return callback(null);
+
+      const COL_MAP = {
+        headId: 'head_id',
+        streamIds: 'stream_ids',
+        endTime: 'end_time',
+        clientData: 'client_data',
+        createdBy: 'created_by',
+        modifiedBy: 'modified_by'
+      };
+      const JSONB_COLS = new Set(['stream_ids', 'tags', 'content', 'client_data', 'attachments']);
+      const mapCol = (prop) => COL_MAP[prop] || prop;
+      const mapVal = (col, val) => {
+        if (val === undefined) return null;
+        if (JSONB_COLS.has(col) && val != null) return JSON.stringify(val);
+        return val;
+      };
+
+      (async () => {
+        for (const event of items) {
+          const cols = ['user_id'];
+          const vals = [userId];
+          const placeholders = ['$1'];
+          let idx = 2;
+
+          for (const [prop, val] of Object.entries(event)) {
+            const col = prop === 'id' ? 'id' : mapCol(prop);
+            cols.push(col);
+            vals.push(mapVal(col, val));
+            placeholders.push(`$${idx}`);
+            idx++;
+          }
+
+          await connection.query(
+            `INSERT INTO events (${cols.join(', ')}) VALUES (${placeholders.join(', ')}) ON CONFLICT DO NOTHING`,
+            vals
+          );
+
+          // Populate event_streams junction table
+          if (event.streamIds && event.streamIds.length > 0) {
+            for (const streamId of event.streamIds) {
+              const pathRes = await connection.query(
+                'SELECT path FROM streams WHERE user_id = $1 AND id = $2',
+                [userId, streamId]
+              );
+              const streamPath = pathRes.rows.length > 0 ? pathRes.rows[0].path : streamId + '/';
+              await connection.query(
+                'INSERT INTO event_streams (user_id, event_id, stream_id, stream_path) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+                [userId, event.id, streamId, streamPath]
+              );
+            }
+          }
+        }
+      })().then(() => callback(null)).catch(callback);
+    },
+
+    clearAll (userOrUserId, callback) {
+      const userId = typeof userOrUserId === 'string' ? userOrUserId : userOrUserId.id;
+      (async () => {
+        await connection.query('DELETE FROM event_streams WHERE user_id = $1', [userId]);
+        await connection.query('DELETE FROM events WHERE user_id = $1', [userId]);
+      })().then(() => callback(null)).catch(callback);
+    }
+  };
+
   storageLayer.iterateAllEvents = async function * () {
     const { rowToEvent } = require('./dataStore/localUserEventsPG');
     const res = await connection.query('SELECT * FROM events');

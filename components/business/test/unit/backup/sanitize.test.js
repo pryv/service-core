@@ -33,11 +33,11 @@ describe('backup/sanitize', function () {
     assert.strictEqual(clean.id, 'acc123');
   });
 
-  it('does NOT promote _id when streamId exists (streams use streamId as app ID)', function () {
+  it('renames streamId to id (engine-agnostic backup format)', function () {
     const doc = { _id: '67890bcd', streamId: 'my-stream', name: 'My Stream' };
     const clean = sanitize(doc);
-    assert.strictEqual(clean.id, undefined);
-    assert.strictEqual(clean.streamId, 'my-stream');
+    assert.strictEqual(clean.id, 'my-stream');
+    assert.strictEqual(clean.streamId, undefined);
     assert.strictEqual(clean.name, 'My Stream');
   });
 

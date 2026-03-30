@@ -60,6 +60,27 @@ function initStorageLayer (storageLayer, connection, options) {
   storageLayer.streams = new Streams(connection);
   storageLayer.webhooks = new Webhooks(connection);
 
+  // Events import/clear for backup restore (not used in normal operation —
+  // normal event CRUD goes through the DataStore/Mall layer).
+  storageLayer.events = {
+    importAll (userOrUserId, items, callback) {
+      const userId = typeof userOrUserId === 'string' ? userOrUserId : userOrUserId.id;
+      if (!items || items.length === 0) return callback(null);
+      const docs = items.map(item => {
+        const doc = Object.assign({}, item);
+        doc._id = doc.id;
+        delete doc.id;
+        doc.userId = userId;
+        return doc;
+      });
+      connection.insertMany({ name: 'events' }, docs, callback);
+    },
+    clearAll (userOrUserId, callback) {
+      const userId = typeof userOrUserId === 'string' ? userOrUserId : userOrUserId.id;
+      connection.deleteMany({ name: 'events' }, { userId }, callback);
+    }
+  };
+
   storageLayer.iterateAllEvents = async function * () {
     const cursor = await bluebird.fromCallback(cb =>
       connection.findCursor({ name: 'events' }, {}, {}, cb)

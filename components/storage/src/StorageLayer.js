@@ -28,6 +28,7 @@ class StorageLayer {
   accesses;
   profile;
   streams;
+  events;
   webhooks;
   logger;
 
