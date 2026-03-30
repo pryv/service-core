@@ -6,6 +6,8 @@
  */
 
 const bluebird = require('bluebird');
+const accountStreams = require('../system-streams');
+const timestamp = require('unix-timestamp');
 
 /**
  * Orchestrates restore from a backup archive into the current core.
@@ -36,6 +38,7 @@ class RestoreOrchestrator {
     this.seriesConnection = storages.seriesConnection;
     const { getLogger } = require('@pryv/boiler');
     this.logger = getLogger('restore');
+    await accountStreams.init();
     return this;
   }
 
@@ -235,6 +238,24 @@ class RestoreOrchestrator {
     const accountData = await userReader.readAccountData();
     if (accountData) {
       await this.userAccountStorage._importAll(targetUserId, accountData);
+    }
+
+    // Ensure minimum account fields exist (safety net for v1 backups without accountFields)
+    const hasAccountFields = accountData?.accountFields?.length > 0;
+    if (!hasAccountFields) {
+      const leavesMap = accountStreams.accountLeavesMap;
+      const now = timestamp.now();
+      let defaultsCreated = 0;
+      for (const [streamId, stream] of Object.entries(leavesMap)) {
+        if (stream.default != null) {
+          const fieldName = accountStreams.toFieldName(streamId);
+          await this.userAccountStorage.setAccountField(targetUserId, fieldName, stream.default, 'restore', now);
+          defaultsCreated++;
+        }
+      }
+      if (defaultsCreated > 0) {
+        this.logger.info(`Created ${defaultsCreated} default account fields for user ${targetUserId}`);
+      }
     }
 
     // Audit (optional)
