@@ -29,14 +29,14 @@ require('@pryv/boiler').init({
       plugin: require('../../../config/plugins/systemStreams')
     },
     {
+      plugin: require('../../../config/plugins/core-identity')
+    },
+    {
       plugin: require('../../../config/plugins/public-url')
     },
     {
       scope: 'default-audit-path',
       file: path.resolve(__dirname, '../../../config/plugins/default-path.js')
-    },
-    {
-      plugin: require('../../../config/plugins/core-identity')
     },
     {
       plugin: require('../../../config/plugins/config-validation')
