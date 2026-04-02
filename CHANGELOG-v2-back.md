@@ -1,5 +1,24 @@
 # Changelog - Internal (no API impact)
 
+## Plan 24: Test Deploy with Dokku
+
+### Multi-core support
+- `storages.engines.rqlite.external` config: skip embedded rqlited, connect to external instance
+- `public-url.js` plugin: generate `api`/`register`/`access` service info for multi-core mode
+- Config plugin order: `core-identity` runs before `public-url`
+- `subdomainToPath` middleware: skip core's own subdomain in multi-core mode
+- `/reg/cores`: check shared PlatformDB before local users_index for cross-core lookups
+
+### Deployment tooling
+- `INSTALL.md`: standalone HTTPS (backloop.dev / custom certs) + nginx reverse proxy guide
+- `SINGLE-TO-MULTIPLE.md`: step-by-step single→multi-core upgrade guide
+- `bin/migrate-platform-to-rqlite.js`: reads users from base storage, populates rqlite platform DB
+- Dockerfile: `--ignore-scripts` + rebuild native modules, audit syslog `active:false` support
+
+### RestoreOrchestrator
+- Ensure default account fields for v1 backups (fixes "Unknown user" after migration)
+- Engine-agnostic backup sanitize: `streamId`/`profileId` → `id`
+
 ## Plan 23: Migration Toolkit v1→v2
 
 ### Backup writer: target file size on compressed output
