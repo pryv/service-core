@@ -33,7 +33,11 @@ async function expressAppInit (logging) {
     .filter((e) => _.isString(e))
     .filter((e) => e.indexOf(Paths.Params.Username) < 0)
     .value();
-  if (!config.get('dnsLess:isActive')) { app.use(middleware.subdomainToPath(ignorePaths)); }
+  if (!config.get('dnsLess:isActive')) {
+    const coreId = config.get('core:id');
+    const ignoredSubdomains = coreId && coreId !== 'single' ? [coreId] : [];
+    app.use(middleware.subdomainToPath(ignorePaths, ignoredSubdomains));
+  }
   // Parse JSON bodies:
   app.use(bodyParser.json({
     limit: config.get('uploads:maxSizeMb') + 'mb'

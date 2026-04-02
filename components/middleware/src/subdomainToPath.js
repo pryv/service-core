@@ -17,7 +17,8 @@ const { USERNAME_REGEXP_STR } = require('api-server/src/schema/helpers');
  * @param {Array} ignoredPaths Paths for which no translation is needed
  * @return {Function}
  */
-module.exports = function (ignoredPaths) {
+module.exports = function (ignoredPaths, ignoredSubdomains) {
+  ignoredSubdomains = ignoredSubdomains || [];
   return function (req, res, next) {
     if (isIgnoredPath(req.url)) {
       return next();
@@ -30,6 +31,8 @@ module.exports = function (ignoredPaths) {
     // looks like a user name.
     const firstChunk = hostChunks[0];
     if (!looksLikeUsername(firstChunk)) { return next(); }
+    // Skip core's own subdomain in multi-core mode
+    if (ignoredSubdomains.includes(firstChunk)) { return next(); }
     // Skip if it is already in the path.
     const pathPrefix = `/${firstChunk}`;
     if (req.url.startsWith(pathPrefix)) { return next(); }
