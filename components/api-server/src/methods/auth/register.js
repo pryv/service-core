@@ -117,21 +117,21 @@ module.exports = async function (api) {
       }
     }
 
-    // Check username exists
-    if (!(await usersRepository.usernameExists(username))) {
-      return next(errors.unknownResource('user', username));
-    }
-
-    // Multi-core: look up which core hosts this user
+    // Multi-core: look up which core hosts this user via shared PlatformDB
     if (!platform.isSingleCore) {
       const userCoreId = await platform.getUserCore(username);
       if (userCoreId != null) {
         result.core = { url: platform.coreIdToUrl(userCoreId) };
         return next();
       }
+      // User not in PlatformDB — unknown
+      return next(errors.unknownResource('user', username));
     }
 
-    // Single-core or no mapping: return API endpoint for this user
+    // Single-core: check local users_index
+    if (!(await usersRepository.usernameExists(username))) {
+      return next(errors.unknownResource('user', username));
+    }
     result.core = { url: ApiEndpoint.build(username, null) };
     next();
   }
