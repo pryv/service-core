@@ -13,9 +13,9 @@ const WWW_PATH = '/www';
 async function publicUrlToService (config) {
   const isDnsLess = config.get('dnsLess:isActive');
   const publicUrl = config.get('dnsLess:publicUrl');
+  const existing = config.get('service') || {};
   if (isDnsLess && publicUrl != null) {
-    // Preserve existing service fields (e.g. from serviceInfoUrl) and override with dnsLess URLs
-    const existing = config.get('service') || {};
+    // dnsLess: all endpoints on the same URL with username in path
     config.set('service', Object.assign({}, existing, {
       api: buildUrl(publicUrl, '/{username}/'),
       register: buildUrl(publicUrl, path.join(REG_PATH, '/')),
@@ -24,8 +24,22 @@ async function publicUrlToService (config) {
         definitions: buildUrl(publicUrl, path.join(WWW_PATH, '/assets/index.json'))
       },
       ...(existing.features ? { features: existing.features } : {})
-
     }));
+  } else {
+    // Multi-core: api uses {username}.{domain}, register on this core
+    const coreUrl = config.get('core:url');
+    const dnsDomain = config.get('dns:domain');
+    if (coreUrl && dnsDomain) {
+      config.set('service', Object.assign({}, existing, {
+        api: 'https://{username}.' + dnsDomain + '/',
+        register: buildUrl(coreUrl, path.join(REG_PATH, '/')),
+        access: buildUrl(coreUrl, path.join(REG_PATH, '/access/')),
+        assets: existing.assets || {
+          definitions: buildUrl(coreUrl, path.join(WWW_PATH, '/assets/index.json'))
+        },
+        ...(existing.features ? { features: existing.features } : {})
+      }));
+    }
   }
 }
 
