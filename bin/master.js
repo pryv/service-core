@@ -45,9 +45,9 @@ if (cluster.isPrimary) {
     const logger = getLogger('master');
     const log = (msg) => { logger.info(msg); console.log(`[master] ${msg}`); };
 
-    // Start rqlited if platform engine is rqlite
+    // Start rqlited if platform engine is rqlite (skip if external rqlite)
     const platformEngine = config.get('storages:platform:engine');
-    if (platformEngine === 'rqlite') {
+    if (platformEngine === 'rqlite' && !config.get('storages:engines:rqlite:external')) {
       const rqliteConfig = config.get('storages:engines:rqlite') || {};
       const httpPort = new URL(rqliteConfig.url || 'http://localhost:4001').port || 4001;
       await rqliteProcess.start({
