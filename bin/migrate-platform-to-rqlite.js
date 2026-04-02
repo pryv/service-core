@@ -88,10 +88,11 @@ async function main () {
   // Get all users from the users index
   const usersLocalIndex = require('storage/src/usersLocalIndex');
   await usersLocalIndex.init();
-  const allUserIds = await usersLocalIndex.getAllUserIds();
-  console.log(`Found ${allUserIds.length} users in local index`);
+  const usersByUsername = await usersLocalIndex.getAllByUsername();
+  const usernames = Object.keys(usersByUsername);
+  console.log(`Found ${usernames.length} users in local index`);
 
-  // Get account fields for each user
+  // Build rqlite statements
   const stmts = [];
   stmts.push(['CREATE TABLE IF NOT EXISTS keyValue (key TEXT PRIMARY KEY, value TEXT)']);
 
@@ -103,35 +104,36 @@ async function main () {
     'core-info/' + coreId, coreInfo]);
 
   // Process each user
-  for (const userId of allUserIds) {
-    const userInfo = await usersLocalIndex.getByUserId(userId);
-    if (!userInfo || !userInfo.username) continue;
-    const username = userInfo.username;
+  const mall = storages.mall;
+  const indexedFields = ['language', 'email', 'appId', 'invitationToken', 'referer'];
+
+  for (const username of usernames) {
+    const userId = usersByUsername[username];
 
     // user-core mapping
     stmts.push(['INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
       'user-core/' + username, coreId]);
 
-    // Read account fields from the base storage
-    const mall = storages.mall;
-    const accountEvents = await mall.events.get(userId, { streams: [{ any: [':_system:account'] }], limit: 100 });
-    const indexedFields = ['language', 'email', 'appId', 'invitationToken', 'referer'];
-
-    for (const event of (accountEvents || [])) {
-      const streamId = event.streamIds?.[0];
-      if (!streamId) continue;
-      // Extract field name from streamId (e.g. :_system:language → language, :system:email → email)
-      const fieldName = streamId.replace(/^:_?system:/, '');
-      if (indexedFields.includes(fieldName)) {
-        const value = event.content != null ? String(event.content) : '';
-        stmts.push(['INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
-          'user-indexed/' + fieldName + '/' + username, value]);
-
-        if (fieldName === 'email') {
+    // Read account fields from the mall (account stream events)
+    try {
+      const accountEvents = await mall.events.get(userId, { streams: [{ any: [':_system:account'] }], limit: 100 });
+      for (const event of (accountEvents || [])) {
+        const streamId = event.streamIds?.[0];
+        if (!streamId) continue;
+        const fieldName = streamId.replace(/^:_?system:/, '');
+        if (indexedFields.includes(fieldName)) {
+          const value = event.content != null ? String(event.content) : '';
           stmts.push(['INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
-            'user-unique/email/' + value, username]);
+            'user-indexed/' + fieldName + '/' + username, value]);
+
+          if (fieldName === 'email') {
+            stmts.push(['INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
+              'user-unique/email/' + value, username]);
+          }
         }
       }
+    } catch (e) {
+      console.warn(`Warning: could not read account fields for ${username}: ${e.message}`);
     }
   }
 
