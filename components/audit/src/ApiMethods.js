@@ -15,6 +15,12 @@ const ALL_METHODS = [
   'auth.emailCheck',
   'auth.cores',
   'auth.delete',
+  'mfa.activate',
+  'mfa.confirm',
+  'mfa.challenge',
+  'mfa.verify',
+  'mfa.deactivate',
+  'mfa.recover',
   'accesses.get',
   'accesses.create',
   'accesses.update',
@@ -75,7 +81,8 @@ const AUDITED_METHODS = ALL_METHODS.filter(m => !NOT_AUDITED_METHODS.includes(m)
 const WITHOUT_USER_METHODS = [
   'auth.register',
   'system.createUser',
-  'system.deactivateMfa'
+  'system.deactivateMfa',
+  'mfa.recover'
 ];
 
 const WITH_USER_METHODS = AUDITED_METHODS.filter(m => !WITHOUT_USER_METHODS.includes(m));

@@ -109,6 +109,7 @@ class Server {
     await require('./methods/auth/login')(app.api);
     await require('./methods/auth/register')(app.api);
     await require('./methods/auth/delete')(app.api);
+    await require('./methods/mfa')(app.api);
     await require('./methods/accesses')(app.api);
     require('./methods/service')(app.api);
     await require('./methods/webhooks')(app.api);

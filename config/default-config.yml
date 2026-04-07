@@ -76,6 +76,34 @@ customExtensions:
   defaultFolder: 'REPLACE ME'
   customAuthStepFn: ''
 
+# --- Services (external integrations) ---
+services:
+  # Multi-factor authentication (Plan 26: merged from service-mfa)
+  # mode: disabled — no MFA enforcement (default, backwards-compatible)
+  # mode: challenge-verify — separate challenge + verify SMS endpoints
+  # mode: single — combined challenge+verify in one SMS endpoint
+  mfa:
+    mode: disabled
+    sms:
+      endpoints:
+        challenge:
+          url: ''
+          method: POST
+          body: ''
+          headers: {}
+        verify:
+          url: ''
+          method: POST
+          body: ''
+          headers: {}
+        single:
+          url: ''
+          method: POST
+          body: ''
+          headers: {}
+    sessions:
+      ttlSeconds: 1800
+
 testNotifications:
   enabled: false
 

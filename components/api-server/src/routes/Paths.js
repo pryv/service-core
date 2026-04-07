@@ -29,6 +29,7 @@ const Paths = (module.exports = {
   Service: makePath(username, 'service'),
   Webhooks: makePath(username, 'webhooks'),
   Audit: makePath(username, 'audit/logs'),
+  MFA: makePath(username, 'mfa'),
   SocketIO: makePath('socket.io'),
   SocketIO2: makePath('socket.io2'),
   Favicon: makePath('favicon.ico')

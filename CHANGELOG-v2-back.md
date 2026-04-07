@@ -1,5 +1,44 @@
 # Changelog - Internal (no API impact)
 
+## Plan 26: Merge service-mfa into service-core
+
+### New business module `components/business/src/mfa/`
+- `Profile.js` — per-user MFA state model (content + recovery codes); replaces lodash `_.isEmpty` with native check
+- `Service.js` — abstract base for SMS providers. Takes a plain `mfaConfig` object (not boiler) for DI-friendly tests. Static `replaceAll`/`replaceRecursively` helpers (immutable — original mutated input).
+- `ChallengeVerifyService.js` — two-endpoint SMS provider (external SMS service generates + validates the code)
+- `SingleService.js` — single-endpoint SMS provider (service-core generates the code + validates locally, templates it into an HTTP call that only delivers the SMS)
+- `generateCode.js` — drops bluebird, uses `node:util.promisify` + `node:crypto.randomBytes`
+- `SessionStore.js` — in-memory `Map<mfaToken, {profile, context, _timeout}>` with TTL via per-session `setTimeout().unref()`. Single-core only; multi-core sharing deferred.
+- `index.js` — barrel with `createMFAService(mfaConfig)` factory and `getMFAService`/`getMFASessionStore` process-wide singleton accessors
+
+### API methods `components/api-server/src/methods/mfa.js`
+- Registers `mfa.activate`, `mfa.confirm`, `mfa.challenge`, `mfa.verify`, `mfa.deactivate`, `mfa.recover` on the v2 API. Added to `components/audit/src/ApiMethods.js ALL_METHODS` (required for registration). `mfa.recover` is in `WITHOUT_USER_METHODS`.
+- Reads `services.mfa` config per-invocation (not module load) so tests can inject config dynamically.
+- Uses `errors.factory.apiUnavailable` (HTTP 503) when MFA is disabled server-wide.
+- `saveMFAProfile` uses the `Profile` storage's dot-notation converter shape: `{data: {mfa: X}}` for set and `{data: {mfa: null}}` for unset — the converter turns NULL leaves into `$unset['data.mfa']`.
+
+### HTTP routes `components/api-server/src/routes/mfa.js`
+- Binds the 6 API methods to `POST /:username/mfa/*` endpoints
+- `activate` and `deactivate` use `loadAccessMiddleware` (personal access token required); `confirm`/`challenge`/`verify` extract `mfaToken` from the Authorization header (supports raw token and `Bearer <token>` shapes) and pass it via `params.mfaToken`; `recover` is unauthenticated.
+- New `Paths.MFA = /:username/mfa` entry
+
+### Login integration `components/api-server/src/methods/auth/login.js`
+- New `mfaCheckIfActive` step appended to the `auth.login` method chain. When MFA is enabled server-wide AND the user has `profile.private.data.mfa` set, it calls `mfaService.challenge()`, stashes the issued `{user, token, apiEndpoint}` in the SessionStore under a fresh `mfaToken`, and replaces the response with `{mfaToken}` — the caller must then call `mfa.verify` to release the real token.
+- MFA disabled OR user has no `profile.mfa` → step is a no-op (login response unchanged).
+
+### Config defaults `config/default-config.yml`
+- New `services.mfa` block with `mode: disabled` default. SMS endpoints are empty strings; `sessions.ttlSeconds: 1800`. Existing deployments are fully backwards-compatible.
+
+### Tests
+- `components/business/test/unit/mfa/` — 23 unit tests across `generateCode` (2), `Profile` (3), `Service` (6), `createMFAService` factory (5), `SessionStore` (7)
+- `components/api-server/test/mfa-seq.test.js` — 15 acceptance tests (`[MFAA]`/`[MA*]`) covering the full activate→confirm→login→challenge→verify→deactivate→recover lifecycle with `nock`-mocked SMS endpoints and `nock.disableNetConnect()` for fast failure on missing mocks
+- Added `mfa` to the methods list in `components/test-helpers/src/helpers-base.js` AND `helpers-c.js` (the latter hardcodes the list)
+- Added `require('api-server/src/methods/mfa')` to `components/api-server/test/helpers/core-process.js` (multi-core tests)
+
+### Dropped
+- `service-mfa`'s separate HTTP proxy, Dockerfile, runit lane. Repo is archived (final commit adds README pointer to the service-core merge commit).
+- Copied and dropped: `service-mfa/src/business/pryv/Connection.js` (replaced by direct `userProfileStorage` + `usersRepository` calls), its own `middlewares/`, its own `errorsHandling.js` (replaced by service-core's `errors.factory`).
+
 ## Plan 25: rqlite as default platform engine
 
 ### Platform DB

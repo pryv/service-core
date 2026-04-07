@@ -125,7 +125,7 @@ async function initCore () {
   };
 
   // Load API methods based on options
-  const methods = options.methods || ['events', 'streams', 'service', 'auth/login', 'auth/register', 'accesses', 'account', 'profile', 'webhooks', 'utility'];
+  const methods = options.methods || ['events', 'streams', 'service', 'auth/login', 'auth/register', 'accesses', 'account', 'profile', 'webhooks', 'utility', 'mfa'];
 
   for (const method of methods) {
     const loaded = require(`api-server/src/methods/${method}`);

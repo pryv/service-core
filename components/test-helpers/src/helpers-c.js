@@ -63,7 +63,7 @@ base.init({
   // All API methods for api-server tests
   methods: [
     'events', 'streams', 'service', 'auth/login', 'auth/register',
-    'accesses', 'account', 'profile', 'webhooks', 'utility'
+    'accesses', 'account', 'profile', 'webhooks', 'utility', 'mfa'
   ]
 });
 

@@ -83,6 +83,7 @@ const http = require('node:http');
   await require('api-server/src/methods/auth/login')(app.api);
   await require('api-server/src/methods/auth/register')(app.api);
   await require('api-server/src/methods/auth/delete')(app.api);
+  await require('api-server/src/methods/mfa')(app.api);
   await require('api-server/src/methods/accesses')(app.api);
   require('api-server/src/methods/service')(app.api);
   await require('api-server/src/methods/webhooks')(app.api);
