@@ -28,6 +28,10 @@
 - `README-DBs.md`: rewrote "Platform Wide Shared Storage" section to describe the rqlite-everywhere model
 - `storages/pluginLoader.js`: stale `platform: engine: sqlite` example updated
 
+### Bug fix discovered during Plan 25 live test (me-dns1.pryv.io v1.9.0 backup)
+- `RestoreOrchestrator._restorePlatform`: v1 backups (and any future raw exports) write platform entries as `{key, value}` straight from the legacy SQLite/MongoDB platform-wide store, but `platformDB.importAll` expects the parsed shape `{username, field, value, isUnique}`. The orchestrator now bridges both shapes via a new `parseRawPlatformEntry` helper, so v1→v2 migrations restore platform data correctly. v2→v2 round-trips still pass entries through unchanged.
+- Verified live: me-dns1 backup (14 users, 28064 events, 271 streams, 211 accesses, 63 platform records, 23 password hashes) restores cleanly into a fresh v2 instance with rqlite as platform engine — including end-to-end email lookup `pm@perki.com → perki`.
+
 ## Plan 24: Test Deploy with Dokku
 
 ### Multi-core support

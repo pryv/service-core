@@ -388,14 +388,47 @@ class RestoreOrchestrator {
   async _restorePlatform (reader) {
     if (!this.platformDB) return;
     const data = [];
+    let skipped = 0;
     for await (const item of await reader.readPlatformData()) {
-      data.push(item);
+      // v1 backups (and old v2 exports) write raw `{key, value}` entries straight from
+      // the SQLite/MongoDB platform-wide store. v2 platformDB.importAll expects the
+      // parsed shape `{username, field, value, isUnique}` (matching exportAll output).
+      // Bridge both shapes here so v1→v2 migrations restore platform data correctly.
+      if (item.username == null && typeof item.key === 'string') {
+        const parsed = parseRawPlatformEntry(item);
+        if (parsed) data.push(parsed);
+        else skipped++;
+      } else {
+        data.push(item);
+      }
     }
     if (data.length > 0) {
       await this.platformDB.importAll(data);
     }
-    this.logger.info(`Platform data restored: ${data.length} records`);
+    this.logger.info(`Platform data restored: ${data.length} records${skipped ? ` (${skipped} unsupported keys skipped)` : ''}`);
   }
+}
+
+/**
+ * Parse a raw platform entry `{key, value}` (as written by v1's SQLite/MongoDB
+ * platform-wide store) into the canonical shape `{username, field, value, isUnique}`
+ * expected by `PlatformDB.importAll`.
+ *
+ * Only handles `user-unique/{field}/{value}` and `user-indexed/{field}/{username}` —
+ * the only key types present in v1 platform data. Other key types (user-core,
+ * core-info, invitation) are v2-only and have no v1 equivalent; returns null.
+ */
+function parseRawPlatformEntry (entry) {
+  const parts = entry.key.split('/');
+  if (parts.length < 3) return null;
+  const [type, field, userNameOrValue] = parts;
+  if (type === 'user-unique') {
+    return { isUnique: true, field, username: entry.value, value: userNameOrValue };
+  }
+  if (type === 'user-indexed') {
+    return { isUnique: false, field, username: userNameOrValue, value: entry.value };
+  }
+  return null;
 }
 
 module.exports = RestoreOrchestrator;
