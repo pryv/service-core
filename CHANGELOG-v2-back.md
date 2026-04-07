@@ -1,5 +1,33 @@
 # Changelog - Internal (no API impact)
 
+## Plan 25: rqlite as default platform engine
+
+### Platform DB
+- `storages.platform.engine` default flipped from `sqlite` → `rqlite`. rqlite is now the only supported runtime platform engine in v2.
+- SQLite engine no longer advertises `platformStorage`: removed from `storages/engines/sqlite/manifest.json`, dropped `createPlatformDB` export from `storages/engines/sqlite/src/index.js`, deleted `DBsqlite.js` and the `[SQPF]` SQLite PlatformDB conformance test. SQLite remains in use for `baseStorage`, `dataStore`, and `auditStorage`.
+- `mongodb` and `postgresql` engines still ship `PlatformDB` implementations for conformance tests, but cannot be selected as the runtime platform engine via config.
+
+### master.js / lifecycle
+- `bin/master.js` always spawns and supervises an embedded `rqlited` (no engine guard, no `external` flag check). The `storages.engines.rqlite.external` config introduced in Plan 24 has been removed — master.js owns the rqlited lifecycle in both single- and multi-core mode.
+- Single-core: rqlited runs as a standalone Raft node.
+- Multi-core: rqlited uses DNS discovery on `lsc.{dns.domain}` to join peers.
+
+### Migration script moved
+- `bin/migrate-platform-to-rqlite.js` moved to `dev-migrate-v1-v2/migrate-platform-to-rqlite.js`. It is no longer needed for in-v2 single→multi-core upgrades (no migration step at all). Retained in the v1→v2 toolkit for the same shape of work, with a header note explaining the rework needed before reuse.
+
+### Test infrastructure
+- `storages/engines/rqlite/scripts/setup` — downloads `rqlited` v9.4.5 from GitHub releases (Linux/macOS, amd64/arm64), idempotent, mirrors mongodb pattern
+- `storages/engines/rqlite/scripts/start` — single-node foreground/background launcher with pidfile and `/readyz` wait
+- `storages/engines/rqlite/manifest.json`: declared `scripts.setup` and `scripts.start`
+- `scripts/setup-dev-env`: invokes rqlite setup after mongodb
+
+### Documentation
+- `INSTALL.md`: rqlite added to prerequisites; minimal config updated; `data/rqlite-data/` documented
+- `SINGLE-TO-MULTIPLE.md`: rewritten — removed manual rqlite install + data migration steps; new flow is DNS → config → restart → deploy second core (224 → 145 lines)
+- `README.md`: storage engines table updated (rqlite added, `platform` removed from MongoDB/PostgreSQL/SQLite rows)
+- `README-DBs.md`: rewrote "Platform Wide Shared Storage" section to describe the rqlite-everywhere model
+- `storages/pluginLoader.js`: stale `platform: engine: sqlite` example updated
+
 ## Plan 24: Test Deploy with Dokku
 
 ### Multi-core support

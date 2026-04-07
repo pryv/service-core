@@ -20,7 +20,7 @@ storages:
   base:
     engine: mongodb         # baseStorage + dataStore
   platform:
-    engine: sqlite          # platformStorage
+    engine: rqlite          # platformStorage
   series:
     engine: influxdb        # seriesStorage
   file:

@@ -81,9 +81,10 @@ webhooks:
 
 | Engine | Storage types | Status |
 |--------|--------------|--------|
-| MongoDB | base, platform, user index | Production |
-| PostgreSQL | base, platform, user index | Production |
-| SQLite | platform, user account, user index, audit | Production |
+| MongoDB | base, dataStore | Production |
+| PostgreSQL | base, dataStore, series, audit | Production |
+| SQLite | dataStore (per-user), user account, user index, audit | Production |
+| rqlite | platform (single- and multi-core) | Production |
 | Filesystem | file (attachments) | Production |
 | InfluxDB | series (HFS) | Production |
 

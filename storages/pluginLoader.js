@@ -140,7 +140,7 @@ const SHORT_NAMES = {
  *     base:
  *       engine: mongodb
  *     platform:
- *       engine: sqlite
+ *       engine: rqlite
  *     series:
  *       engine: influxdb
  *     file:

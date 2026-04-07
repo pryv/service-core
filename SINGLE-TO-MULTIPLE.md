@@ -2,91 +2,26 @@
 
 This guide covers upgrading a running single-core service-core deployment to a multi-core setup with shared platform database (rqlite).
 
+Since v2 the platform DB is **always** rqlite — `bin/master.js` spawns and supervises an embedded `rqlited` in both single- and multi-core mode. Going multi-core no longer requires migrating any platform data; it's a config-only change followed by deploying additional cores.
+
 ## Overview
 
 | | Single-core | Multi-core |
 |---|---|---|
-| Platform DB | SQLite (local file) | rqlite (distributed, shared) |
+| Platform DB | rqlite (single node, embedded) | rqlite (clustered, embedded on every core, joined via DNS discovery) |
 | User routing | All users on one instance | Each core hosts a subset of users |
 | DNS | dnsLess (path-based) or single domain | `{username}.{domain}` subdomains |
-| Config | `dnsLess: isActive: true` | `dns.domain` + `core.id` per instance |
+| Config | `dnsLess.isActive: true` | `dns.domain` + `core.id` per instance |
 
 ## Prerequisites
 
-- Running single-core deployment with users and data
-- rqlite binary (`rqlited`) — [download from releases](https://github.com/rqlite/rqlite/releases)
+- Running single-core deployment with users and data (already using rqlite for platform — automatic since v2)
 - DNS control for the target domain (wildcard A record needed)
 - A second machine or Dokku app for the second core (with its own PostgreSQL/MongoDB)
 
 ## Step-by-step
 
-### 1. Install rqlite
-
-Download and install on the host (or each host in a multi-host setup):
-
-```bash
-RQLITE_VERSION=8.36.14
-wget "https://github.com/rqlite/rqlite/releases/download/v${RQLITE_VERSION}/rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz"
-tar xzf "rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz"
-sudo cp "rqlite-v${RQLITE_VERSION}-linux-amd64/rqlited" /usr/local/bin/
-```
-
-Start rqlite as a service:
-
-```bash
-# Replace PRIVATE_IP with the host's internal IP
-sudo tee /etc/systemd/system/rqlite.service <<EOF
-[Unit]
-Description=rqlite distributed SQLite
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/rqlited \
-  -node-id rqlite-1 \
-  -http-addr 0.0.0.0:4001 \
-  -http-adv-addr PRIVATE_IP:4001 \
-  -raft-addr 0.0.0.0:4002 \
-  -raft-adv-addr PRIVATE_IP:4002 \
-  /var/lib/rqlite/data
-Restart=on-failure
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo mkdir -p /var/lib/rqlite/data
-sudo systemctl daemon-reload
-sudo systemctl enable rqlite
-sudo systemctl start rqlite
-
-# Verify
-curl -s http://localhost:4001/status | python3 -c "import sys,json; print(json.load(sys.stdin)['store']['raft']['state'])"
-# Should print: Leader
-```
-
-### 2. Migrate platform data to rqlite
-
-Before changing the config, migrate the existing user data into rqlite:
-
-```bash
-node bin/migrate-platform-to-rqlite.js --core-id core-a --rqlite-url http://localhost:4001
-```
-
-This reads all users and their indexed account fields from the base storage (PostgreSQL/MongoDB) and populates rqlite with:
-- `core-info/core-a` — core metadata
-- `user-core/{username}` → `core-a` — maps every existing user to this core
-- `user-indexed/{field}/{username}` — indexed fields (email, language, etc.)
-- `user-unique/email/{email}` → `{username}` — reverse email index
-
-Use `--dry-run` to preview without writing.
-
-**Verify:**
-```bash
-curl -s 'http://localhost:4001/db/query?q=SELECT+COUNT(*)+FROM+keyValue'
-```
-
-### 3. Set up DNS
+### 1. Set up DNS
 
 Create a wildcard DNS record for the multi-core domain:
 
@@ -98,9 +33,11 @@ mc.example.com    A  → <host-ip>
 Each core gets a subdomain: `core-a.mc.example.com`, `core-b.mc.example.com`.
 Users get subdomains: `{username}.mc.example.com`.
 
-### 4. Update the config
+For rqlite peer discovery, also add a DNS A record for `lsc.mc.example.com` listing every core's raft IP. `bin/master.js` reads `dns.domain` and passes `-disco-mode dns -disco-config '{"name":"lsc.mc.example.com","port":4002}'` to rqlited so cores can find each other automatically.
 
-Change the single-core config to multi-core:
+### 2. Update the first core's config
+
+Switch from dnsLess to multi-core mode:
 
 ```yaml
 # REMOVE these (single-core / dnsLess)
@@ -108,7 +45,6 @@ Change the single-core config to multi-core:
 #   isActive: true
 #   publicUrl: https://old-single-core.example.com
 
-# ADD these (multi-core)
 dnsLess:
   isActive: false
 
@@ -122,28 +58,26 @@ dns:
   active: false           # true only if using embedded DNS server
 
 storages:
-  platform:
-    engine: rqlite         # was: sqlite
   engines:
     rqlite:
-      url: http://<rqlite-host>:4001
-      external: true       # don't spawn embedded rqlited
+      raftPort: 4002      # Raft consensus port — must be reachable from peer cores
 ```
 
 **Key changes:**
 - `dnsLess.isActive` → `false`
 - `core.id` → unique identifier for this core
-- `dns.domain` → the shared domain
-- `storages.platform.engine` → `rqlite` (was `sqlite`)
-- `storages.engines.rqlite.url` → rqlite HTTP API URL
-- `storages.engines.rqlite.external` → `true` (use the host-level rqlite, don't spawn one)
+- `dns.domain` → the shared domain (also used by rqlite for `lsc.{domain}` discovery)
+- `storages.engines.rqlite.raftPort` → make sure it's open between cores
 
-### 5. Restart the first core
+`storages.platform.engine` is already `rqlite` from day one — no change needed there.
+
+### 3. Restart the first core
 
 Restart service-core. It will now:
-- Use rqlite for all platform operations (registration, user lookup, core discovery)
+- Use the embedded rqlited for all platform operations (registration, user lookup, core discovery)
 - Generate API URLs as `https://{username}.{dns.domain}/`
 - Identify itself as `core-a` in the platform
+- Self-register its core info (id, ip, available) into the platform DB on startup
 
 **Verify:**
 ```bash
@@ -154,14 +88,14 @@ curl -s https://core-a.mc.example.com/reg/service/info
 # Existing users should still be accessible
 curl -s https://core-a.mc.example.com/{username}/auth/login -X POST ...
 
-# Core discovery should work
+# Core discovery should work for users registered on core-a
 curl -s 'https://core-a.mc.example.com/reg/cores?username={existing-user}'
 # → { core: { url: "https://core-a.mc.example.com" } }
 ```
 
-### 6. Deploy the second core
+### 4. Deploy the second core
 
-Set up a second instance with its own base storage (PostgreSQL/MongoDB) but sharing the same rqlite:
+Set up a second instance with its own base storage (PostgreSQL/MongoDB). The embedded rqlited on core-b will join core-a's rqlite cluster automatically via DNS discovery, sharing the same platform DB.
 
 ```yaml
 core:
@@ -173,19 +107,18 @@ dns:
   domain: mc.example.com
 
 storages:
-  platform:
-    engine: rqlite
   engines:
     rqlite:
-      url: http://<rqlite-host>:4001
-      external: true
+      raftPort: 4002      # same Raft port — must be reachable from core-a
     postgresql:
       host: <core-b-pg-host>
       database: pryv_db_b
       # ... core-b's own PG credentials
 ```
 
-### 7. Verify cross-core operation
+`bin/master.js` on core-b passes `-disco-mode dns -disco-config '{"name":"lsc.mc.example.com","port":4002}'` to rqlited, which queries `lsc.mc.example.com` and joins the existing cluster.
+
+### 5. Verify cross-core operation
 
 ```bash
 # Register user on Core B
@@ -214,10 +147,13 @@ When running behind nginx (including Dokku), each core needs:
 2. **Socket.IO** — WebSocket upgrade location for `/socket.io/`
 3. **Upload size** — `client_max_body_size` matching `uploads.maxSizeMb`
 
+The rqlite Raft port (default 4002) does **not** go through nginx — it's a peer-to-peer TCP connection between cores. Open it in any firewall between cores.
+
 ## Rollback
 
 To revert to single-core:
 1. Stop the second core
-2. Change config back: `storages.platform.engine: sqlite`, `dnsLess.isActive: true`, restore `dnsLess.publicUrl`
-3. Remove `core.id` and `dns.domain`
-4. Restart — the SQLite platform DB still has the original data
+2. Change first core's config back: `dnsLess.isActive: true`, restore `dnsLess.publicUrl`, remove `core.id`/`dns.domain`
+3. Restart — the embedded rqlited will run as a standalone node again with the same data
+
+No platform data migration is needed in either direction — it stays in rqlite throughout.

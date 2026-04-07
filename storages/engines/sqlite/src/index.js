@@ -48,13 +48,6 @@ function getDataStoreModule () {
   return require('./dataStore');
 }
 
-// -- PlatformStorage ----------------------------------------------------
-
-function createPlatformDB () {
-  const DB = require('./DBsqlite');
-  return new DB();
-}
-
 // -- AuditStorage -------------------------------------------------------
 
 function createAuditStorage () {
@@ -68,6 +61,5 @@ module.exports = {
   getUserAccountStorage,
   getUsersLocalIndex,
   getDataStoreModule,
-  createPlatformDB,
   createAuditStorage
 };

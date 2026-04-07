@@ -4,7 +4,8 @@
 
 - **Node.js** 22.x
 - **Database**: PostgreSQL 14+ (recommended) or MongoDB 4.2+
-- **SQLite** (bundled — used for platform DB and audit)
+- **rqlite** — distributed SQLite used for the platform DB. The `rqlited` binary is bundled under `var-pryv/rqlite-bin/` after `just setup-dev-env`. `bin/master.js` spawns and supervises it; no manual install needed in single- or multi-core deployments.
+- **SQLite** (bundled — used for audit and per-user account/index storage)
 - **InfluxDB** 1.x (optional — for high-frequency series; PostgreSQL can also serve as series engine)
 - **GraphicsMagick** (optional — for image previews): `apt install graphicsmagick`
 - [just](https://github.com/casey/just#installation) (task runner)
@@ -61,7 +62,7 @@ storages:
   base:
     engine: postgresql    # or mongodb
   platform:
-    engine: sqlite
+    engine: rqlite        # only supported value; master.js spawns the embedded rqlited
   file:
     engine: filesystem
   series:
@@ -81,6 +82,11 @@ storages:
       previewsDirPath: /path/to/data/previews
     sqlite:
       path: /path/to/data/users
+    rqlite:
+      url: http://localhost:4001
+      raftPort: 4002
+      dataDir: /path/to/data/rqlite-data
+      binPath: /path/to/rqlited        # default: var-pryv/rqlite-bin/rqlited
 ```
 
 ### Assets
@@ -255,9 +261,10 @@ server {
 
 | Path | Content |
 |------|---------|
-| `data/users/` | SQLite DBs (platform, audit, user index) |
+| `data/users/` | SQLite DBs (audit, user index, per-user account) |
 | `data/users/{userId}/` | Per-user file attachments |
 | `data/previews/` | Generated image previews |
+| `data/rqlite-data/` | Platform DB (rqlite Raft log + SQLite snapshot) |
 
 
 ## Troubleshooting

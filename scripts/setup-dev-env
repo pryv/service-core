@@ -41,7 +41,18 @@ mkdir -p $ATTACHMENTS_FOLDER
 EXIT_CODE=$?
 if [[ ${EXIT_CODE} -ne 0 ]]; then
   echo ""
-  echo "Error setting up database; setup aborted"
+  echo "Error setting up MongoDB; setup aborted"
+  echo ""
+  exit ${EXIT_CODE}
+fi
+
+# platform DB (rqlite — mandatory since v2)
+
+. storages/engines/rqlite/scripts/setup
+EXIT_CODE=$?
+if [[ ${EXIT_CODE} -ne 0 ]]; then
+  echo ""
+  echo "Error setting up rqlite; setup aborted"
   echo ""
   exit ${EXIT_CODE}
 fi

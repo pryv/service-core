@@ -50,14 +50,13 @@ Settings to activate MongoDB instead of SQLite: `storageUserAccount:engine = 'mo
 
 base code: [components/platform](components/platform)
 
-This database contains all indexed and unique fields for users such as emails and custom systems streams data.
+This database contains all indexed and unique fields for users such as emails and custom systems streams data, plus the user→core mapping in multi-core deployments.
 
-In the Enterprise version of Pryv, it acts as a local cache and report to `service-register` being the main index. For Open-Pryv.io platformDB should evolve in a shared database between running service-core. 
+Since v2 the platform DB is **always** rqlite (distributed SQLite). `bin/master.js` spawns and supervises an embedded `rqlited` in single-core mode (one node) and in multi-core mode (each core runs its own node, joined into one Raft cluster via DNS discovery on `lsc.{dns.domain}`).
 
-- With SQLite (default) the db file can be usually found at `var-pryv/platform-wide.db`
-- With MongoDB 
-
-Settings to activate MongoDB instead of SQLite:`storagePlatform:engine = 'mongodb'`
+- Data lives in `var-pryv/rqlite-data/` (Raft log + SQLite snapshot)
+- HTTP API: `http://localhost:4001` (default)
+- Other engines (mongodb, postgresql) still ship `PlatformDB` implementations for conformance tests, but rqlite is the only engine that can be selected at runtime via `storages.platform.engine`
 
 #### Events, Streams & Attachments Storage
 
