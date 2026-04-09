@@ -320,6 +320,41 @@ Configuration loads from (last takes precedence):
 3. Config file via `--config <path>`
 4. Command-line options (`--key:path=value`)
 
+### Multi-core deployments
+
+Multi-core deployments host users across N cores sharing a single rqlite-replicated PlatformDB. Two topology variants:
+
+| Variant | DNS | `core.url` |
+|---|---|---|
+| **Domain-derived** (legacy) | `{username}.{domain}` resolved by the embedded DNS server or external wildcard | Auto-derived from `core.id + dns.domain` |
+| **DNSless** (Plan 27 Phase 2) | Externally managed (load balancer, fixed FQDNs) | Explicit `core.url` per core in YAML |
+
+Both variants use:
+
+- `GET /reg/cores?username=X` — discovery route. Returns the URL of the core hosting the user. Any core can answer (reads from PlatformDB).
+- **HTTP 421 wrong-core middleware** — if a `/:username/*` request hits the wrong core, the response is `421 Misdirected Request` with `{ error: { id: 'wrong-core', coreUrl } }`. SDKs retry against `coreUrl`. No HTTP redirect (cross-origin redirects strip `Authorization` headers).
+- `/reg/*` and `/system/*` are intentionally load-balanced — the wrong-core middleware is bypassed for those.
+
+See `SINGLE-TO-MULTIPLE.md` for the full upgrade procedure.
+
+### Configuration model: platform-wide vs per-core
+
+service-core v2 groups configuration into three categories. **Multi-core deployments must respect this split** or cores will drift and users will see inconsistent behaviour depending on which core answers their request.
+
+| Category | Meaning | Source |
+|---|---|---|
+| **Per-core** | Local to this node — ports, IPs, worker counts, log paths, DB credentials for this host, local tuning | YAML/env, each node has its own values |
+| **Platform-wide** | MUST be identical across all cores in a deployment — policy, user schema, identity, feature toggles | PlatformDB (rqlite-replicated) is authoritative; YAML seeds on first boot |
+| **Bootstrap** | Platform-wide in meaning, but needed before PlatformDB is reachable — how to connect to PlatformDB, admin key, first-boot seeds | YAML only; operator responsibility to keep identical across cores |
+
+**Per-core examples:** `http.port`, `cluster.apiWorkers`, `core.id`, `logs.*`, `storages.engines.mongodb.*`
+**Platform-wide examples:** `dns.domain`, `hostings`, `invitationTokens` (already in PlatformDB), `custom.systemStreams`, password policy, `integrity.algorithm`, webhook retry contract
+**Bootstrap examples:** `storages.platform.engine` + `storages.engines.rqlite.*`, `auth.adminAccessKey`, first-boot seeds
+
+Every block in `config/default-config.yml` is annotated with its category. On startup, cores log a warning when local YAML disagrees with PlatformDB for known platform-wide values — look for `[platform-drift]` in the logs.
+
+For the full categorization of every config key, see `_plans/27-pre-open-pryv-merge-atwork/CONFIG-SEPARATION.md`.
+
 
 ## Next steps (toward v2.0.0)
 

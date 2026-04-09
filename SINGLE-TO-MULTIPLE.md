@@ -157,3 +157,73 @@ To revert to single-core:
 3. Restart — the embedded rqlited will run as a standalone node again with the same data
 
 No platform data migration is needed in either direction — it stays in rqlite throughout.
+
+## DNSless multi-core (externally managed DNS)
+
+If DNS is managed by an external system (load balancer, Cloudflare, internal DNS server, ...) and FQDNs cannot be derived from `{core.id}.{dns.domain}`, set an explicit `core.url` per core:
+
+```yaml
+# core-a config
+core:
+  id: core-a
+  url: https://api1.example.com    # explicit override — wins over id+domain derivation
+  ip: 1.2.3.4
+  hosting: us-east-1
+  available: true
+
+dns:
+  domain: example.com               # still needed for rqlite peer discovery (lsc.example.com)
+```
+
+```yaml
+# core-b config
+core:
+  id: core-b
+  url: https://api2.example.com
+  ip: 5.6.7.8
+  hosting: us-east-1
+  available: true
+```
+
+Each core advertises its `core.url` to PlatformDB on startup (`Platform.registerSelf()`). Other cores read this via the `Platform.coreIdToUrl()` cache, so the `/reg/cores` discovery route and the wrong-core middleware return the externally-correct URL.
+
+### Discovery preflight (required for client SDKs)
+
+In multi-core mode (with or without DNSless overrides), client SDKs must discover the user's home core URL **before** issuing API requests. The pattern:
+
+```
+1. SDK → GET /reg/cores?username=alice  (load balancer / any core)
+   ← 200 { core: { url: "https://api1.example.com" } }
+
+2. SDK → POST https://api1.example.com/alice/auth/login  (direct, no redirect)
+   ← 200 { token: "...", apiEndpoint: "https://api1.example.com/alice/" }
+
+3. SDK → GET https://api1.example.com/alice/events  (direct)
+```
+
+`api.example.com` (the load-balanced entry point) is for `/reg/*` and `/system/*` only. **User API calls (`/:username/*`) must go directly to the user's home core URL** returned by the discovery route.
+
+### Wrong-core protection (HTTP 421)
+
+If a client mistakenly sends a `/:username/*` request to the wrong core, the server responds with **HTTP 421 Misdirected Request**:
+
+```json
+{
+  "error": {
+    "id": "wrong-core",
+    "message": "User \"alice\" is hosted on a different core. Retry the request against the URL in `coreUrl`.",
+    "coreUrl": "https://api1.example.com"
+  }
+}
+```
+
+The SDK should retry against `coreUrl`. **There is no HTTP redirect** because:
+
+1. Cross-origin redirects strip the `Authorization` header per the HTTP spec — a 308 to a different host would 401 on the next core.
+2. WebSocket upgrades cannot follow HTTP redirects, so Socket.IO would break.
+3. Some clients do not reliably resend POST/PUT bodies on redirect.
+4. CORS preflight overhead on every misrouted request.
+
+The wrong-core middleware is mounted on `/:username/*` only. `/reg/*` and `/system/*` routes are intentionally load-balanced and bypass it.
+
+In single-core mode the middleware is a no-op.

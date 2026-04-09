@@ -5,6 +5,8 @@
  * Refer to LICENSE file
  */
 
+const crypto = require('crypto');
+
 const { getLogger, getConfig } = require('@pryv/boiler');
 const logger = getLogger('platform');
 
@@ -28,9 +30,15 @@ class Platform {
   #initialized;
   #db;
   #config;
+  // Plan 27 Phase 2: in-memory cache of coreId → public URL.
+  // Populated by `_refreshCoreUrlCache()` from PlatformDB on init() and refreshed
+  // periodically. Lets `coreIdToUrl()` stay synchronous while honoring explicit
+  // `core.url` overrides set by other cores in DNSless multi-core deployments.
+  #coreUrlCache;
 
   constructor () {
     this.#initialized = false;
+    this.#coreUrlCache = new Map();
   }
 
   async init () {
@@ -45,6 +53,11 @@ class Platform {
 
     // Register this core in PlatformDB so other cores can discover it
     await this.registerSelf();
+
+    // Plan 27 Phase 2: load all known core URLs into the in-memory cache so
+    // `coreIdToUrl()` can answer synchronously even when explicit `core.url`
+    // overrides are in play (DNSless multi-core).
+    await this._refreshCoreUrlCache();
 
     // Seed invitation tokens from config into PlatformDB (if not already present)
     await this.#seedInvitationTokens();
@@ -212,10 +225,24 @@ class Platform {
 
   /**
    * Build the public URL for a core given its ID.
+   *
+   * Resolution order:
+   *  1. In-memory cache populated from PlatformDB core info (`url` field) — set
+   *     by other cores via `registerSelf()` when they have an explicit `core.url`.
+   *  2. Derivation from `core.id + dns.domain` (legacy multi-core).
+   *  3. Self URL (single-core / fallback).
+   *
+   * Stays synchronous so existing call sites (~10 across api-server) don't need
+   * a cascade rewrite. The cache is refreshed on `init()` and via
+   * `_refreshCoreUrlCache()` (called from this core after `registerSelf()`).
+   *
    * @param {string} coreId
    * @returns {string}
    */
   coreIdToUrl (coreId) {
+    if (this.#coreUrlCache.has(coreId)) {
+      return this.#coreUrlCache.get(coreId);
+    }
     const domain = this.domain;
     if (domain != null) {
       return 'https://' + coreId + '.' + domain;
@@ -225,12 +252,32 @@ class Platform {
   }
 
   /**
+   * Reload the coreId → URL cache from PlatformDB. Idempotent.
+   * Adds an entry only when a core info row carries an explicit `url` —
+   * empty url means "fall through to derivation" so a core with neither an
+   * override nor a domain doesn't poison the cache with `null`.
+   */
+  async _refreshCoreUrlCache () {
+    const cores = await this.#db.getAllCoreInfos();
+    const fresh = new Map();
+    for (const info of cores) {
+      if (info && info.id && info.url) {
+        fresh.set(info.id, info.url);
+      }
+    }
+    this.#coreUrlCache = fresh;
+  }
+
+  /**
    * Register this core in PlatformDB on startup.
    * Other cores will discover it via getAllCoreInfos().
+   * Includes `url` so DNSless multi-core deployments can advertise an
+   * explicit core URL that other cores resolve via the in-memory cache.
    */
   async registerSelf () {
     const info = {
       id: this.coreId,
+      url: this.coreUrl || null, // Plan 27 Phase 2: advertise explicit URL
       ip: this.#config.get('core:ip') || null,
       ipv6: this.#config.get('core:ipv6') || null,
       cname: this.#config.get('core:cname') || null,
@@ -238,6 +285,35 @@ class Platform {
       available: this.#config.get('core:available') !== false
     };
     await this.#db.setCoreInfo(this.coreId, info);
+    // Refresh the in-memory coreId→URL cache so this core's own entry is
+    // visible immediately. NOTE: cache stays cold for changes made by OTHER
+    // cores until the next init() — periodic refresh for dynamic cluster
+    // membership is tracked in PLATFORM-WIDE-CONFIG-MIGRATION.md follow-up.
+    await this._refreshCoreUrlCache();
+
+    // Plan 27 Phase 2b: log this core's observed values for known platform-wide
+    // config keys so operators can compare across cores and detect drift. A full
+    // PlatformDB-backed `platform_config` table with live drift warnings is
+    // targeted as a Plan 27 follow-up — see
+    // `_plans/27-pre-open-pryv-merge-atwork/CONFIG-SEPARATION.md`.
+    const platformWideSnapshot = {
+      'dns.domain': this.#config.get('dns:domain') || null,
+      'integrity.algorithm': this.#config.get('integrity:algorithm') || null,
+      'versioning.deletionMode': this.#config.get('versioning:deletionMode') || null,
+      'uploads.maxSizeMb': this.#config.get('uploads:maxSizeMb') || null
+    };
+    // `auth.adminAccessKey` is a secret and stays YAML-only (bootstrap category).
+    // We log only a SHA-256 hash so operators can compare hashes across cores to
+    // detect drift without the secret ever appearing in logs.
+    const adminKey = this.#config.get('auth:adminAccessKey');
+    const adminKeyHash = adminKey
+      ? crypto.createHash('sha256').update(String(adminKey)).digest('hex').slice(0, 16)
+      : null;
+    platformWideSnapshot['auth.adminAccessKey.sha256'] = adminKeyHash;
+    logger.info('[platform-config-snapshot] coreId=' + this.coreId + ' ' +
+      JSON.stringify(platformWideSnapshot) +
+      ' — these values MUST be identical across cores in a multi-core deployment. ' +
+      'Compare hashes across core logs to detect drift. See CONFIG-SEPARATION.md.');
   }
 
   /**
@@ -281,6 +357,40 @@ class Platform {
    */
   async getAllCoreInfos () {
     return await this.#db.getAllCoreInfos();
+  }
+
+  // --- Persistent DNS records (Plan 27 Phase 1) --- //
+
+  /**
+   * Set a persistent DNS record. Runtime-managed entries like ACME challenges.
+   * Static infrastructure records stay in YAML config; admin MUST NOT shadow them.
+   * @param {string} subdomain
+   * @param {Object} records
+   */
+  async setDnsRecord (subdomain, records) {
+    await this.#db.setDnsRecord(subdomain, records);
+  }
+
+  /**
+   * @param {string} subdomain
+   * @returns {Promise<Object|null>}
+   */
+  async getDnsRecord (subdomain) {
+    return await this.#db.getDnsRecord(subdomain);
+  }
+
+  /**
+   * @returns {Promise<Array<{subdomain: string, records: Object}>>}
+   */
+  async getAllDnsRecords () {
+    return await this.#db.getAllDnsRecords();
+  }
+
+  /**
+   * @param {string} subdomain
+   */
+  async deleteDnsRecord (subdomain) {
+    await this.#db.deleteDnsRecord(subdomain);
   }
 
   /**

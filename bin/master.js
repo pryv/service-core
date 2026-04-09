@@ -169,13 +169,16 @@ if (cluster.isPrimary) {
     }
 
     // --- IPC from workers (DNS record updates) ---
+    // Plan 27 Phase 1: the worker already persisted the record to PlatformDB
+    // before sending this IPC. Master refreshes from PlatformDB to pick it up
+    // atomically (instead of trusting the IPC payload) — any other core in the
+    // deployment will do the same via its next periodic refresh.
     if (dnsServer) {
       cluster.on('message', (worker, msg) => {
         if (msg && msg.type === 'dns:updateRecords') {
-          const { subdomain, records } = msg.data || {};
-          if (subdomain && records) {
-            dnsServer.updateStaticEntry(subdomain, records);
-          }
+          dnsServer.refreshFromPlatform().catch((err) => {
+            log('DNS refresh after IPC failed: ' + err.message);
+          });
         }
       });
     }

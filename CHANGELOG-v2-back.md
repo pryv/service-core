@@ -1,5 +1,32 @@
 # Changelog - Internal (no API impact)
 
+## Plan 27: Pre open-pryv.io merge readiness
+
+### Phase 2: DNSless multi-core minimum
+- `config/plugins/core-identity.js` now honors an explicit `core.url` YAML override as the highest-priority source for `core:url`. Falls back to id+domain derivation, then to `dnsLess.publicUrl`.
+- `Platform.js`:
+  - New private `#coreUrlCache: Map<coreId, url>` populated by `_refreshCoreUrlCache()` from PlatformDB on `init()` and on `registerSelf()`. Lets `coreIdToUrl()` stay synchronous (~10 call sites in api-server) while honoring explicit URLs registered by other cores.
+  - `registerSelf()` now writes `url: this.coreUrl || null` into the core info row so DNSless multi-core deployments can advertise their externally-correct URL.
+  - `coreIdToUrl(coreId)`: cache lookup → derivation from id+domain → self URL fallback. NOTE: cache stays cold for changes made by OTHER cores until the next `init()` — periodic refresh for dynamic cluster membership is tracked in `_plans/XXX-Backlog/PLATFORM-WIDE-CONFIG-MIGRATION.md`.
+- New middleware `components/middleware/src/checkUserCore.js` — wrong-core check on `/:username/*`. Returns HTTP 421 Misdirected Request with `{ error: { id: 'wrong-core', message, coreUrl } }` when `platform.getUserCore(username) !== platform.coreId`. No-op in single-core mode and for unknown users (existing 401/404 paths handle them). Test hook `_resetPlatformCache()` exposed for cross-test isolation.
+- `components/middleware/src/index.js` exports the new middleware as `middleware.checkUserCore`.
+- `components/api-server/src/routes/root.js` mounts `middleware.checkUserCore` on `Paths.UserRoot + '/*'` BEFORE `getAuth` and `initContextMiddleware` so wrong-core requests don't pay the cost of user/access loading.
+- New tests in `components/api-server/test/reg-multicore-seq.test.js`: 5 wrong-core middleware tests `[MC09A..MC09E]` (wrong core, right core, unknown user, /reg bypass, single-core no-op) and 3 explicit-URL tests `[MC10A..MC10C]` (cache hit, derivation fallback, end-to-end through middleware).
+
+### Phase 1: Persistent DNS records via PlatformDB
+- `PlatformDB` interface gains `setDnsRecord(subdomain, records)` / `getDnsRecord(subdomain)` / `getAllDnsRecords()` / `deleteDnsRecord(subdomain)`. The rqlite backend (`storages/engines/rqlite/src/DBrqlite.js`) implements them on the existing `keyValue` table using a `dns-record/{subdomain}` key prefix — no schema migration needed.
+- `Platform.js` gains delegating methods for the four DNS record operations.
+- `DnsServer` (`components/dns-server/src/DnsServer.js`) now loads runtime DNS records from PlatformDB on `start()` and refreshes them every 30s by default (`platformRefreshIntervalMs` constructor option). YAML `dns.staticEntries` are authoritative — admin runtime entries cannot shadow them. `updateStaticEntry()` is now `async` and persists to PlatformDB before updating the in-memory map. New `deleteStaticEntry()` mirror.
+- `POST /reg/records` (`components/api-server/src/routes/reg/records.js`) writes to PlatformDB first, then sends an IPC nudge to master so the local DnsServer refreshes immediately. Other cores in a multi-core deployment pick up the change via the periodic refresh.
+- `bin/master.js` IPC handler refreshes from PlatformDB on `dns:updateRecords` instead of trusting the IPC payload — single source of truth.
+- Multi-core impact: ACME challenges and other runtime DNS entries now survive master restart and propagate across all cores via rqlite RAFT replication.
+
+### Phase 2b: Configuration model — platform-wide vs per-core
+- `default-config.yml` annotated with `# === PER-CORE / PLATFORM-WIDE / BOOTSTRAP / MIXED ===` section headers for every block.
+- New "Configuration model: platform-wide vs per-core" section in `service-core/README.md` explaining the three categories and how multi-core operators must respect the split.
+- `Platform.registerSelf()` logs a `[platform-config-snapshot]` line on boot with this core's observed values for known platform-wide keys (`dns.domain`, `integrity.algorithm`, `versioning.deletionMode`, `uploads.maxSizeMb`) plus a SHA-256 hash of `auth.adminAccessKey`. Operators can compare these across core logs to detect drift without the admin key value ever appearing in logs. `auth.adminAccessKey` is confirmed YAML-only (BOOTSTRAP, secret, never moves to PlatformDB).
+- Authoritative reference: `_plans/27-pre-open-pryv-merge-atwork/CONFIG-SEPARATION.md`. Post-v2 follow-up (full PlatformDB-backed `platform_config` table + live drift warnings + per-key migrations) tracked in `_plans/XXX-Backlog/PLATFORM-WIDE-CONFIG-MIGRATION.md`.
+
 ## Plan 26: Merge service-mfa into service-core
 
 ### New business module `components/business/src/mfa/`

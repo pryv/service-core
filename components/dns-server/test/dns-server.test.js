@@ -276,22 +276,31 @@ describe('[DNS] DNS Server', function () {
     });
   });
 
-  // --- Dynamic static entry updates ---
+  // --- Dynamic runtime entry updates ---
 
   describe('updateStaticEntry', () => {
-    it('[DN40] must update static entry for ACME challenge', async () => {
-      server.updateStaticEntry('_acme-challenge', { txt: ['acme-validation-token-123'] });
+    it('[DN40] must update runtime entry for ACME challenge', async () => {
+      await server.updateStaticEntry('_acme-challenge', { txt: ['acme-validation-token-123'] });
 
       const records = await resolver.resolveTxt(`_acme-challenge.${TEST_DOMAIN}`);
       assert.strictEqual(records.length, 1);
       assert.deepStrictEqual(records[0], ['acme-validation-token-123']);
     });
 
-    it('[DN41] must overwrite existing static entry', async () => {
-      server.updateStaticEntry('www', { a: ['99.99.99.99'] });
+    it('[DN41] must reject updates that would shadow a config-static entry', async () => {
+      // Plan 27 Phase 1: config wins — admin cannot override infrastructure records.
+      let caught = null;
+      try {
+        await server.updateStaticEntry('www', { a: ['99.99.99.99'] });
+      } catch (err) {
+        caught = err;
+      }
+      assert.ok(caught, 'Expected updateStaticEntry(www, ...) to throw');
+      assert.match(caught.message, /config-static/);
 
-      const addresses = await resolver.resolve4(`www.${TEST_DOMAIN}`);
-      assert.deepStrictEqual(addresses, ['99.99.99.99']);
+      // www still resolves to the config value
+      const records = await resolver.resolveCname(`www.${TEST_DOMAIN}`);
+      assert.deepStrictEqual(records, ['web.example.com']);
     });
   });
 
@@ -303,5 +312,225 @@ describe('[DNS] DNS Server', function () {
       assert.strictEqual(res.answers.length, 0);
       assert.strictEqual(res.header.rcode, 3); // NXDOMAIN
     });
+  });
+});
+
+// =============================================================================
+// Plan 27 Phase 1 — Persistent DNS records via PlatformDB
+// Isolated describe block with its own DnsServer instance so the mock platform
+// can expose setDnsRecord/getDnsRecord/getAllDnsRecords/deleteDnsRecord without
+// interfering with the main suite above.
+// =============================================================================
+
+describe('[DNP] DNS Server — PlatformDB persistence (Plan 27 Phase 1)', function () {
+  this.timeout(30000);
+
+  // In-memory mock PlatformDB backing store shared across all tests in this block.
+  const mockPersistedRecords = new Map();
+
+  function createPersistentPlatform () {
+    return {
+      async getUserCore () { return null; },
+      async getCoreInfo () { return null; },
+      async getAllCoreInfos () { return []; },
+      async setDnsRecord (subdomain, records) {
+        mockPersistedRecords.set(subdomain, records);
+      },
+      async getDnsRecord (subdomain) {
+        return mockPersistedRecords.has(subdomain) ? mockPersistedRecords.get(subdomain) : null;
+      },
+      async getAllDnsRecords () {
+        return Array.from(mockPersistedRecords.entries()).map(([subdomain, records]) => ({ subdomain, records }));
+      },
+      async deleteDnsRecord (subdomain) {
+        mockPersistedRecords.delete(subdomain);
+      }
+    };
+  }
+
+  beforeEach(() => {
+    mockPersistedRecords.clear();
+  });
+
+  it('[DNP01] must load persisted records from PlatformDB on start()', async () => {
+    mockPersistedRecords.set('_acme-challenge', { txt: ['pre-existing-token'] });
+
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform: createPersistentPlatform(),
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0 // disable periodic refresh for deterministic test
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+    const port = server._getAddresses().udp.port;
+    const resolver = new dns.promises.Resolver();
+    resolver.setServers([`127.0.0.1:${port}`]);
+
+    try {
+      const records = await resolver.resolveTxt(`_acme-challenge.${TEST_DOMAIN}`);
+      assert.strictEqual(records.length, 1);
+      assert.deepStrictEqual(records[0], ['pre-existing-token']);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('[DNP02] updateStaticEntry must persist to PlatformDB', async () => {
+    const platform = createPersistentPlatform();
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+
+    try {
+      await server.updateStaticEntry('_acme-new', { txt: ['fresh-token'] });
+      const stored = await platform.getDnsRecord('_acme-new');
+      assert.deepStrictEqual(stored, { txt: ['fresh-token'] });
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('[DNP03] persisted records must survive a "restart"', async () => {
+    // Boot server A, persist a record, stop it.
+    const platform = createPersistentPlatform();
+    const server1 = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server1.start({ port: 0, ip: '127.0.0.1', ip6: null });
+    await server1.updateStaticEntry('_acme-surv', { txt: ['survives-restart'] });
+    await server1.stop();
+
+    // Boot server B with the same platform — must see the record from its start().
+    const server2 = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server2.start({ port: 0, ip: '127.0.0.1', ip6: null });
+    const port = server2._getAddresses().udp.port;
+    const resolver = new dns.promises.Resolver();
+    resolver.setServers([`127.0.0.1:${port}`]);
+
+    try {
+      const records = await resolver.resolveTxt(`_acme-surv.${TEST_DOMAIN}`);
+      assert.strictEqual(records.length, 1);
+      assert.deepStrictEqual(records[0], ['survives-restart']);
+    } finally {
+      await server2.stop();
+    }
+  });
+
+  it('[DNP04] config-static entries MUST shadow PlatformDB records', async () => {
+    // PlatformDB says www should point elsewhere — config must win.
+    mockPersistedRecords.set('www', { a: ['66.66.66.66'] });
+
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform: createPersistentPlatform(),
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+    const port = server._getAddresses().udp.port;
+    const resolver = new dns.promises.Resolver();
+    resolver.setServers([`127.0.0.1:${port}`]);
+
+    try {
+      // Config says www → web.example.com via CNAME.
+      const cname = await resolver.resolveCname(`www.${TEST_DOMAIN}`);
+      assert.deepStrictEqual(cname, ['web.example.com']);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('[DNP05] updateStaticEntry for a config-key must throw and leave PlatformDB untouched', async () => {
+    const platform = createPersistentPlatform();
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+
+    try {
+      let caught = null;
+      try {
+        await server.updateStaticEntry('reg', { cname: 'evil.example.com' });
+      } catch (err) {
+        caught = err;
+      }
+      assert.ok(caught, 'Expected rejection');
+      const stored = await platform.getDnsRecord('reg');
+      assert.strictEqual(stored, null);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('[DNP06] periodic refresh must pick up records added after start() (multi-core propagation)', async () => {
+    const platform = createPersistentPlatform();
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 30 // poll aggressively for the test
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+    const port = server._getAddresses().udp.port;
+
+    try {
+      // Simulate another core writing to the shared PlatformDB.
+      await platform.setDnsRecord('_acme-remote', { txt: ['from-remote-core'] });
+
+      // Wait long enough for several timer ticks.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      let answers = [];
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline) {
+        const res = await rawQuery(port, `_acme-remote.${TEST_DOMAIN}`, 'TXT');
+        answers = res.answers.filter(a => a.type === Packet.TYPE.TXT);
+        if (answers.length > 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      assert.ok(answers.length > 0, 'Remote record was not picked up by periodic refresh');
+      // dns2 stores TXT data in `data` (string or array)
+      const txt = answers[0].data;
+      const value = Array.isArray(txt) ? txt[0] : txt;
+      assert.strictEqual(value, 'from-remote-core');
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('[DNP07] deleteStaticEntry must remove from PlatformDB and memory', async () => {
+    const platform = createPersistentPlatform();
+    const server = createDnsServer({
+      config: createMockConfig(),
+      platform,
+      logger: createMockLogger(),
+      platformRefreshIntervalMs: 0
+    });
+    await server.start({ port: 0, ip: '127.0.0.1', ip6: null });
+
+    try {
+      await server.updateStaticEntry('_acme-del', { txt: ['to-be-deleted'] });
+      assert.deepStrictEqual(await platform.getDnsRecord('_acme-del'), { txt: ['to-be-deleted'] });
+
+      await server.deleteStaticEntry('_acme-del');
+      assert.strictEqual(await platform.getDnsRecord('_acme-del'), null);
+    } finally {
+      await server.stop();
+    }
   });
 });

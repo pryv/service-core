@@ -260,6 +260,37 @@ class DBrqlite {
     const key = 'invitation/' + token;
     await this.execute('DELETE FROM keyValue WHERE key = ?', [key]);
   }
+
+  // --- DNS records (Plan 27 Phase 1) --- //
+
+  async setDnsRecord (subdomain, records) {
+    const key = getDnsRecordKey(subdomain);
+    await this.execute(
+      'INSERT OR REPLACE INTO keyValue (key, value) VALUES (?, ?)',
+      [key, JSON.stringify(records)]
+    );
+  }
+
+  async getDnsRecord (subdomain) {
+    const key = getDnsRecordKey(subdomain);
+    const rows = await this.query('SELECT value FROM keyValue WHERE key = ?', [key]);
+    return rows.length === 0 ? null : JSON.parse(rows[0].value);
+  }
+
+  async getAllDnsRecords () {
+    const rows = await this.query(
+      "SELECT key, value FROM keyValue WHERE key LIKE 'dns-record/%'"
+    );
+    return rows.map(row => ({
+      subdomain: row.key.slice('dns-record/'.length),
+      records: JSON.parse(row.value)
+    }));
+  }
+
+  async deleteDnsRecord (subdomain) {
+    const key = getDnsRecordKey(subdomain);
+    await this.execute('DELETE FROM keyValue WHERE key = ?', [key]);
+  }
 }
 
 // --- Key helpers (same as SQLite engine) --- //
@@ -285,6 +316,10 @@ function getUserIndexedKey (username, field) {
 
 function getUserCoreKey (username) {
   return 'user-core/' + username;
+}
+
+function getDnsRecordKey (subdomain) {
+  return 'dns-record/' + subdomain;
 }
 
 module.exports = DBrqlite;

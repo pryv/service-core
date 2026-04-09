@@ -14,6 +14,14 @@ const dns2 = require('dns2');
 const { Packet } = dns2;
 const { buildA, buildAAAA, buildCNAME, buildMX, buildNS, buildSOA, buildTXT, buildCAA } = require('./records');
 
+/**
+ * Default interval for refreshing runtime DNS records from PlatformDB.
+ * Multi-core deployments rely on this for Core B to see a record created on Core A.
+ * ACME challenges are typically valid for >= 1 hour, so 30s is plenty.
+ * Set via opts.platformRefreshIntervalMs (tests use a shorter value).
+ */
+const DEFAULT_PLATFORM_REFRESH_INTERVAL_MS = 30000;
+
 class DnsServer {
   #config;
   #platform;
@@ -22,15 +30,19 @@ class DnsServer {
   #domain;
   #ttl;
   #rootRecords;
-  #staticEntries;
+  #staticEntries;       // working map: config entries + runtime entries
+  #configKeys;          // Set of subdomain keys that came from YAML config (immutable)
+  #platformRefreshTimer;
+  #platformRefreshIntervalMs;
 
   /**
    * @param {Object} opts
    * @param {Object} opts.config - @pryv/boiler config
-   * @param {Object} opts.platform - Platform instance
+   * @param {Object} opts.platform - Platform instance (needs getAllDnsRecords/setDnsRecord/deleteDnsRecord for persistence; DNS-record methods are optional — absence disables PlatformDB persistence)
    * @param {Object} opts.logger - logger with .info/.warn/.error
+   * @param {number} [opts.platformRefreshIntervalMs] - override refresh interval (tests)
    */
-  constructor ({ config, platform, logger }) {
+  constructor ({ config, platform, logger, platformRefreshIntervalMs }) {
     this.#config = config;
     this.#platform = platform;
     this.#logger = logger;
@@ -38,7 +50,10 @@ class DnsServer {
     this.#ttl = config.get('dns:defaultTTL') || 300;
     this.#rootRecords = config.get('dns:records:root') || {};
     // Deep-copy static entries from config so runtime updates don't mutate config
-    this.#staticEntries = Object.assign({}, config.get('dns:staticEntries') || {});
+    const configEntries = config.get('dns:staticEntries') || {};
+    this.#staticEntries = Object.assign({}, configEntries);
+    this.#configKeys = new Set(Object.keys(configEntries));
+    this.#platformRefreshIntervalMs = platformRefreshIntervalMs ?? DEFAULT_PLATFORM_REFRESH_INTERVAL_MS;
   }
 
   /**
@@ -80,6 +95,55 @@ class DnsServer {
       await this.#server._udp6.listen(port, ip6);
       this.#logger.info(`DNS server listening on [${ip6}]:${port} (IPv6)`);
     }
+
+    // Plan 27 Phase 1: load runtime DNS records from PlatformDB and start periodic refresh.
+    // Multi-core: Core B picks up records created on Core A via PlatformDB replication.
+    await this.refreshFromPlatform();
+    if (this.#platformRefreshIntervalMs > 0) {
+      this.#platformRefreshTimer = setInterval(() => {
+        this.refreshFromPlatform().catch((err) => {
+          this.#logger.warn('DNS platform refresh failed: ' + err.message);
+        });
+      }, this.#platformRefreshIntervalMs);
+      // Don't block process exit on this timer
+      if (typeof this.#platformRefreshTimer.unref === 'function') {
+        this.#platformRefreshTimer.unref();
+      }
+    }
+  }
+
+  /**
+   * Reload runtime DNS records from PlatformDB. Config entries are authoritative —
+   * they are NOT overwritten. Runtime entries that no longer exist in PlatformDB
+   * are removed from the in-memory map.
+   *
+   * No-op if the platform instance doesn't expose `getAllDnsRecords` (allows the
+   * DnsServer to be used with a minimal platform mock in tests).
+   */
+  async refreshFromPlatform () {
+    if (!this.#platform || typeof this.#platform.getAllDnsRecords !== 'function') {
+      return;
+    }
+    const persisted = await this.#platform.getAllDnsRecords();
+    const seenSubdomains = new Set();
+    for (const { subdomain, records } of persisted) {
+      if (this.#configKeys.has(subdomain)) {
+        // Config wins — log drift once per refresh if different
+        this.#logger.warn(
+          `DNS runtime record for '${subdomain}' is shadowed by config static entry; ignoring PlatformDB value`
+        );
+        continue;
+      }
+      this.#staticEntries[subdomain] = records;
+      seenSubdomains.add(subdomain);
+    }
+    // Prune in-memory runtime entries that were deleted from PlatformDB
+    for (const key of Object.keys(this.#staticEntries)) {
+      if (this.#configKeys.has(key)) continue;
+      if (!seenSubdomains.has(key)) {
+        delete this.#staticEntries[key];
+      }
+    }
   }
 
   /**
@@ -93,6 +157,10 @@ class DnsServer {
    * Stop the DNS server.
    */
   async stop () {
+    if (this.#platformRefreshTimer) {
+      clearInterval(this.#platformRefreshTimer);
+      this.#platformRefreshTimer = null;
+    }
     if (this.#server) {
       if (this.#server._udp6) {
         this.#server._udp6.close();
@@ -103,13 +171,44 @@ class DnsServer {
   }
 
   /**
-   * Update a static DNS entry at runtime (e.g. from admin API / ACME).
+   * Update a runtime DNS entry at runtime (e.g. from admin API / ACME).
+   * Persists the record to PlatformDB when the platform exposes `setDnsRecord`,
+   * so it survives restart and replicates to other cores.
+   * Config-sourced static entries are authoritative and cannot be shadowed —
+   * an attempt to update one throws an error.
+   *
    * @param {string} subdomain - e.g. '_acme-challenge'
    * @param {Object} records - e.g. { txt: ['validation-token'] } or { cname: 'target.example.com' }
+   * @returns {Promise<void>}
    */
-  updateStaticEntry (subdomain, records) {
+  async updateStaticEntry (subdomain, records) {
+    if (this.#configKeys.has(subdomain)) {
+      const msg = `DNS runtime update rejected: '${subdomain}' is a config-static entry and cannot be overwritten at runtime`;
+      this.#logger.warn(msg);
+      throw new Error(msg);
+    }
+    if (this.#platform && typeof this.#platform.setDnsRecord === 'function') {
+      await this.#platform.setDnsRecord(subdomain, records);
+    }
     this.#staticEntries[subdomain] = records;
-    this.#logger.info(`DNS static entry updated: ${subdomain}`);
+    this.#logger.info(`DNS runtime entry updated: ${subdomain}`);
+  }
+
+  /**
+   * Delete a runtime DNS entry. No-op for config-sourced static entries.
+   * @param {string} subdomain
+   */
+  async deleteStaticEntry (subdomain) {
+    if (this.#configKeys.has(subdomain)) {
+      const msg = `DNS runtime delete rejected: '${subdomain}' is a config-static entry`;
+      this.#logger.warn(msg);
+      throw new Error(msg);
+    }
+    if (this.#platform && typeof this.#platform.deleteDnsRecord === 'function') {
+      await this.#platform.deleteDnsRecord(subdomain);
+    }
+    delete this.#staticEntries[subdomain];
+    this.#logger.info(`DNS runtime entry deleted: ${subdomain}`);
   }
 
   /**
@@ -291,8 +390,8 @@ class DnsServer {
 /**
  * Factory function.
  */
-function createDnsServer ({ config, platform, logger }) {
-  return new DnsServer({ config, platform, logger });
+function createDnsServer ({ config, platform, logger, platformRefreshIntervalMs }) {
+  return new DnsServer({ config, platform, logger, platformRefreshIntervalMs });
 }
 
 module.exports = { DnsServer, createDnsServer };

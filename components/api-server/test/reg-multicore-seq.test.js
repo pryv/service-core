@@ -528,4 +528,163 @@ describe('[RGMC] register: multi-core', function () {
       assert.notStrictEqual(url, 'https://any-core.' + DOMAIN);
     });
   });
+
+  // ----------------------------------------------------------------
+  // 9. Plan 27 Phase 2: wrong-core middleware on /:username/*
+  // ----------------------------------------------------------------
+  describe('[MC09] wrong-core middleware', function () {
+    let request;
+
+    before(async function () {
+      await setupMultiCore(CORE_A);
+      await seedCore(CORE_B, { hosting: 'us-east-1' });
+      const app = getApplication(true);
+      await app.initiate();
+      request = supertest(app.expressApp);
+      // Reset the lazy platform cache so the middleware uses the freshly
+      // re-initialized singleton (multi-core mode).
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+    });
+
+    after(async function () {
+      restoreSingleCore();
+      // Restore the cached platform reference for subsequent test files.
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+    });
+
+    it('[MC09A] must return 421 wrong-core when user is hosted on a different core', async function () {
+      const username = 'mc09-other-' + cuid.slug();
+      await getPlatformDB().setUserCore(username, CORE_B);
+
+      const res = await request.get('/' + username + '/events');
+      assert.strictEqual(res.status, 421);
+      assert.strictEqual(res.body.error.id, 'wrong-core');
+      assert.strictEqual(res.body.error.coreUrl, buildCoreUrl(CORE_B));
+      assert.match(res.body.error.message, new RegExp(username));
+    });
+
+    it('[MC09B] must let through requests for users hosted on this core', async function () {
+      const username = 'mc09-self-' + cuid.slug();
+      await getPlatformDB().setUserCore(username, CORE_A);
+
+      const res = await request.get('/' + username + '/events');
+      // Either 401 (no auth) or some other downstream error — the only thing
+      // we care about is that 421 is NOT returned.
+      assert.notStrictEqual(res.status, 421);
+    });
+
+    it('[MC09C] must let through requests for unknown users (no PlatformDB mapping)', async function () {
+      const username = 'mc09-unknown-' + cuid.slug();
+      // No setUserCore call — user is not in PlatformDB at all.
+      const res = await request.get('/' + username + '/events');
+      // Existing 401/404 paths handle unknown users; the middleware must NOT
+      // return 421.
+      assert.notStrictEqual(res.status, 421);
+    });
+
+    it('[MC09D] must skip /reg and /system routes', async function () {
+      // /reg/cores is mounted outside /:username/* so the middleware never sees it.
+      const res = await request.get('/reg/cores').query({ username: 'nonexistent-' + cuid.slug() });
+      // The /reg/cores handler returns 404 for unknown user, NOT 421.
+      assert.notStrictEqual(res.status, 421);
+    });
+
+    it('[MC09E] single-core mode must be a no-op', async function () {
+      restoreSingleCore();
+      // Re-init the application against single-core config.
+      const app = getApplication(true);
+      await app.initiate();
+      const scRequest = supertest(app.expressApp);
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+      // Even if PlatformDB has the user mapped to CORE_B, single-core mode
+      // must NOT return 421 — there is only one core.
+      const username = 'mc09e-' + cuid.slug();
+      await getPlatformDB().setUserCore(username, CORE_B);
+      const res = await scRequest.get('/' + username + '/events');
+      assert.notStrictEqual(res.status, 421);
+      // Restore multi-core for the rest of this describe block (after hook).
+      await setupMultiCore(CORE_A);
+      await seedCore(CORE_B, { hosting: 'us-east-1' });
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+    });
+  });
+
+  // ----------------------------------------------------------------
+  // 10. Plan 27 Phase 2: explicit core.url override (DNSless multi-core)
+  // ----------------------------------------------------------------
+  describe('[MC10] core.url override', function () {
+    after(restoreSingleCore);
+
+    it('[MC10A] coreIdToUrl must return the explicit URL when other core has core.url set', async function () {
+      await setupMultiCore(CORE_A);
+
+      // Simulate another core that registered with an explicit core.url
+      // (e.g. https://api2.example.com — DNSless multi-core where DNS is
+      // managed externally and FQDN is not derivable from {id}.{domain}).
+      const explicitUrl = 'https://api2.example.com';
+      await getPlatformDB().setCoreInfo(CORE_B, {
+        id: CORE_B,
+        url: explicitUrl,
+        ip: null,
+        ipv6: null,
+        cname: null,
+        hosting: 'us-east-1',
+        available: true
+      });
+      // Refresh the in-memory cache that backs coreIdToUrl()
+      await platform._refreshCoreUrlCache();
+
+      const url = platform.coreIdToUrl(CORE_B);
+      assert.strictEqual(url, explicitUrl);
+    });
+
+    it('[MC10B] coreIdToUrl must fall back to derivation when no explicit URL is registered', async function () {
+      await setupMultiCore(CORE_A);
+
+      // CORE_B registered without a url field — coreIdToUrl must derive
+      // from id + domain.
+      await getPlatformDB().setCoreInfo(CORE_B, {
+        id: CORE_B,
+        url: null,
+        ip: null,
+        ipv6: null,
+        cname: null,
+        hosting: 'us-east-1',
+        available: true
+      });
+      await platform._refreshCoreUrlCache();
+
+      const url = platform.coreIdToUrl(CORE_B);
+      assert.strictEqual(url, 'https://' + CORE_B + '.' + DOMAIN);
+    });
+
+    it('[MC10C] wrong-core middleware must surface explicit URL in 421 response', async function () {
+      await setupMultiCore(CORE_A);
+      const explicitUrl = 'https://api3.example.com';
+      await getPlatformDB().setCoreInfo(CORE_B, {
+        id: CORE_B,
+        url: explicitUrl,
+        ip: null,
+        ipv6: null,
+        cname: null,
+        hosting: 'us-east-1',
+        available: true
+      });
+      await platform._refreshCoreUrlCache();
+
+      const app = getApplication(true);
+      await app.initiate();
+      const request = supertest(app.expressApp);
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+
+      const username = 'mc10c-' + cuid.slug();
+      await getPlatformDB().setUserCore(username, CORE_B);
+
+      const res = await request.get('/' + username + '/events');
+      assert.strictEqual(res.status, 421);
+      assert.strictEqual(res.body.error.coreUrl, explicitUrl);
+
+      require('middleware/src/checkUserCore')._resetPlatformCache();
+    });
+  });
 });

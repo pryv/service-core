@@ -5,6 +5,7 @@
  * Refer to LICENSE file
  */
 module.exports = {
+  checkUserCore: require('./checkUserCore'),
   commonHeaders: require('./commonHeaders'),
   contentType: require('./contentType'),
   filesUploadSupport: require('./filesUploadSupport'),

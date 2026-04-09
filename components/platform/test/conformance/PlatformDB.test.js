@@ -259,5 +259,64 @@ module.exports = function conformanceTests (getDB) {
         assert.strictEqual(all.length, 0);
       });
     });
+
+    describe('setDnsRecord / getDnsRecord / getAllDnsRecords / deleteDnsRecord', () => {
+      it('must set and retrieve a DNS record', async () => {
+        const subdomain = '_acme-' + cuid();
+        const records = { txt: ['token-' + cuid()] };
+        await db.setDnsRecord(subdomain, records);
+
+        const stored = await db.getDnsRecord(subdomain);
+        assert.deepStrictEqual(stored, records);
+      });
+
+      it('must return null for an unknown DNS record', async () => {
+        const result = await db.getDnsRecord('missing-' + cuid());
+        assert.strictEqual(result, null);
+      });
+
+      it('must overwrite an existing DNS record', async () => {
+        const subdomain = '_acme-' + cuid();
+        await db.setDnsRecord(subdomain, { txt: ['first'] });
+        await db.setDnsRecord(subdomain, { txt: ['second'] });
+        const stored = await db.getDnsRecord(subdomain);
+        assert.deepStrictEqual(stored, { txt: ['second'] });
+      });
+
+      it('getAllDnsRecords() must return every persisted record', async () => {
+        const sub1 = '_all1-' + cuid();
+        const sub2 = '_all2-' + cuid();
+        await db.setDnsRecord(sub1, { txt: ['a'] });
+        await db.setDnsRecord(sub2, { cname: 'target.example.com' });
+
+        const all = await db.getAllDnsRecords();
+        const found1 = all.find(r => r.subdomain === sub1);
+        const found2 = all.find(r => r.subdomain === sub2);
+        assert.ok(found1, 'subdomain 1 missing from getAllDnsRecords');
+        assert.deepStrictEqual(found1.records, { txt: ['a'] });
+        assert.ok(found2, 'subdomain 2 missing from getAllDnsRecords');
+        assert.deepStrictEqual(found2.records, { cname: 'target.example.com' });
+      });
+
+      it('deleteDnsRecord() must remove the record', async () => {
+        const subdomain = '_del-' + cuid();
+        await db.setDnsRecord(subdomain, { txt: ['gone'] });
+        await db.deleteDnsRecord(subdomain);
+        const stored = await db.getDnsRecord(subdomain);
+        assert.strictEqual(stored, null);
+      });
+
+      it('setDnsRecord must not interfere with user-unique keys (namespace isolation)', async () => {
+        const subdomain = '_iso-' + cuid();
+        const email = 'iso-' + cuid() + '@test.com';
+        await db.setUserUniqueField('u-' + cuid(), 'email', email);
+        await db.setDnsRecord(subdomain, { txt: ['x'] });
+
+        const dns = await db.getDnsRecord(subdomain);
+        assert.deepStrictEqual(dns, { txt: ['x'] });
+        const userEmail = await db.getUsersUniqueField('email', email);
+        assert.ok(userEmail);
+      });
+    });
   });
 };

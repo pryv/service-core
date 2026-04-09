@@ -142,7 +142,38 @@ const PlatformDB = module.exports.PlatformDB = {
    * Get all registered cores.
    * @returns {Promise<Array<Object>>}
    */
-  async getAllCoreInfos () { throw new Error('Not implemented'); }
+  async getAllCoreInfos () { throw new Error('Not implemented'); },
+
+  // --- DNS records (Plan 27 Phase 1: persistent runtime DNS entries) --- //
+
+  /**
+   * Set a persistent DNS record for a subdomain. Overwrites any existing
+   * record for the same subdomain. Intended for runtime-managed entries
+   * (e.g. ACME challenges) — static infrastructure records stay in YAML config.
+   *
+   * @param {string} subdomain  e.g. '_acme-challenge'
+   * @param {Object} records    e.g. { txt: ['validation-token'] } or { cname: 'target.example.com' }
+   */
+  async setDnsRecord (subdomain, records) { throw new Error('Not implemented'); },
+
+  /**
+   * Get the persistent DNS record for a subdomain.
+   * @param {string} subdomain
+   * @returns {Promise<Object|null>}
+   */
+  async getDnsRecord (subdomain) { throw new Error('Not implemented'); },
+
+  /**
+   * Get all persistent DNS records.
+   * @returns {Promise<Array<{subdomain: string, records: Object}>>}
+   */
+  async getAllDnsRecords () { throw new Error('Not implemented'); },
+
+  /**
+   * Delete a persistent DNS record.
+   * @param {string} subdomain
+   */
+  async deleteDnsRecord (subdomain) { throw new Error('Not implemented'); }
 };
 
 // Limit tampering on existing properties
