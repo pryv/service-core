@@ -1,5 +1,17 @@
 # Changelog - Internal (no API impact)
 
+## Plan 28: Test hardening + deploy validation
+
+### Phase 2 tooling: `just clean-test-data` now also resets MongoDB + rqlite
+- `justfile` `clean-test-data` recipe updated to drop `pryv-node-test` MongoDB database and wipe the rqlite `keyValue` table, in addition to the SQLite user index + per-user directories it already cleaned.
+- Rationale: Plan 25 made rqlite the only platform engine, but `clean-test-data` was still cleaning the obsolete pre-Plan-25 `var-pryv/users/platform-wide.db` SQLite file. As a result, full-suite runs on a previously-used workstation inherited stale `user-*` entries from rqlite and orphaned account-field rows from MongoDB, which caused the `root-seq.test.js [UA7B] beforeEach` integrity check to fail non-deterministically.
+- With the fix: `just clean-test-data && just test all` → **1568 / 0** with integrity checks ENABLED. Same for `just test-pg all` → **1543 / 0**. No `DISABLE_INTEGRITY_CHECK=1` workaround needed on sequential runs anymore. Parallel runs still use the workaround because parallel workers share state across processes.
+
+### Phase 1: Fix backup chunking bug
+- `storages/interfaces/backup/FilesystemBackupWriter.js` `writeChunkedJsonlFiles()` — compressed-mode chunking check now also fires when `rawSize >= maxChunkSize`, not only every 100 items. Small datasets (< 100 items) with aggressive `maxChunkSize` previously produced a single chunk regardless of target; they now respect the soft limit. Large datasets are unaffected (100-item batch check still dominates; the raw-bytes trigger is a lower bound).
+- Two tests in `components/business/test/unit/backup/filesystem-writer-reader.test.js` were subtly wrong — they used highly compressible payloads (`'Hello world '.repeat(5)`, short fixed strings) that gzip to almost nothing, so the compressed size never reached `maxChunkSize`. Updated to use non-compressible pseudo-random payloads so the chunking assertions are deterministic.
+- New regression test `'round-trips a single event larger than maxChunkSize (soft-limit semantics)'` documents that an individual oversized item is written to exactly one chunk — chunks cannot split items.
+
 ## Plan 27: Pre open-pryv.io merge readiness
 
 ### Phase 2: DNSless multi-core minimum

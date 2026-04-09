@@ -175,10 +175,16 @@ test-data command version:
 
 # Reset test state: SQLite DBs, user dirs, and MongoDB user collections (keeps MongoDB running)
 clean-test-data:
+    # SQLite user index + legacy pre-Plan-25 platform-wide.db (retained for safety)
     rm -f ./var-pryv/users/user-index.db ./var-pryv/users/user-index.db-wal ./var-pryv/users/user-index.db-shm
     rm -f ./var-pryv/users/platform-wide.db ./var-pryv/users/platform-wide.db-wal ./var-pryv/users/platform-wide.db-shm
+    # Per-user directories
     find ./var-pryv/users -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + 2>/dev/null || true
-    @echo "Test data cleaned (SQLite DBs + user dirs)"
+    # MongoDB test database (reset only — keeps server running)
+    ./var-pryv/mongodb-bin/bin/mongosh --quiet pryv-node-test --eval 'db.dropDatabase()' > /dev/null 2>&1 || echo "MongoDB not reachable (skipping mongo reset)"
+    # rqlite PlatformDB key-value table (Plan 25: rqlite is the only platform engine)
+    curl -s -X POST -H 'Content-Type: application/json' 'http://localhost:4001/db/execute' -d '[["DELETE FROM keyValue"]]' > /dev/null 2>&1 || echo "rqlite not reachable (skipping rqlite reset)"
+    @echo "Test data cleaned (SQLite DBs + user dirs + MongoDB pryv-node-test + rqlite keyValue)"
 
 # Cleanup users data and MongoDB data in `var-pryv/`
 clean-data:

@@ -205,7 +205,14 @@ async function writeChunkedJsonlFiles (dir, baseName, items, opts) {
     currentLines = [];
   }
 
-  // Track uncompressed size as a proxy — check actual output size every N items
+  // Track uncompressed size as a proxy — check actual output size every N items.
+  // In compressed mode we also trigger an early check when rawSize has already
+  // reached maxChunkSize: gzip never expands highly compressible input below its
+  // header size but cannot shrink below ~20 bytes either, so once the raw size
+  // exceeds the target, the compressed output is *possibly* over the limit —
+  // worth a check. Without this lower-bound trigger, small datasets (fewer than
+  // CHECK_INTERVAL items) never fire the batch check and produce a single chunk
+  // regardless of maxChunkSize — see Plan 28 Phase 1.
   let rawSize = 0;
   const CHECK_INTERVAL = 100;
 
@@ -215,15 +222,22 @@ async function writeChunkedJsonlFiles (dir, baseName, items, opts) {
     rawSize += Buffer.byteLength(line, 'utf8') + 1;
     totalCount++;
 
-    // For uncompressed mode, rawSize is the actual file size — check directly
-    if (!opts.compress && rawSize >= opts.maxChunkSize) {
-      flushChunk();
-      rawSize = 0;
+    // Uncompressed mode: rawSize IS the file size — check directly.
+    if (!opts.compress) {
+      if (rawSize >= opts.maxChunkSize) {
+        flushChunk();
+        rawSize = 0;
+      }
       continue;
     }
 
-    // For compressed mode, check actual output size periodically
-    if (opts.compress && currentLines.length % CHECK_INTERVAL === 0) {
+    // Compressed mode: check when either
+    //   (a) the batch interval hit — amortizes gzipSync cost on large datasets
+    //   (b) raw size already exceeds the target — catches small datasets and
+    //       aggressive maxChunkSize values where the batch check never fires.
+    const batchHit = currentLines.length % CHECK_INTERVAL === 0;
+    const rawOverBudget = rawSize >= opts.maxChunkSize;
+    if (batchHit || rawOverBudget) {
       const content = currentLines.join('\n') + '\n';
       const compressed = zlib.gzipSync(Buffer.from(content, 'utf8'));
       if (compressed.length >= opts.maxChunkSize) {
