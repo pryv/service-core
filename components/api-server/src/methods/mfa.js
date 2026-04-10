@@ -3,19 +3,6 @@
  * Copyright (C) Pryv https://pryv.com
  * This file is part of Pryv.io and released under BSD-Clause-3 License
  * Refer to LICENSE file
- *
- * MFA API methods. Plan 26: merged from service-mfa as built-in service-core methods.
- *
- * Six methods:
- *   - mfa.activate    : personal token; starts MFA setup, returns mfaToken
- *   - mfa.confirm     : mfaToken; validates SMS code, persists profile, returns recovery codes
- *   - mfa.challenge   : mfaToken; re-sends SMS during a pending login flow
- *   - mfa.verify      : mfaToken; validates SMS code, returns the real Pryv access token
- *   - mfa.deactivate  : personal token; clears profile.mfa
- *   - mfa.recover     : no auth (username + password + recoveryCode); clears profile.mfa
- *
- * MFA persistent state lives in the user's private profile under `data.mfa = { content, recoveryCodes }`.
- * Session state (mfaToken → context) lives in the in-memory SessionStore singleton.
  */
 
 const bluebird = require('bluebird');
