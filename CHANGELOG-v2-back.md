@@ -2,6 +2,12 @@
 
 ## Plan 28: Test hardening + deploy validation
 
+### Phase 3: Deploy validation — Dockerfile + external rqlite
+- `Dockerfile`: rqlite binary now bundled in the Docker image (`/app/var-pryv/rqlite-bin/rqlited`). Since Plan 25 master.js spawns rqlited directly — previous images lacked the binary. Also removed `--omit=optional` so `sharp` installs for the previews worker.
+- `bin/master.js`: new `rqlite.external` mode — when `storages.engines.rqlite.external: true`, master.js skips spawning rqlited and connects to an already-running external instance (multi-core deployments sharing one rqlited on the host).
+- `storages/engines/rqlite/src/rqliteProcess.js`: new `waitForExternal(url, timeoutMs, log)` helper.
+- `components/api-server/src/methods/mfa.js`: removed redundant Plan 26 docstring header.
+
 ### Phase 2 tooling: `just clean-test-data` now also resets MongoDB + rqlite
 - `justfile` `clean-test-data` recipe updated to drop `pryv-node-test` MongoDB database and wipe the rqlite `keyValue` table, in addition to the SQLite user index + per-user directories it already cleaned.
 - Rationale: Plan 25 made rqlite the only platform engine, but `clean-test-data` was still cleaning the obsolete pre-Plan-25 `var-pryv/users/platform-wide.db` SQLite file. As a result, full-suite runs on a previously-used workstation inherited stale `user-*` entries from rqlite and orphaned account-field rows from MongoDB, which caused the `root-seq.test.js [UA7B] beforeEach` integrity check to fail non-deterministically.
