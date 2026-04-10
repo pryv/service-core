@@ -46,18 +46,25 @@ if (cluster.isPrimary) {
     const log = (msg) => { logger.info(msg); console.log(`[master] ${msg}`); };
 
     // Start rqlited — rqlite is the only supported platform engine, master.js owns the lifecycle.
+    // When `storages.engines.rqlite.external` is true, skip spawning and connect to an
+    // already-running instance (useful for multi-core deployments sharing one rqlited).
     const rqliteConfig = config.get('storages:engines:rqlite') || {};
     const httpPort = new URL(rqliteConfig.url || 'http://localhost:4001').port || 4001;
-    await rqliteProcess.start({
-      coreId: config.get('core:id') || 'single',
-      binPath: rqliteConfig.binPath || 'var-pryv/rqlite-bin/rqlited',
-      dataDir: rqliteConfig.dataDir || 'var-pryv/rqlite-data',
-      httpPort: parseInt(httpPort),
-      raftPort: rqliteConfig.raftPort || 4002,
-      dnsDomain: config.get('dns:domain') || null,
-      coreIp: config.get('core:ip') || null,
-      log
-    });
+    if (rqliteConfig.external) {
+      log(`Connecting to external rqlited at ${rqliteConfig.url || 'http://localhost:4001'}`);
+      await rqliteProcess.waitForExternal(rqliteConfig.url || 'http://localhost:4001', 30000, log);
+    } else {
+      await rqliteProcess.start({
+        coreId: config.get('core:id') || 'single',
+        binPath: rqliteConfig.binPath || 'var-pryv/rqlite-bin/rqlited',
+        dataDir: rqliteConfig.dataDir || 'var-pryv/rqlite-data',
+        httpPort: parseInt(httpPort),
+        raftPort: rqliteConfig.raftPort || 4002,
+        dnsDomain: config.get('dns:domain') || null,
+        coreIp: config.get('core:ip') || null,
+        log
+      });
+    }
 
     // Run DB migrations before starting services (same as runit core/run)
     const runMigrations = config.get('cluster:runMigrations') ?? true;

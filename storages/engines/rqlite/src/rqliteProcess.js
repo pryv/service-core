@@ -152,4 +152,15 @@ async function waitForReady (httpUrl, timeoutMs, log) {
   throw new Error(`rqlited did not become ready within ${timeoutMs}ms`);
 }
 
-module.exports = { start, stop, isRunning };
+/**
+ * Wait for an external (not managed by us) rqlite instance to be ready.
+ * @param {string} url - rqlite HTTP API base URL
+ * @param {number} timeoutMs
+ * @param {Function} log
+ */
+async function waitForExternal (url, timeoutMs, log) {
+  await waitForReady(url, timeoutMs, log);
+  log('External rqlited HTTP API ready');
+}
+
+module.exports = { start, stop, isRunning, waitForExternal };

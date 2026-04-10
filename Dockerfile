@@ -25,7 +25,7 @@ COPY . .
 # Install with workspaces (links components/* and storages into node_modules)
 # --ignore-scripts avoids backloop.dev postinstall cert fetch failing in Docker;
 # npm rebuild re-compiles all native addons (better-sqlite3, unix-dgram, etc.)
-RUN npm install --omit=dev --omit=optional --ignore-scripts && \
+RUN npm install --omit=dev --ignore-scripts && \
     npm rebuild
 
 # Clean up build deps
