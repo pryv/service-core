@@ -1,5 +1,8 @@
 # service-core
 
+> **ARCHIVED** — This repository has been merged into [**open-pryv.io**](https://github.com/pryv/open-pryv.io).
+> All development continues there. This repo is kept as read-only reference.
+
 Pryv.io core server — handles user data (events, streams, accesses, webhooks) with pluggable storage engines.
 
 **Current version**: 2.0.0-pre.2
